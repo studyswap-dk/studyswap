@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StudySwap
 
-## Getting Started
+Byt faglig hjælp med andre studerende på tværs af uddannelser, med point i stedet for penge.
 
-First, run the development server:
+4. semesterprojekt (SW4PRJ4) på Softwareteknologi, Aarhus Universitet. Gruppe 2.
+
+| Miljø | Adresse | Branch |
+|---|---|---|
+| Produktion | https://studyswap.dk | `main` |
+| Udvikling | https://dev.studyswap.dk (kræver Vercel-login) | `dev` |
+
+## Gruppen
+
+| Navn | GitHub | Område |
+|---|---|---|
+| Luca Daniel Kirk Abildgaard | | |
+| Oliver Widemann Bache | | |
+| Morten Rode Enghausen | [enghausen](https://github.com/enghausen) | |
+| Julius Bak Gasberg | | |
+| Phillip Wei-Ye Lam | | |
+| Viktor Kalhøj Sønderup Laursen | | |
+| Mads Dessau Arp Posborg | | |
+| Mads Kvisgaard Schnell | | |
+
+Vejleder: Michel Howard.
+
+## Teknologi
+
+Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon, hostet på Vercel.
+
+## Kom i gang
+
+Kræver Node.js 20.9 eller nyere og git.
 
 ```bash
+git clone https://github.com/studyswap-dk/studyswap.git
+cd studyswap
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Åbn http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Kommando | Hvad den gør |
+|---|---|
+| `npm run dev` | Starter udviklingsserveren |
+| `npm run build` | Bygger som til produktion |
+| `npm run lint` | Tjekker koden for fejl |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Brug npm, ikke yarn eller pnpm, så der kun findes én `package-lock.json`.
 
-## Learn More
+## Arbejdsgang
 
-To learn more about Next.js, take a look at the following resources:
+`dev` er udgangspunktet for alt arbejde, og `main` er produktion. Ingen kan pushe direkte til dem. Alt går via pull request mod `dev`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+git checkout dev
+git pull
+git checkout -b feature/kort-beskrivelse
+# arbejd og commit, og derefter:
+git push -u origin feature/kort-beskrivelse
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten.
 
-## Deploy on Vercel
+Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreger, uden æ, ø og å. Typerne er `feature`, `fix`, `chore`, `docs` og `ci`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Dokumentation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js](https://nextjs.org/docs)
+- [Vercel](https://vercel.com/docs)
+- [Neon](https://neon.com/docs)
+- [GitHub: pull requests](https://docs.github.com/en/pull-requests)
