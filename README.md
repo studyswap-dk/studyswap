@@ -2,7 +2,7 @@
 
 Byt faglig hjælp med andre studerende på tværs af uddannelser, med point i stedet for penge.
 
-4. semesterprojekt (SW4PRJ4) på Softwareteknologi, Aarhus Universitet. Gruppe 2.
+Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet. Gruppe 2.
 
 | Miljø | Adresse | Branch |
 |---|---|---|
@@ -11,18 +11,18 @@ Byt faglig hjælp med andre studerende på tværs af uddannelser, med point i st
 
 ## Gruppen
 
-| Navn | GitHub | Område |
-|---|---|---|
-| Luca Daniel Kirk Abildgaard | | |
-| Oliver Widemann Bache | | |
-| Morten Rode Enghausen | [enghausen](https://github.com/enghausen) | |
-| Julius Bak Gasberg | | |
-| Phillip Wei-Ye Lam | | |
-| Viktor Kalhøj Sønderup Laursen | | |
-| Mads Dessau Arp Posborg | | |
-| Mads Kvisgaard Schnell | | |
+| Navn | GitHub |
+|---|---|
+| Luca | |
+| Oliver | |
+| Morten | [enghausen](https://github.com/enghausen) |
+| Julius | |
+| Phillip | |
+| Viktor | |
+| Mads P | |
+| Mads S | |
 
-Vejleder: Michel Howard.
+Vejleder: Michel.
 
 ## Teknologi
 
@@ -70,4 +70,4 @@ Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreg
 - [Next.js](https://nextjs.org/docs)
 - [Vercel](https://vercel.com/docs)
 - [Neon](https://neon.com/docs)
-- [GitHub: pull requests](https://docs.github.com/en/pull-requests)
+- [GitHub](https://docs.github.com)
