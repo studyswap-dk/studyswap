@@ -20,7 +20,7 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 | Phillip | |
 | Viktor | |
 | Mads P | |
-| Mads S | |
+| Mads S | [Madsschnell](https://github.com/Madsschnell)|
 
 Vejleder: Michel.
 
