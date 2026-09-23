@@ -9,8 +9,10 @@ export default defineConfig({
   dialect: "postgresql",
   schema: "./db/schema.ts",
   out: "./drizzle",
-  // Only our own tables. neon_auth belongs to Neon and is never migrated by us.
-  schemaFilter: ["public"],
+  // Our own tables in public, plus neon_auth so our tables can reference
+  // neon_auth.user. neon_auth belongs to Neon: its tables are pulled in as-is
+  // and must never be changed by our migrations.
+  schemaFilter: ["public", "neon_auth"],
   dbCredentials: {
     // Migrations need a direct connection with a persistent session, not the pooler.
     url: process.env.DATABASE_URL_UNPOOLED!,
