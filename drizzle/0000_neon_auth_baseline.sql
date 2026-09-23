@@ -1,0 +1,9 @@
+-- Baseline for neon_auth, created by `drizzle-kit pull`.
+--
+-- neon_auth is owned by Neon's managed Better Auth and already exists in every
+-- branch, so this migration intentionally does nothing. Its snapshot in
+-- meta/0000_snapshot.json tells Drizzle that neon_auth exists, so later
+-- migrations only contain our own tables in public.
+--
+-- The generated CREATE statements were wrapped in a block comment, which Neon's
+-- guide warns can make `drizzle-kit migrate` fail, so they were removed.
