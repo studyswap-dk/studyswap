@@ -46,12 +46,18 @@ pnpm run dev
 |---|---|
 | `pnpm run dev` | Starter udviklingsserveren |
 | `pnpm run build` | Bygger som til produktion |
-| `pnpm run lint` | Tjekker koden for fejl |
+| `pnpm run lint` | Tjekker koden med Oxlint |
+| `pnpm run format` | Formaterer TypeScript, JavaScript, JSON og CSS samt sorterer Tailwind-klasser |
+| `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI |
 | `pnpm run typecheck` | Tjekker TypeScript-typerne |
 | `pnpm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
 | `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
 | `pnpm run db:migrate` | Kører migrationerne mod din database |
 | `pnpm run db:studio` | Viser databasen i browseren |
+
+## Lint og formatering
+
+Oxlint bruger native regler for Next.js, React, JSX-tilgængelighed, TypeScript og Vitest. TypeScript-lint er ikke type-aware; `pnpm run typecheck` kontrollerer fortsat typer separat. Oxlint-reglerne svarer tæt til det tidligere ESLint-setup, men dækker ikke alle regler og detaljer identisk. `react/react-in-jsx-scope` er slået fra, fordi Next.js bruger Reacts automatiske JSX-runtime. Oxfmt formaterer TypeScript, TSX, JavaScript, JSON og CSS og sorterer Tailwind CSS 4-klasser ud fra `app/globals.css`.
 
 ## Lokal database
 

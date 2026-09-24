@@ -22,21 +22,22 @@ import { userInNeonAuth } from "./neon-auth";
 export const postType = pgEnum("postType", ["seeking", "offering"]);
 export const postStatus = pgEnum("postStatus", ["open", "closed", "removed"]);
 
-
 export const post = pgTable(
-    "post",
-    {
-        id: uuid().primaryKey().defaultRandom(),
-        authorId: uuid().notNull().references(() => userInNeonAuth.id),
-        type: postType().notNull(),
-        title: text().notNull(),
-        description: text().notNull(),
-        status: postStatus().notNull().default("open"),
-        createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-        updatedAt: timestamp({ withTimezone: true })
-            .notNull()
-            .defaultNow()
-            .$onUpdate(() => new Date()),
-    },
-    (table) => [index("post_status_createdAt_idx").on(table.status, table.createdAt)],
+  "post",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    authorId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    type: postType().notNull(),
+    title: text().notNull(),
+    description: text().notNull(),
+    status: postStatus().notNull().default("open"),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("post_status_createdAt_idx").on(table.status, table.createdAt)],
 );
