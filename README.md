@@ -30,27 +30,28 @@ Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon med D
 
 ## Kom i gang
 
-Kræver Node.js 24 eller nyere og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Brug den npm der følger med Node, ikke yarn eller pnpm.
+Kræver Node.js 24 eller nyere, pnpm og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
 
 ```bash
 git clone https://github.com/studyswap-dk/studyswap.git
 cd studyswap
-npm ci
-npm run dev
+corepack enable
+pnpm install
+pnpm run dev
 ```
 
-Åbn http://localhost:3000. `npm ci` installerer præcis de versioner der står i `package-lock.json`.
+Åbn http://localhost:3000. `pnpm install` installerer præcis de versioner der står i `pnpm-lock.yaml`.
 
 | Kommando | Hvad den gør |
 |---|---|
-| `npm run dev` | Starter udviklingsserveren |
-| `npm run build` | Bygger som til produktion |
-| `npm run lint` | Tjekker koden for fejl |
-| `npm run typecheck` | Tjekker TypeScript-typerne |
-| `npm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
-| `npm run db:generate` | Laver en migration ud fra `db/schema.ts` |
-| `npm run db:migrate` | Kører migrationerne mod din database |
-| `npm run db:studio` | Viser databasen i browseren |
+| `pnpm run dev` | Starter udviklingsserveren |
+| `pnpm run build` | Bygger som til produktion |
+| `pnpm run lint` | Tjekker koden for fejl |
+| `pnpm run typecheck` | Tjekker TypeScript-typerne |
+| `pnpm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
+| `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
+| `pnpm run db:migrate` | Kører migrationerne mod din database |
+| `pnpm run db:studio` | Viser databasen i browseren |
 
 ## Lokal database
 
@@ -58,9 +59,9 @@ Hver udvikler har sin egen database-branch i Neon, så ingen roder i hinandens d
 
 1. I Neon: Branches, New Branch. Navn `dev-<fornavn>`, parent `production`, og sæt Auto-delete til Never
 2. Connect på din branch, database `studyswap`. Læg forbindelsesstrengen med pooling i `DATABASE_URL` og uden pooling i `DATABASE_URL_UNPOOLED` i en fil `.env.local` i roden af projektet
-3. Kør `npm run db:migrate`
+3. Kør `pnpm run db:migrate`
 
-`.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `npm run db:generate -- --name create_post`.
+`.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `pnpm run db:generate --name create_post`.
 
 ## Arbejdsgang
 
@@ -76,7 +77,7 @@ git push -u origin feature/kort-beskrivelse
 
 Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, typecheck, test og build.
 
-Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package-lock.json`, så kør `npm ci`.
+Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package.json` eller `pnpm-lock.yaml`, så kør `pnpm install`.
 
 Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreger, uden æ, ø og å. Typerne er `feature`, `fix`, `chore`, `docs` og `ci`.
 
