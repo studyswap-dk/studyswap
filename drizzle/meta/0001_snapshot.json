@@ -92,8 +92,12 @@
           "tableFrom": "post",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["authorId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "authorId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -213,8 +217,12 @@
           "tableFrom": "account",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -320,8 +328,12 @@
           "tableFrom": "invitation",
           "tableTo": "organization",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -330,8 +342,12 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["inviterId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "inviterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -462,8 +478,12 @@
           "tableFrom": "member",
           "tableTo": "organization",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -472,8 +492,12 @@
           "tableFrom": "member",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -550,7 +574,9 @@
         "organization_slug_key": {
           "name": "organization_slug_key",
           "nullsNotDistinct": false,
-          "columns": ["slug"]
+          "columns": [
+            "slug"
+          ]
         }
       },
       "policies": {},
@@ -644,7 +670,9 @@
         "project_config_endpoint_id_key": {
           "name": "project_config_endpoint_id_key",
           "nullsNotDistinct": false,
-          "columns": ["endpoint_id"]
+          "columns": [
+            "endpoint_id"
+          ]
         }
       },
       "policies": {},
@@ -742,8 +770,12 @@
           "tableFrom": "session",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -753,7 +785,9 @@
         "session_token_key": {
           "name": "session_token_key",
           "nullsNotDistinct": false,
-          "columns": ["token"]
+          "columns": [
+            "token"
+          ]
         }
       },
       "policies": {},
@@ -841,7 +875,9 @@
         "user_email_key": {
           "name": "user_email_key",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -922,12 +958,19 @@
     "public.postStatus": {
       "name": "postStatus",
       "schema": "public",
-      "values": ["open", "closed", "removed"]
+      "values": [
+        "open",
+        "closed",
+        "removed"
+      ]
     },
     "public.postType": {
       "name": "postType",
       "schema": "public",
-      "values": ["seeking", "offering"]
+      "values": [
+        "seeking",
+        "offering"
+      ]
     }
   },
   "schemas": {
