@@ -1,0 +1,34 @@
+name: Mirror to GitLab
+
+# Backup of dev and main on AU's GitLab. Runs after every merge to either branch,
+# and can be started by hand from the Actions tab. Not part of the required CI
+# check, so a failed mirror never blocks a merge.
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: gitlab-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history of all branches, so both can be pushed as they are
+          fetch-depth: 0
+
+      - name: Push dev and main to GitLab
+        env:
+          # Project access token "github-mirror" on gitlab.au.dk, scope
+          # write_repository, no expiry. Revoke it when the project ends.
+          GITLAB_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+        run: |
+          git push --force \
+            "https://oauth2:${GITLAB_TOKEN}@gitlab.au.dk/studyswap/studyswap-mirror.git" \
+            origin/dev:refs/heads/dev \
+            origin/main:refs/heads/main

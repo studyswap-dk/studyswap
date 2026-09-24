@@ -1,22 +1,21 @@
 // Tables in the neon_auth schema, pulled from the database with `drizzle-kit pull`.
 //
-// DO NOT EDIT. neon_auth belongs to Neon's managed Better Auth. This file must mirror
-// what `pull` saw, not what would be "correct": pull did not include the primary
-// keys and unique constraints, even though they exist in the database. Adding
-// .primaryKey() or .unique() here would make `db:generate` create a migration that
-// changes Neon's tables.
+// DO NOT EDIT. neon_auth belongs to Neon's managed Better Auth. This file mirrors
+// what `pull` sees, and the baseline snapshot in drizzle/meta tells Drizzle that
+// these tables already exist, so our migrations never change them. If Neon changes
+// neon_auth, pull again and replace this file and the baseline snapshot together.
 //
 // Our own tables reference users like this:
 //   authorId: uuid().notNull().references(() => userInNeonAuth.id)
 
-import { pgSchema, index, foreignKey, uuid, text, timestamp, boolean, uniqueIndex, jsonb } from "drizzle-orm/pg-core"
+import { pgSchema, index, foreignKey, uuid, text, timestamp, unique, boolean, uniqueIndex, jsonb } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const neonAuth = pgSchema("neon_auth");
 
 
 export const invitationInNeonAuth = neonAuth.table("invitation", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	organizationId: uuid().notNull(),
 	email: text().notNull(),
 	role: text(),
@@ -40,7 +39,7 @@ export const invitationInNeonAuth = neonAuth.table("invitation", {
 ]);
 
 export const userInNeonAuth = neonAuth.table("user", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	name: text().notNull(),
 	email: text().notNull(),
 	emailVerified: boolean().notNull(),
@@ -51,10 +50,12 @@ export const userInNeonAuth = neonAuth.table("user", {
 	banned: boolean(),
 	banReason: text(),
 	banExpires: timestamp({ withTimezone: true, mode: 'string' }),
-});
+}, (table) => [
+	unique("user_email_key").on(table.email),
+]);
 
 export const sessionInNeonAuth = neonAuth.table("session", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	expiresAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
 	token: text().notNull(),
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -71,10 +72,11 @@ export const sessionInNeonAuth = neonAuth.table("session", {
 			foreignColumns: [userInNeonAuth.id],
 			name: "session_userId_fkey"
 		}).onDelete("cascade"),
+	unique("session_token_key").on(table.token),
 ]);
 
 export const organizationInNeonAuth = neonAuth.table("organization", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	name: text().notNull(),
 	slug: text().notNull(),
 	logo: text(),
@@ -82,10 +84,11 @@ export const organizationInNeonAuth = neonAuth.table("organization", {
 	metadata: text(),
 }, (table) => [
 	uniqueIndex("organization_slug_uidx").using("btree", table.slug.asc().nullsLast().op("text_ops")),
+	unique("organization_slug_key").on(table.slug),
 ]);
 
 export const accountInNeonAuth = neonAuth.table("account", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	accountId: text().notNull(),
 	providerId: text().notNull(),
 	userId: uuid().notNull(),
@@ -108,7 +111,7 @@ export const accountInNeonAuth = neonAuth.table("account", {
 ]);
 
 export const verificationInNeonAuth = neonAuth.table("verification", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	identifier: text().notNull(),
 	value: text().notNull(),
 	expiresAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
@@ -119,7 +122,7 @@ export const verificationInNeonAuth = neonAuth.table("verification", {
 ]);
 
 export const jwksInNeonAuth = neonAuth.table("jwks", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	publicKey: text().notNull(),
 	privateKey: text().notNull(),
 	createdAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
@@ -127,7 +130,7 @@ export const jwksInNeonAuth = neonAuth.table("jwks", {
 });
 
 export const memberInNeonAuth = neonAuth.table("member", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	organizationId: uuid().notNull(),
 	userId: uuid().notNull(),
 	role: text().notNull(),
@@ -148,7 +151,7 @@ export const memberInNeonAuth = neonAuth.table("member", {
 ]);
 
 export const projectConfigInNeonAuth = neonAuth.table("project_config", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	name: text().notNull(),
 	endpointId: text("endpoint_id").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -160,4 +163,6 @@ export const projectConfigInNeonAuth = neonAuth.table("project_config", {
 	allowLocalhost: boolean("allow_localhost").notNull(),
 	pluginConfigs: jsonb("plugin_configs"),
 	webhookConfig: jsonb("webhook_config"),
-});
+}, (table) => [
+	unique("project_config_endpoint_id_key").on(table.endpointId),
+]);
