@@ -89,6 +89,14 @@ Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreg
 
 Commit-beskeder skrives i bydeform og siger hvad der ændres, fx "Tilføj tabel til opslag".
 
+# Extensions
+
+Brug disse extensions i VS Code for at få den bedste udvikleroplevelse :)
+
+- [OCX Toolbox (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
+- [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) - Til Tailwind CSS-autocomplete og linting
+- [Vitest](https://marketplace.visualstudio.com/items?itemName=Vitest.vitest) - Til at køre tests i VS Code
+
 ## Dokumentation
 
 - [Next.js](https://nextjs.org/docs)
