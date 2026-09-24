@@ -14,7 +14,7 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 | Navn | GitHub |
 |---|---|
 | Luca | |
-| Oliver | |
+| Oliver | [Oliverwidemann](https://github.com/Oliverwidemann)|
 | Morten | [enghausen](https://github.com/enghausen) |
 | Julius | |
 | Phillip | |
