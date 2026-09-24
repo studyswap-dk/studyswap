@@ -7,7 +7,7 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 | Miljø | Adresse | Branch |
 |---|---|---|
 | Produktion | https://studyswap.dk | `main` |
-| Udvikling | https://dev.studyswap.dk (kræver Vercel-login) | `dev` |
+| Udvikling | https://dev.studyswap.dk | `dev` |
 
 ## Gruppen
 
@@ -17,7 +17,7 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 | Oliver | [Oliverwidemann](https://github.com/Oliverwidemann)|
 | Morten | [enghausen](https://github.com/enghausen) |
 | Julius | |
-| Phillip | |
+| Phillip | [philliplam88](https://github.com/philliplam88)|
 | Viktor | |
 | Mads P | |
 | Mads S | [Madsschnell](https://github.com/Madsschnell)|
@@ -30,7 +30,7 @@ Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon med D
 
 ## Kom i gang
 
-Kræver Node.js 24 eller nyere, pnpm og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
+Kræver Node.js 24 eller nyere (helst 24 LTS), pnpm og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
 
 ```bash
 git clone https://github.com/studyswap-dk/studyswap.git
@@ -89,13 +89,13 @@ Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreg
 
 Commit-beskeder skrives i bydeform og siger hvad der ændres, fx "Tilføj tabel til opslag".
 
-# Extensions
+## Extensions
 
-Brug disse extensions i VS Code for at få den bedste udvikleroplevelse :)
+Brug disse extensions i VS Code for at få den bedste udvikleroplevelse. VS Code foreslår dem selv, når du åbner projektet, fordi de står i `.vscode/extensions.json`.
 
-- [OCX Toolbox (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
+- [Oxc (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
 - [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) - Til Tailwind CSS-autocomplete og linting
-- [Vitest](https://marketplace.visualstudio.com/items?itemName=Vitest.vitest) - Til at køre tests i VS Code
+- [Vitest](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) - Til at køre tests i VS Code
 
 ## Dokumentation
 
