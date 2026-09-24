@@ -14,8 +14,8 @@ import { userInNeonAuth } from "./neon-auth";
 // (assets/figures/er-diagram.drawio), one table per pull request.
 // Table, column and enum names are camelCase, as decided for the whole database.
 //
-// After changing this file: `npm run db:generate -- --name <what_it_does>`, e.g.
-// `--name create_post`, creates a migration in ./drizzle, and `npm run db:migrate`
+// After changing this file: `pnpm run db:generate --name <what_it_does>`, e.g.
+// `--name create_post`, creates a migration in ./drizzle, and `pnpm run db:migrate`
 // applies it to the database in DATABASE_URL_UNPOOLED. Without --name, Drizzle
 // picks a random name.
 
