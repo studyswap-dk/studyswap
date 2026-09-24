@@ -46,12 +46,18 @@ pnpm run dev
 |---|---|
 | `pnpm run dev` | Starter udviklingsserveren |
 | `pnpm run build` | Bygger som til produktion |
-| `pnpm run lint` | Tjekker koden for fejl |
+| `pnpm run lint` | Tjekker koden med Oxlint |
+| `pnpm run format` | Formaterer TypeScript, JavaScript, JSON og CSS samt sorterer Tailwind-klasser |
+| `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI |
 | `pnpm run typecheck` | Tjekker TypeScript-typerne |
 | `pnpm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
 | `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
 | `pnpm run db:migrate` | Kører migrationerne mod din database |
 | `pnpm run db:studio` | Viser databasen i browseren |
+
+## Lint og formatering
+
+Oxlint bruger native regler for Next.js, React, JSX-tilgængelighed, TypeScript og Vitest. TypeScript-lint er ikke type-aware; `pnpm run typecheck` kontrollerer fortsat typer separat. Oxlint-reglerne svarer tæt til det tidligere ESLint-setup, men dækker ikke alle regler og detaljer identisk. `react/react-in-jsx-scope` er slået fra, fordi Next.js bruger Reacts automatiske JSX-runtime. Oxfmt formaterer TypeScript, TSX, JavaScript, JSON og CSS og sorterer Tailwind CSS 4-klasser ud fra `app/globals.css`.
 
 ## Lokal database
 
@@ -82,6 +88,14 @@ Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/ko
 Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreger, uden æ, ø og å. Typerne er `feature`, `fix`, `chore`, `docs` og `ci`.
 
 Commit-beskeder skrives i bydeform og siger hvad der ændres, fx "Tilføj tabel til opslag".
+
+# Extensions
+
+Brug disse extensions i VS Code for at få den bedste udvikleroplevelse :)
+
+- [OCX Toolbox (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
+- [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) - Til Tailwind CSS-autocomplete og linting
+- [Vitest](https://marketplace.visualstudio.com/items?itemName=Vitest.vitest) - Til at køre tests i VS Code
 
 ## Dokumentation
 

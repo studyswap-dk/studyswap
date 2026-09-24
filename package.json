@@ -2,15 +2,13 @@
   "name": "studyswap-github",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.6.0",
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "oxlint",
+    "format": "oxfmt \"**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,css}\"",
+    "format:check": "oxfmt --check \"**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,css}\"",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -34,10 +32,14 @@
     "@types/react-dom": "^19",
     "dotenv": "^18.0.3",
     "drizzle-kit": "^0.31.11",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.5",
+    "oxfmt": "0.70.0",
+    "oxlint": "1.85.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.1"
-  }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.6.0"
 }
