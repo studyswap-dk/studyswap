@@ -99,8 +99,12 @@
           "tableFrom": "invitation",
           "tableTo": "organization",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -109,8 +113,12 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["inviterId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "inviterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -200,7 +208,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "user_email_key": {
-          "columns": ["email"],
+          "columns": [
+            "email"
+          ],
           "nullsNotDistinct": false,
           "name": "user_email_key"
         }
@@ -300,8 +310,12 @@
           "tableFrom": "session",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -309,7 +323,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "session_token_key": {
-          "columns": ["token"],
+          "columns": [
+            "token"
+          ],
           "nullsNotDistinct": false,
           "name": "session_token_key"
         }
@@ -382,7 +398,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "organization_slug_key": {
-          "columns": ["slug"],
+          "columns": [
+            "slug"
+          ],
           "nullsNotDistinct": false,
           "name": "organization_slug_key"
         }
@@ -500,8 +518,12 @@
           "tableFrom": "account",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -701,8 +723,12 @@
           "tableFrom": "member",
           "tableTo": "organization",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -711,8 +737,12 @@
           "tableFrom": "member",
           "tableTo": "user",
           "schemaTo": "neon_auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -808,7 +838,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "project_config_endpoint_id_key": {
-          "columns": ["endpoint_id"],
+          "columns": [
+            "endpoint_id"
+          ],
           "nullsNotDistinct": false,
           "name": "project_config_endpoint_id_key"
         }

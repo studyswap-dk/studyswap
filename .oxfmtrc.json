@@ -2,5 +2,6 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "sortTailwindcss": {
     "stylesheet": "app/globals.css"
-  }
+  },
+  "ignorePatterns": ["drizzle/", "db/neon-auth.ts", "db/neon-auth-relations.ts"]
 }
