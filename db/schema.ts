@@ -64,3 +64,17 @@ export const postTag = pgTable(
     index("postTag_tagId_idx").on(table.tagId),
   ],
 );
+
+export const profile = pgTable("profile", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: uuid()
+    .notNull()
+    .unique()
+    .references(() => userInNeonAuth.id),
+  programme: text().notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});

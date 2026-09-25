@@ -22,6 +22,13 @@
       "when": 1790243511398,
       "tag": "0002_create_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790328937143,
+      "tag": "0003_create_profile",
+      "breakpoints": true
     }
   ]
 }
