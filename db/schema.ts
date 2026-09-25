@@ -6,7 +6,7 @@
 export * from "./neon-auth";
 export * from "./neon-auth-relations";
 
-import { index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 import { userInNeonAuth } from "./neon-auth";
 
@@ -40,4 +40,27 @@ export const post = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [index("post_status_createdAt_idx").on(table.status, table.createdAt)],
+);
+
+export const tag = pgTable("tag", {
+  id: uuid().primaryKey().defaultRandom(),
+  name: text().notNull().unique(),
+});
+
+export const postTag = pgTable(
+  "postTag",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    postId: uuid()
+      .notNull()
+      .references(() => post.id),
+    tagId: uuid()
+      .notNull()
+      .references(() => tag.id),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("postTag_postId_tagId_key").on(table.postId, table.tagId),
+    index("postTag_tagId_idx").on(table.tagId),
+  ],
 );
