@@ -85,7 +85,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return {
         ok: true,
         newStatus: "cancelled",
-        postings: [{ userId: agreement.receiverId, amount: agreement.points, type: "refund" }],
+        postings: [],
       };
     }
     case "dispute": {
@@ -114,7 +114,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return {
           ok: true,
           newStatus: "cancelled",
-          postings: [{ userId: agreement.receiverId, amount: agreement.points, type: "refund" }],
+          postings: [],
         };
       }
       return {

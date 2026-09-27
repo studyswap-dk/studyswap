@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { decide, type Agreement } from "./agreement";
+import { decide, type Action, type Agreement, type Posting } from "./agreement";
 
 const base: Agreement = {
   id: "a1",
@@ -13,6 +13,44 @@ const base: Agreement = {
 };
 
 const now = new Date("2026-09-25T12:00:00Z");
+const marked: Agreement = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
+const disputed: Agreement = { ...marked, status: "disputed" };
+
+function applyPostings(
+  balance: Record<string, number>,
+  postings: Posting[],
+): Record<string, number> {
+  const result = { ...balance };
+  for (const posting of postings) {
+    result[posting.userId] = (result[posting.userId] ?? 0) + posting.amount;
+  }
+  // For each posting, add the posting.amount to result[posting.userId]
+  return result;
+}
+
+const validCases: { name: string; agreement: Agreement; action: Action; actor: string }[] = [
+  { name: "confirm", agreement: base, action: { kind: "confirm" }, actor: "receiver" },
+  { name: "markDone", agreement: base, action: { kind: "markDone" }, actor: "helper" },
+  { name: "cancel", agreement: base, action: { kind: "cancel" }, actor: "receiver" },
+  {
+    name: "dispute",
+    agreement: marked,
+    action: { kind: "dispute", reason: "x" },
+    actor: "receiver",
+  },
+  {
+    name: "resolveDispute upheld",
+    agreement: disputed,
+    action: { kind: "resolveDispute", outcome: "upheld" },
+    actor: "moderator",
+  },
+  {
+    name: "resolveDispute rejected",
+    agreement: disputed,
+    action: { kind: "resolveDispute", outcome: "rejected" },
+    actor: "moderator",
+  },
+];
 
 describe("decide", () => {
   it("F12: modtageren bekræfter en indgået aftale", () => {
@@ -32,14 +70,6 @@ describe("decide", () => {
     const result = decide(completed, { kind: "confirm" }, "receiver", now);
     expect(result.ok).toBe(false);
   });
-
-  it("en overførsel summer til nul", () => {
-    const result = decide(base, { kind: "confirm" }, "receiver", now);
-    if (!result.ok) throw new Error("forventede ok");
-
-    const sum = result.postings.reduce((acc, p) => acc + p.amount, 0);
-    expect(sum).toBe(0);
-  });
   it("F13: hjælperen kan ikke melde hjælpen givet to gange", () => {
     const alreadyMarked = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
     const result = decide(alreadyMarked, { kind: "markDone" }, "helper", now);
@@ -58,7 +88,7 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("cancelled");
-    expect(result.postings).toHaveLength(1);
+    expect(result.postings).toHaveLength(0);
   });
 
   it("F11: hjælperen kan også annullere", () => {
@@ -72,12 +102,10 @@ describe("decide", () => {
   });
 
   it("F11: kan ikke annulleres efter hjælpen er meldt givet", () => {
-    const marked = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
     const result = decide(marked, { kind: "cancel" }, "receiver", now);
     expect(result.ok).toBe(false);
   });
   it("F15: modtageren gør indsigelse efter hjælpen er meldt givet", () => {
-    const marked = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
     const result = decide(
       marked,
       { kind: "dispute", reason: "Hjælpen blev aldrig givet" },
@@ -96,13 +124,11 @@ describe("decide", () => {
   });
 
   it("F15: hjælperen kan ikke gøre indsigelse", () => {
-    const marked = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
     const result = decide(marked, { kind: "dispute", reason: "..." }, "helper", now);
     expect(result.ok).toBe(false);
   });
 
-  it("F16: medhold tilbagefører point til modtageren", () => {
-    const disputed = { ...base, status: "disputed" as const };
+  it("F16: medhold ophæver reservationen uden at flytte point", () => {
     const result = decide(
       disputed,
       { kind: "resolveDispute", outcome: "upheld" },
@@ -112,12 +138,10 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("cancelled");
-    expect(result.postings).toHaveLength(1);
-    expect(result.postings[0].userId).toBe("receiver");
+    expect(result.postings).toHaveLength(0);
   });
 
   it("F16: afvisning frigiver point til hjælperen", () => {
-    const disputed = { ...base, status: "disputed" as const };
     const result = decide(
       disputed,
       { kind: "resolveDispute", outcome: "rejected" },
@@ -134,5 +158,28 @@ describe("decide", () => {
   it("F16: en indsigelse kan ikke afgøres på en aftale der ikke er under indsigelse", () => {
     const result = decide(base, { kind: "resolveDispute", outcome: "upheld" }, "moderator", now);
     expect(result.ok).toBe(false);
+  });
+  it.each(validCases)(
+    "invariant: $name skaber eller fjerner ingen point",
+    ({ agreement, action, actor }) => {
+      const result = decide(agreement, action, actor, now);
+      if (!result.ok) throw new Error("forventede ok");
+      const sum = result.postings.reduce((acc, p) => acc + p.amount, 0);
+      expect(sum).toBe(0);
+    },
+  );
+
+  it("livscyklus: annulleret aftale efterlader begge saldi uændrede", () => {
+    const start = { receiver: 5, helper: 5 };
+    const result = decide(base, { kind: "cancel" }, "receiver", now);
+    if (!result.ok) throw new Error("forventede ok");
+    expect(applyPostings(start, result.postings)).toEqual({ receiver: 5, helper: 5 });
+  });
+
+  it("livscyklus: bekræftet aftale flytter ét point til hjælperen", () => {
+    const start = { receiver: 5, helper: 5 };
+    const result = decide(base, { kind: "confirm" }, "receiver", now);
+    if (!result.ok) throw new Error("forventede ok");
+    expect(applyPostings(start, result.postings)).toEqual({ receiver: 4, helper: 6 });
   });
 });
