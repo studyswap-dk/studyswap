@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - uses: actions/setup-node@v5
         with:
-          # Same major version as Vercel, see Settings, Build and Deployment
+          # Same major version as engines in package.json, which Vercel follows
           node-version: 24
           cache: pnpm
 
