@@ -2,12 +2,26 @@ export type AgreementStatus = "accepted" | "completed" | "cancelled" | "expired"
 
 export type TransactionType = "initial" | "reserve" | "release" | "refund";
 
+export const SYSTEM_ACTOR = "system";
+
+const DAY_MS = 24 * 60 * 60 * 1000; //Til expire
+
 export type Action =
   | { kind: "confirm" } // F12, receiver confirms help was given
   | { kind: "markDone" } // F13, helper reports help was given
   | { kind: "cancel" } // F11, either party
   | { kind: "dispute"; reason: string } // F15, receiver
+  | { kind: "expire" } // F14, system
+  | { kind: "autoRelease" } // F17, system
   | { kind: "resolveDispute"; outcome: "upheld" | "rejected" }; // F16, moderator
+
+function releasePostings(a: Agreement): Posting[] {
+  //Til expire og autorelesae
+  return [
+    { userId: a.helperId, amount: a.points, type: "release" },
+    { userId: a.receiverId, amount: -a.points, type: "release" },
+  ];
+}
 
 export type Agreement = {
   id: string;
@@ -125,6 +139,33 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
           { userId: agreement.receiverId, amount: -agreement.points, type: "release" },
         ],
       };
+    }
+
+    //hvis der ikke sker noget indenfor 7 dage, så udløber hele reservationen
+    case "expire": {
+      if (actorId !== SYSTEM_ACTOR) return { ok: false, reason: "Only the system can expire" };
+      if (agreement.status !== "accepted")
+        return { ok: false, reason: "Agreement is not in accepted status" };
+      if (agreement.helperConfirmedAt !== null || agreement.receiverConfirmedAt !== null) {
+        return { ok: false, reason: "Help has already been marked as done or confirmed" };
+      }
+      if (now < agreement.expiresAt) return { ok: false, reason: "Agreement has not expired yet" };
+      return { ok: true, newStatus: "expired", postings: [] };
+    }
+
+    //Hvis hjælperen har sagt at hjælpen er udført, og 24 timer er gået uden at modtageren har bekræftet, kan systemet auto-release pointene til hjælperen.
+    //Den skal måske gentænkes rent businesslogik, men ellers kan man jo vente på point i evig tid
+    case "autoRelease": {
+      if (actorId !== SYSTEM_ACTOR)
+        return { ok: false, reason: "Only the system can auto-release" };
+      if (agreement.status !== "accepted")
+        return { ok: false, reason: "Agreement is not in accepted status" };
+      if (agreement.helperConfirmedAt === null)
+        return { ok: false, reason: "Help has not been marked as done" };
+      if (now.getTime() < agreement.helperConfirmedAt.getTime() + DAY_MS) {
+        return { ok: false, reason: "The 24 hour window has not passed" };
+      }
+      return { ok: true, newStatus: "completed", postings: releasePostings(agreement) };
     }
     default:
       return { ok: false, reason: "Action not implemented" };
