@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "Neon": {
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp"
+    },
+    "shadcn": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/node_modules/shadcn/dist/index.js", "mcp"]
+    }
+  }
+}
