@@ -133,6 +133,8 @@ Første gang, efter `pnpm install` og `gh auth login`:
 
 **VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start Neon, shadcn og github, dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Neon og shadcn står også som Disabled fra `.mcp.json`; lad dem være, de er Claude Codes.
 
+**Codex:** log ind med `codex login`, og log ind på Neon med `codex mcp login Neon`. Start `codex` i roden af repoet, og tjek med `/mcp` at Neon og shadcn er forbundet. Når Codex skal bruge `gh` til rapporten, beder den om lov til netværk; godkend det.
+
 ## Dokumentation
 
 - [Next.js](https://nextjs.org/docs)
