@@ -94,6 +94,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 - Change the schema only in `db/schema.ts`, then run `pnpm run db:generate --name <name>`. Never edit files in `drizzle/` or `db/neon-auth*.ts` by hand, and never format them
 - The `neon_auth` schema belongs to Neon. Read it and reference `neon_auth.user`, but never create, change or migrate anything in it
 - Work against your own Neon branch, never against `production`
+- The Neon project is `studyswap`, project ID `autumn-heart-54862693`. Pass it to the Neon MCP server instead of searching for it
 
 **Login**
 - Login uses Neon Auth, which is managed Better Auth, through `@neondatabase/auth`, with a one-time code sent by email and no passwords
