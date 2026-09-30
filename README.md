@@ -121,13 +121,13 @@ Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de s
 
 **Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
 
-**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. I VS Code er også GitHubs MCP-server med, som logger ind via browseren, og Copilot CLI har den indbygget. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i Copilot. Ingen af dem kræver nøgler i repoet.
+**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, shadcn, og next-devtools, som henter fejl, logs og routes fra udviklingsserveren og derfor kun virker, når `pnpm run dev` kører. I VS Code er også GitHubs MCP-server med, som logger ind via browseren, og Copilot CLI har den indbygget. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i Copilot. Ingen af dem kræver nøgler i repoet.
 
 ### Kom i gang med din agent
 
 Første gang, efter `pnpm install` og `gh auth login`:
 
-**Claude Code:** start `claude` i roden af repoet, og godkend Neon og shadcn, når den spørger. Kør `/mcp`, vælg Neon og log ind i browseren.
+**Claude Code:** start `claude` i roden af repoet, og godkend serverne, når den spørger. Kør `/mcp`, vælg Neon og log ind i browseren.
 
 **Claude Desktop, Code:** vælg mappen med repoet. Den læser `AGENTS.md`, skills og `.mcp.json` som Claude Code og deler login med den, så samme godkendelse og login gælder. Det er den rigtige til at arbejde i projektet.
 
@@ -136,9 +136,9 @@ Første gang, efter `pnpm install` og `gh auth login`:
 - MCP-serveren **Neon** er ekstern: Settings, Connectors, Add custom connector, med adressen `https://mcp.neon.tech/mcp`. Behold standardvalgene, og log ind. Connectoren hører til din Claude-konto, så den er også med i browseren og på mobilen
 - MCP-serveren **shadcn** er lokal: bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og luk og genstart Claude Desktop. Den kan søge i shadcns register, men startes ikke i repoet
 
-**VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start Neon, shadcn og github, dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Neon og shadcn står også som Disabled fra `.mcp.json`; lad dem være, de er Claude Codes.
+**VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Serverne fra `.mcp.json` står også på listen som Disabled; lad dem være, de er til Claude Code og Copilot CLI.
 
-**Codex:** log ind med `codex login`, og log ind på Neon med `codex mcp login Neon`. Start `codex` i roden af repoet, og tjek med `/mcp` at Neon og shadcn er forbundet. Når Codex skal bruge `gh` til rapporten, beder den om lov til netværk; godkend det.
+**Codex:** log ind med `codex login`, og log ind på Neon med `codex mcp login Neon`. Start `codex` i roden af repoet, og tjek med `/mcp` at serverne er forbundet. Når Codex skal bruge `gh` til rapporten, beder den om lov til netværk; godkend det.
 
 **Copilot CLI:** bruger `.mcp.json`, samme fil som Claude Code, men kun når mappen er betroet. Start `copilot` i roden af repoet, og svar ja til at stole på mappen. Kommer spørgsmålet ikke, og viser `/mcp` kun GitHub, så start den i stedet med `copilot --additional-mcp-config @.mcp.json`. Virker det heller ikke, så luk Copilot og tilføj stien til repoet i listen `trustedFolders` i `~/.copilot/config.json`, på Windows `%USERPROFILE%\.copilot\config.json`, fx `"trustedFolders": ["/sti/til/studyswap"]`, på Windows med dobbelte backslashes, `["C:\\Users\\navn\\studyswap"]`. Kør så `/mcp`, vælg Neon og Authenticate.
 

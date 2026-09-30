@@ -8,6 +8,12 @@
       "type": "stdio",
       "command": "node",
       "args": ["node_modules/shadcn/dist/index.js", "mcp"]
+    },
+    "next-devtools": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["node_modules/next-devtools-mcp/dist/index.js"],
+      "env": { "NEXT_TELEMETRY_DISABLED": "1" }
     }
   }
 }
