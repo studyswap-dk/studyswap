@@ -125,6 +125,14 @@ Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de s
 
 **Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, så bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og genstart Claude Desktop.
 
+### Kom i gang med din agent
+
+Første gang, efter `pnpm install` og `gh auth login`:
+
+**Claude Code:** start `claude` i roden af repoet, og godkend Neon og shadcn, når den spørger. Kør `/mcp`, vælg Neon og log ind i browseren.
+
+**VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start Neon, shadcn og github, dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Neon og shadcn står også som Disabled fra `.mcp.json`; lad dem være, de er Claude Codes.
+
 ## Dokumentation
 
 - [Next.js](https://nextjs.org/docs)

@@ -71,7 +71,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 |---|---|
 | `app/` | Routes. Pages in `app/(dashboard)/` share the layout with navigation |
 | `app/actions/` | Server Actions |
-| `components/ui/` | shadcn/ui components on Base UI. Add new ones with `pnpm exec shadcn add <name>` |
+| `components/ui/` | shadcn/ui components on Base UI. Add new ones with `pnpm exec shadcn add <name>`. The shadcn MCP server suggests `pnpm dlx shadcn@latest add`; use `pnpm exec shadcn add` instead, so the version locked in `package.json` is used |
 | `components/<feature>/` | Components for one feature |
 | `domain/` | Business rules as pure TypeScript, with tests next to the code as `*.test.ts` |
 | `lib/` | Server-side helpers and database queries |
