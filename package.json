@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "skills:sync": "node scripts/sync-claude-skills.mjs",
+    "skills:check": "node scripts/sync-claude-skills.mjs --check"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
