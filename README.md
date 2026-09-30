@@ -30,7 +30,7 @@ Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon med D
 
 ## Kom i gang
 
-Kræver Node.js 24 eller nyere (helst 24 LTS), pnpm og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
+Kræver Node.js 24 (LTS), pnpm og git. Vercel og CI kører Node.js 24, og `engines` i `package.json` kræver `24.x`, så nyere versioner giver en advarsel. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
 
 ```bash
 git clone https://github.com/studyswap-dk/studyswap.git
@@ -50,7 +50,7 @@ pnpm run dev
 | Mac | `brew install gh` |
 | Arch | `sudo pacman -S github-cli` |
 
-Kør derefter `gh auth login`, vælg GitHub.com og login via browseren.
+Kør derefter `gh auth login`, vælg GitHub.com, og log ind via browseren.
 
 | Kommando | Hvad den gør |
 |---|---|
@@ -117,13 +117,16 @@ Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de s
 |---|---|
 | Regler for projektet | `AGENTS.md`, som alle agenterne læser. `CLAUDE.md` peger på den |
 | Skills | `.agents/skills/`. Claude Code læser en kopi i `.claude/skills/` |
-| MCP-servere | `.mcp.json` til Claude Code og Copilot CLI, `.vscode/mcp.json` til VS Code og Copilot, `.codex/config.toml` til Codex |
+| MCP-servere | `.mcp.json` til Claude Code og Copilot CLI, `.vscode/mcp.json` til VS Code med Copilot, `.codex/config.toml` til Codex |
 
 **Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
 
-**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. I VS Code er også GitHubs MCP-server med, som logger ind via browseren. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i VS Code. Ingen af dem kræver nøgler i repoet.
+**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. I VS Code er også GitHubs MCP-server med, som logger ind via browseren, og Copilot CLI har den indbygget. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i Copilot. Ingen af dem kræver nøgler i repoet.
 
-**Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, så bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og genstart Claude Desktop.
+**Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, skal de ind på to forskellige måder:
+
+- **Neon** er en ekstern server: Settings, Connectors, Add custom connector, med adressen `https://mcp.neon.tech/mcp`. Behold standardvalgene, og log ind. Connectoren hører til din Claude-konto, så den er også med i browseren og på mobilen
+- **shadcn** er en lokal server: bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og luk og genstart Claude Desktop. Den kan søge i shadcns register, men startes ikke i repoet; til arbejde i selve projektet er fanen til kode den rigtige
 
 ### Kom i gang med din agent
 

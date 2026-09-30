@@ -114,5 +114,5 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 ## Agent setup
 
 - Skills live in `.agents/skills/`, where Codex and Copilot read them. Claude Code reads a copy in `.claude/skills/`. Edit only `.agents/skills/`, then run `pnpm run skills:sync`. CI fails if the copy is out of date
-- MCP servers are configured for Claude Code in `.mcp.json`, for VS Code and Copilot in `.vscode/mcp.json`, and for Codex in `.codex/config.toml`. Keep the three in line. The GitHub MCP server is only in `.vscode/mcp.json`, because it can sign in without a personal token only in VS Code; the other agents use `gh`
+- MCP servers are configured for Claude Code and Copilot CLI in `.mcp.json`, for VS Code with Copilot in `.vscode/mcp.json`, and for Codex in `.codex/config.toml`. Keep the three in line. The GitHub MCP server is in `.vscode/mcp.json` and built into Copilot CLI, because only there can it sign in without a personal token; the other agents use `gh`
 - The Neon MCP server acts with the signed-in person's own Neon access. Never use it to change the `production` branch or the Neon Auth settings
