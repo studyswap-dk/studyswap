@@ -42,3 +42,6 @@ next-env.d.ts
 
 # handle migration from npm to pnpm
 package-lock.json
+
+# personal Claude Code settings, such as approved MCP servers
+.claude/settings.local.json
