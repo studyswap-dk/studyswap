@@ -8,6 +8,10 @@
       "type": "stdio",
       "command": "node",
       "args": ["${workspaceFolder}/node_modules/shadcn/dist/index.js", "mcp"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   }
 }

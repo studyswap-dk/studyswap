@@ -42,6 +42,16 @@ pnpm run dev
 
 Åbn http://localhost:3000. `pnpm install` installerer præcis de versioner der står i `pnpm-lock.yaml`.
 
+**GitHub CLI**, `gh`, bruges af AI-agenterne til at læse rapporten i `studyswap-dk/rapport`. Installér den og log ind én gang:
+
+| System | Installation |
+|---|---|
+| Windows | `winget install --id GitHub.cli` |
+| Mac | `brew install gh` |
+| Arch | `sudo pacman -S github-cli` |
+
+Kør derefter `gh auth login`, vælg GitHub.com og login via browseren.
+
 | Kommando | Hvad den gør |
 |---|---|
 | `pnpm run dev` | Starter udviklingsserveren |
@@ -111,7 +121,7 @@ Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de s
 
 **Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
 
-**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. Ingen af dem kræver nøgler i repoet.
+**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. I VS Code er også GitHubs MCP-server med, som logger ind via browseren. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i VS Code. Ingen af dem kræver nøgler i repoet.
 
 **Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, så bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og genstart Claude Desktop.
 

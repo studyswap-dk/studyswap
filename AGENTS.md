@@ -14,7 +14,15 @@ A web app where students exchange help with each other and pay with points inste
 
 ## Where the requirements and design live
 
-The report is written in Danish in Overleaf and copied to the private GitHub repository `studyswap-dk/rapport`. Read it there when a task touches requirements or design; do not guess them.
+The report is written in Danish in Overleaf and copied to the private GitHub repository `studyswap-dk/rapport`. Read it there when a task touches requirements or design; do not guess them, and do not clone the repository.
+
+Read a single file with the GitHub CLI:
+
+```bash
+gh api repos/studyswap-dk/rapport/contents/bilag/kravspecifikation.tex -H "Accept: application/vnd.github.raw"
+```
+
+In VS Code, the GitHub MCP server can read the same files. If neither `gh` nor the GitHub MCP server is available, ask the user to install `gh` and run `gh auth login`, as described in the README.
 
 | What | Where in `studyswap-dk/rapport` |
 |---|---|
@@ -105,5 +113,5 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 ## Agent setup
 
 - Skills live in `.agents/skills/`, where Codex and Copilot read them. Claude Code reads a copy in `.claude/skills/`. Edit only `.agents/skills/`, then run `pnpm run skills:sync`. CI fails if the copy is out of date
-- MCP servers are configured for Claude Code in `.mcp.json`, for VS Code and Copilot in `.vscode/mcp.json`, and for Codex in `.codex/config.toml`. Keep the three in line
+- MCP servers are configured for Claude Code in `.mcp.json`, for VS Code and Copilot in `.vscode/mcp.json`, and for Codex in `.codex/config.toml`. Keep the three in line. The GitHub MCP server is only in `.vscode/mcp.json`, because it can sign in without a personal token only in VS Code; the other agents use `gh`
 - The Neon MCP server acts with the signed-in person's own Neon access. Never use it to change the `production` branch or the Neon Auth settings
