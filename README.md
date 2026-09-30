@@ -123,16 +123,18 @@ Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de s
 
 **MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. I VS Code er også GitHubs MCP-server med, som logger ind via browseren, og Copilot CLI har den indbygget. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i Copilot. Ingen af dem kræver nøgler i repoet.
 
-**Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, skal de ind på to forskellige måder:
-
-- **Neon** er en ekstern server: Settings, Connectors, Add custom connector, med adressen `https://mcp.neon.tech/mcp`. Behold standardvalgene, og log ind. Connectoren hører til din Claude-konto, så den er også med i browseren og på mobilen
-- **shadcn** er en lokal server: bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og luk og genstart Claude Desktop. Den kan søge i shadcns register, men startes ikke i repoet; til arbejde i selve projektet er fanen til kode den rigtige
-
 ### Kom i gang med din agent
 
 Første gang, efter `pnpm install` og `gh auth login`:
 
 **Claude Code:** start `claude` i roden af repoet, og godkend Neon og shadcn, når den spørger. Kør `/mcp`, vælg Neon og log ind i browseren.
+
+**Claude Desktop, Code:** vælg mappen med repoet. Den læser `AGENTS.md`, skills og `.mcp.json` som Claude Code og deler login med den, så samme godkendelse og login gælder. Det er den rigtige til at arbejde i projektet.
+
+**Claude Desktop, chat:** læser ikke repoets opsætning, så hverken `AGENTS.md`, skills eller rapporten via `gh`. MCP-serverne kan tilføjes, men på to forskellige måder:
+
+- MCP-serveren **Neon** er ekstern: Settings, Connectors, Add custom connector, med adressen `https://mcp.neon.tech/mcp`. Behold standardvalgene, og log ind. Connectoren hører til din Claude-konto, så den er også med i browseren og på mobilen
+- MCP-serveren **shadcn** er lokal: bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og luk og genstart Claude Desktop. Den kan søge i shadcns register, men startes ikke i repoet
 
 **VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start Neon, shadcn og github, dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Neon og shadcn står også som Disabled fra `.mcp.json`; lad dem være, de er Claude Codes.
 
