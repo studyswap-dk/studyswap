@@ -54,6 +54,8 @@ pnpm run dev
 | `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
 | `pnpm run db:migrate` | Kører migrationerne mod din database |
 | `pnpm run db:studio` | Viser databasen i browseren |
+| `pnpm run skills:sync` | Kopierer skills fra `.agents/skills` til `.claude/skills`, se [AI-agenter](#ai-agenter) |
+| `pnpm run skills:check` | Kontrollerer at kopien er ens; køres også i CI |
 
 ## Lint og formatering
 
@@ -81,7 +83,7 @@ git checkout -b feature/kort-beskrivelse
 git push -u origin feature/kort-beskrivelse
 ```
 
-Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, typecheck, test og build.
+Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, formatering, skills, typecheck, test og build.
 
 Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package.json` eller `pnpm-lock.yaml`, så kør `pnpm install`.
 
@@ -96,6 +98,22 @@ Brug disse extensions i VS Code for at få den bedste udvikleroplevelse. VS Code
 - [Oxc (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
 - [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) - Til Tailwind CSS-autocomplete og linting
 - [Vitest](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) - Til at køre tests i VS Code
+
+## AI-agenter
+
+Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de samme regler og værktøjer.
+
+| | Hvor |
+|---|---|
+| Regler for projektet | `AGENTS.md`, som alle tre læser. `CLAUDE.md` peger på den |
+| Skills | `.agents/skills/`. Claude Code læser en kopi i `.claude/skills/` |
+| MCP-servere | `.mcp.json` til Claude Code, `.vscode/mcp.json` til VS Code og Copilot, `.codex/config.toml` til Codex |
+
+**Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
+
+**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, og shadcn. Ingen af dem kræver nøgler i repoet.
+
+**Claude Desktop** læser ikke repoets opsætning i den almindelige chat. Brug fanen til kode, som læser den som Claude Code. Vil du have MCP-serverne i chatten, så bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og genstart Claude Desktop.
 
 ## Dokumentation
 
