@@ -29,18 +29,16 @@ export async function createListing(values: CreateListingValues) {
 
   const currentUser = await lookupCurrentUser();
   if (!currentUser.user) {
-    if (currentUser.issue === "database-unavailable") {
+    if (currentUser.issue === "authentication-unavailable") {
       return {
         ok: false,
-        message:
-          "Could not read Neon users. Check DATABASE_URL, the database connection, and the neon_auth.user table.",
+        message: "Could not verify your Neon Auth session. Please try again.",
       };
     }
-    return {
-      ok: false,
-      message:
-        "The connected Neon branch has no user in neon_auth.user yet. Create an auth user first, or set STUDYSWAP_DEMO_USER_ID to an existing user's ID.",
-    };
+    if (currentUser.issue === "not-au-email") {
+      return { ok: false, message: "Only AU email addresses can create listings." };
+    }
+    return { ok: false, message: "Sign in with your AU email before creating a listing." };
   }
 
   try {

@@ -1,0 +1,123 @@
+.page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(100deg, #1e4fd8 0%, #0f2a86 22%, #051662 48%, #000d54 72%, #000 100%);
+}
+
+.card {
+  box-sizing: border-box;
+  display: flex;
+  width: min(380px, 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  padding: 2.75rem 2rem 2.25rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 28px;
+  background: rgb(255 255 255 / 6%);
+  box-shadow:
+    0 30px 80px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
+  color: #f4f6ff;
+  backdrop-filter: blur(24px);
+}
+
+.logo {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  filter: brightness(0) invert(1);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.description {
+  margin: 0;
+  color: rgb(244 246 255 / 72%);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.form,
+.changeEmail {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+
+.input {
+  height: 3rem;
+  border-color: rgb(255 255 255 / 18%);
+  border-radius: 0.875rem;
+  background: rgb(255 255 255 / 7%);
+  color: #f4f6ff;
+}
+
+.input::placeholder {
+  color: rgb(244 246 255 / 52%);
+}
+
+.input:focus-visible {
+  border-color: #8aafff;
+  outline-color: rgb(138 175 255 / 40%);
+}
+
+.primaryButton {
+  height: 3rem;
+  margin-top: 0.25rem;
+  border: 0;
+  border-radius: 0.875rem;
+  background: linear-gradient(135deg, #1e4fd8, #7c3aed);
+  color: white;
+  font-size: 1rem;
+  box-shadow: 0 10px 30px rgb(30 79 216 / 40%);
+}
+
+.primaryButton:hover {
+  filter: brightness(1.12);
+}
+
+.textButton {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: #d5dcff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.error {
+  margin: 0;
+  color: #ffd4d4;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 420px) {
+  .card {
+    padding-inline: 1.5rem;
+  }
+}

@@ -99,6 +99,7 @@ Brug disse extensions i VS Code for at få den bedste udvikleroplevelse. VS Code
 
 ## Dokumentation
 
+- [Login og autentificering](docs/login-and-authentication.md)
 - [Next.js](https://nextjs.org/docs)
 - [Vercel](https://vercel.com/docs)
 - [Neon](https://neon.com/docs)
