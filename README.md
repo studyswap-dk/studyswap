@@ -69,6 +69,12 @@ Hver udvikler har sin egen database-branch i Neon, så ingen roder i hinandens d
 
 `.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `pnpm run db:generate --name create_post`.
 
+## Vercel og databaser
+
+Vercel-builds kører kun `pnpm run build`; de ændrer ikke databasen. Kør `pnpm run db:migrate` separat mod den tilsigtede Neon-branch, før du deployer kode, der afhænger af nye schemaændringer. Brug branchens `DATABASE_URL_UNPOOLED` til migrationer.
+
+I Vercel skal `DATABASE_URL` og `NEON_AUTH_BASE_URL` sættes for både Preview og Production, med værdier der passer til den tilsvarende Neon-branch. Brug separate Neon-branches til Preview og Production, så preview-deployments ikke ændrer eller læser produktionsdata. Sæt også `NEON_AUTH_COOKIE_SECRET` separat for hvert miljø; den skal være mindst 32 tegn og holdes hemmelig. `DATABASE_URL_UNPOOLED` skal kun sættes i Vercel, hvis en særskilt migrationsopgave dér har brug for den.
+
 ## Arbejdsgang
 
 `dev` er udgangspunktet for alt arbejde, og `main` er produktion. Ingen kan pushe direkte til dem. Alt går via pull request mod `dev`.
