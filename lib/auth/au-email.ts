@@ -1,10 +1,10 @@
-const AU_EMAIL_PATTERN = /^[^\s@]+@(?:[a-z0-9-]+\.)*au\.dk$/i;
+const AU_STUDENT_EMAIL_PATTERN = /^\d+@post\.au\.dk$/;
 
-export function normalizeAuEmail(value: unknown): string | null {
+export function normalizeAuStudentEmail(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
 
   const email = value.trim().toLowerCase();
-  return AU_EMAIL_PATTERN.test(email) ? email : null;
+  return AU_STUDENT_EMAIL_PATTERN.test(email) ? email : null;
 }

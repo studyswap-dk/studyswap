@@ -1,4 +1,4 @@
-import { normalizeAuEmail } from "@/lib/auth/au-email";
+import { normalizeAuStudentEmail } from "@/lib/auth/au-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type CurrentUser = {
@@ -12,7 +12,7 @@ export type CurrentUserLookup =
   | { user: CurrentUser; issue: null }
   | {
       user: null;
-      issue: "authentication-unavailable" | "unauthenticated" | "not-au-email";
+      issue: "authentication-unavailable" | "unauthenticated" | "not-au-student-email";
     };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -36,9 +36,9 @@ export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
       return { user: null, issue: "unauthenticated" };
     }
 
-    const email = normalizeAuEmail(sessionUser.email);
+    const email = normalizeAuStudentEmail(sessionUser.email);
     if (!email) {
-      return { user: null, issue: "not-au-email" };
+      return { user: null, issue: "not-au-student-email" };
     }
 
     return {

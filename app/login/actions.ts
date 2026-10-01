@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { normalizeAuEmail } from "@/lib/auth/au-email";
+import { normalizeAuStudentEmail } from "@/lib/auth/au-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type LoginActionState =
@@ -15,13 +15,16 @@ export async function loginAction(
 ): Promise<LoginActionState> {
   const intent = formData.get("intent");
   if (intent === "change-email") {
-    const email = normalizeAuEmail(formData.get("email"));
+    const email = normalizeAuStudentEmail(formData.get("email"));
     return { step: "email", ...(email ? { email } : {}) };
   }
 
-  const email = normalizeAuEmail(formData.get("email"));
+  const email = normalizeAuStudentEmail(formData.get("email"));
   if (!email) {
-    return { step: "email", error: "Brug din AU-mail, som skal ende på au.dk." };
+    return {
+      step: "email",
+      error: "Enter your AU student email in the format studentnumber@post.au.dk.",
+    };
   }
 
   if (intent === "send-code") {
@@ -31,24 +34,24 @@ export async function loginAction(
         type: "sign-in",
       });
       if (error) {
-        return { step: "email", email, error: error.message || "Kunne ikke sende koden." };
+        return { step: "email", email, error: error.message || "Could not send the code." };
       }
     } catch (error) {
       console.error("Neon Auth could not send the sign-in code:", error);
-      return { step: "email", email, error: "Kunne ikke sende koden. Prøv igen om lidt." };
+      return { step: "email", email, error: "Could not send the code. Please try again shortly." };
     }
 
     return { step: "code", email };
   }
 
   if (intent !== "verify-code") {
-    return { step: "email", error: "Ugyldig loginhandling. Prøv igen." };
+    return { step: "email", error: "Invalid sign-in request. Please try again." };
   }
 
   const codeValue = formData.get("code");
   const code = typeof codeValue === "string" ? codeValue.trim() : "";
   if (!code || code.length > 32) {
-    return { step: "code", email, error: "Indtast koden fra din mail." };
+    return { step: "code", email, error: "Enter the code from your email." };
   }
 
   let authenticatedEmail: unknown;
@@ -58,16 +61,16 @@ export async function loginAction(
       return {
         step: "code",
         email,
-        error: error.message || "Koden er forkert eller udløbet.",
+        error: error.message || "The code is incorrect or has expired.",
       };
     }
     authenticatedEmail = data.user.email;
   } catch (error) {
     console.error("Neon Auth could not verify the sign-in code:", error);
-    return { step: "code", email, error: "Kunne ikke logge ind. Prøv igen om lidt." };
+    return { step: "code", email, error: "Could not sign in. Please try again shortly." };
   }
 
-  if (!normalizeAuEmail(authenticatedEmail)) {
+  if (!normalizeAuStudentEmail(authenticatedEmail)) {
     try {
       const { error } = await getNeonAuth().signOut();
       if (error) {
@@ -76,7 +79,11 @@ export async function loginAction(
     } catch (error) {
       console.error("Could not sign out a non-AU Neon Auth session:", error);
     }
-    return { step: "code", email, error: "Kun AU-mails har adgang til StudySwap." };
+    return {
+      step: "code",
+      email,
+      error: "Only AU student email addresses can access StudySwap.",
+    };
   }
 
   redirect("/listings");

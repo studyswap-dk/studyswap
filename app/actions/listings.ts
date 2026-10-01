@@ -35,10 +35,13 @@ export async function createListing(values: CreateListingValues) {
         message: "Could not verify your Neon Auth session. Please try again.",
       };
     }
-    if (currentUser.issue === "not-au-email") {
-      return { ok: false, message: "Only AU email addresses can create listings." };
+    if (currentUser.issue === "not-au-student-email") {
+      return { ok: false, message: "Only AU student email addresses can create listings." };
     }
-    return { ok: false, message: "Sign in with your AU email before creating a listing." };
+    return {
+      ok: false,
+      message: "Sign in with your AU student email before creating a listing.",
+    };
   }
 
   try {
