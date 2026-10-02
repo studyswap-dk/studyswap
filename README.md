@@ -7,17 +7,17 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 | Miljø | Adresse | Branch |
 |---|---|---|
 | Produktion | https://studyswap.dk | `main` |
-| Udvikling | https://dev.studyswap.dk (kræver Vercel-login) | `dev` |
+| Udvikling | https://dev.studyswap.dk | `dev` |
 
 ## Gruppen
 
 | Navn | GitHub |
 |---|---|
 | Luca | |
-| Oliver | |
+| Oliver | [Oliverwidemann](https://github.com/Oliverwidemann)|
 | Morten | [enghausen](https://github.com/enghausen) |
 | Julius | |
-| Phillip | |
+| Phillip | [philliplam88](https://github.com/philliplam88)|
 | Viktor | |
 | Mads P | |
 | Mads S | [Madsschnell](https://github.com/Madsschnell)|
@@ -26,31 +26,50 @@ Vejleder: Michel.
 
 ## Teknologi
 
-Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon med Drizzle, Vitest til tests, hostet på Vercel.
+Next.js 16 (App Router) og TypeScript, Tailwind CSS 4 med shadcn/ui, PostgreSQL hos Neon med Drizzle, login med Neon Auth, Vitest til tests, hostet på Vercel.
 
 ## Kom i gang
 
-Kræver Node.js 24 eller nyere og git. Vercel og CI kører Node.js 24, så kod ikke op mod noget der kun findes i nyere versioner. Brug den npm der følger med Node, ikke yarn eller pnpm.
+Kræver Node.js 24 (LTS), pnpm og git. Vercel og CI kører Node.js 24, og `engines` i `package.json` kræver `24.x`, så nyere versioner giver en advarsel. Projektet bruger pnpm 12.6.0; `packageManager` i `package.json` sørger for, at Corepack vælger den rigtige version.
 
 ```bash
 git clone https://github.com/studyswap-dk/studyswap.git
 cd studyswap
-npm ci
-npm run dev
+corepack enable
+pnpm install
+pnpm run dev
 ```
 
-Åbn http://localhost:3000. `npm ci` installerer præcis de versioner der står i `package-lock.json`.
+Åbn http://localhost:3000. `pnpm install` installerer præcis de versioner der står i `pnpm-lock.yaml`.
+
+**GitHub CLI**, `gh`, bruges af AI-agenterne til at læse rapporten i `studyswap-dk/rapport`. Installér den og log ind én gang:
+
+| System | Installation |
+|---|---|
+| Windows | `winget install --id GitHub.cli` |
+| Mac | `brew install gh` |
+| Arch | `sudo pacman -S github-cli` |
+
+Kør derefter `gh auth login`, vælg GitHub.com, og log ind via browseren.
 
 | Kommando | Hvad den gør |
 |---|---|
-| `npm run dev` | Starter udviklingsserveren |
-| `npm run build` | Bygger som til produktion |
-| `npm run lint` | Tjekker koden for fejl |
-| `npm run typecheck` | Tjekker TypeScript-typerne |
-| `npm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
-| `npm run db:generate` | Laver en migration ud fra `db/schema.ts` |
-| `npm run db:migrate` | Kører migrationerne mod din database |
-| `npm run db:studio` | Viser databasen i browseren |
+| `pnpm run dev` | Starter udviklingsserveren |
+| `pnpm run build` | Bygger som til produktion |
+| `pnpm run lint` | Tjekker koden med Oxlint |
+| `pnpm run format` | Formaterer TypeScript, JavaScript, JSON og CSS samt sorterer Tailwind-klasser |
+| `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI |
+| `pnpm run typecheck` | Tjekker TypeScript-typerne |
+| `pnpm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
+| `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
+| `pnpm run db:migrate` | Kører migrationerne mod din database |
+| `pnpm run db:studio` | Viser databasen i browseren |
+| `pnpm run skills:sync` | Kopierer skills fra `.agents/skills` til `.claude/skills`, se [AI-agenter](#ai-agenter) |
+| `pnpm run skills:check` | Kontrollerer at kopien er ens; køres også i CI |
+
+## Lint og formatering
+
+Oxlint bruger native regler for Next.js, React, JSX-tilgængelighed, TypeScript og Vitest. TypeScript-lint er ikke type-aware; `pnpm run typecheck` kontrollerer fortsat typer separat. Oxlint-reglerne svarer tæt til det tidligere ESLint-setup, men dækker ikke alle regler og detaljer identisk. `react/react-in-jsx-scope` er slået fra, fordi Next.js bruger Reacts automatiske JSX-runtime. Oxfmt formaterer TypeScript, TSX, JavaScript, JSON og CSS og sorterer Tailwind CSS 4-klasser ud fra `app/globals.css`.
 
 ## Lokal database
 
@@ -58,9 +77,10 @@ Hver udvikler har sin egen database-branch i Neon, så ingen roder i hinandens d
 
 1. I Neon: Branches, New Branch. Navn `dev-<fornavn>`, parent `production`, og sæt Auto-delete til Never
 2. Connect på din branch, database `studyswap`. Læg forbindelsesstrengen med pooling i `DATABASE_URL` og uden pooling i `DATABASE_URL_UNPOOLED` i en fil `.env.local` i roden af projektet
-3. Kør `npm run db:migrate`
+3. Kør `pnpm run db:migrate`
+4. Til login, i samme fil: `NEON_AUTH_BASE_URL` fra din egen branch i Neon, og en `NEON_AUTH_COOKIE_SECRET`, som du selv laver med `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Din secret bruges kun lokalt og deles ikke. Previews og produktion har deres egne værdier i Vercel, som du ikke skal kopiere eller røre. Uden de to variabler virker login ikke, og siderne under `/listings` fejler. Se [Login og autentificering](docs/login-and-authentication.md)
 
-`.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `npm run db:generate -- --name create_post`.
+`.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `pnpm run db:generate --name create_post`.
 
 ## Arbejdsgang
 
@@ -74,16 +94,58 @@ git checkout -b feature/kort-beskrivelse
 git push -u origin feature/kort-beskrivelse
 ```
 
-Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, typecheck, test og build.
+Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, formatering, skills, typecheck, test og build.
 
-Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package-lock.json`, så kør `npm ci`.
+Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package.json` eller `pnpm-lock.yaml`, så kør `pnpm install`.
 
 Branchnavne skrives som `type/kort-beskrivelse` med små bogstaver og bindestreger, uden æ, ø og å. Typerne er `feature`, `fix`, `chore`, `docs` og `ci`.
 
 Commit-beskeder skrives i bydeform og siger hvad der ændres, fx "Tilføj tabel til opslag".
 
+## Extensions
+
+Brug disse extensions i VS Code for at få den bedste udvikleroplevelse. VS Code foreslår dem selv, når du åbner projektet, fordi de står i `.vscode/extensions.json`.
+
+- [Oxc (Oxlint og Oxfmt)](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) - Til formattering og linting af vores projekt
+- [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) - Til Tailwind CSS-autocomplete og linting
+- [Vitest](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) - Til at køre tests i VS Code
+
+## AI-agenter
+
+Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de samme regler og værktøjer.
+
+| | Hvor |
+|---|---|
+| Regler for projektet | `AGENTS.md`, som alle agenterne læser. `CLAUDE.md` peger på den |
+| Skills | `.agents/skills/`. Claude Code læser en kopi i `.claude/skills/` |
+| MCP-servere | `.mcp.json` til Claude Code og Copilot CLI, `.vscode/mcp.json` til VS Code med Copilot, `.codex/config.toml` til Codex |
+
+**Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
+
+**MCP-servere:** Neon, som første gang beder dig logge ind med din egen Neon-konto, shadcn, og next-devtools, som henter fejl, logs og routes fra udviklingsserveren og derfor kun virker, når `pnpm run dev` kører. I VS Code er også GitHubs MCP-server med, som logger ind via browseren, og Copilot CLI har den indbygget. Claude Code og Codex læser GitHub med `gh` i stedet, fordi GitHubs server kun kan logge ind uden personlig nøgle i Copilot. Ingen af dem kræver nøgler i repoet.
+
+### Kom i gang med din agent
+
+Første gang, efter `pnpm install` og `gh auth login`:
+
+**Claude Code:** start `claude` i roden af repoet, og godkend serverne, når den spørger. Kør `/mcp`, vælg Neon og log ind i browseren.
+
+**Claude Desktop, Code:** vælg mappen med repoet. Den læser `AGENTS.md`, skills og `.mcp.json` som Claude Code og deler login med den, så samme godkendelse og login gælder. Det er den rigtige til at arbejde i projektet.
+
+**Claude Desktop, chat:** læser ikke repoets opsætning, så hverken `AGENTS.md`, skills eller rapporten via `gh`. MCP-serverne kan tilføjes, men på to forskellige måder:
+
+- MCP-serveren **Neon** er ekstern: Settings, Connectors, Add custom connector, med adressen `https://mcp.neon.tech/mcp`. Behold standardvalgene, og log ind. Connectoren hører til din Claude-konto, så den er også med i browseren og på mobilen
+- MCP-serveren **shadcn** er lokal: bed Claude læse `.mcp.json` og fortælle hvad der skal ind, med den fulde sti til repoet, sæt det ind under Settings, Developer, Edit Config, og luk og genstart Claude Desktop. Den kan søge i shadcns register, men startes ikke i repoet
+
+**VS Code med Copilot:** åbn mappen, kør **MCP: List Servers** i kommandopaletten, og start dem med `.vscode/mcp.json` ud for. Stol på serverne, og log ind på Neon og GitHub i browseren. Bagefter starter de af sig selv, når du skriver i chatten. Brug chatten i Agent-tilstand. Serverne fra `.mcp.json` står også på listen som Disabled; lad dem være, de er til Claude Code og Copilot CLI.
+
+**Codex:** log ind med `codex login`, og log ind på Neon med `codex mcp login Neon`. Start `codex` i roden af repoet, og tjek med `/mcp` at serverne er forbundet. Når Codex skal bruge `gh` til rapporten, beder den om lov til netværk; godkend det.
+
+**Copilot CLI:** bruger `.mcp.json`, samme fil som Claude Code, men kun når mappen er betroet. Start `copilot` i roden af repoet, og svar ja til at stole på mappen. Kommer spørgsmålet ikke, og viser `/mcp` kun GitHub, så start den i stedet med `copilot --additional-mcp-config @.mcp.json`. Virker det heller ikke, så luk Copilot og tilføj stien til repoet i listen `trustedFolders` i `~/.copilot/config.json`, på Windows `%USERPROFILE%\.copilot\config.json`, fx `"trustedFolders": ["/sti/til/studyswap"]`, på Windows med dobbelte backslashes, `["C:\\Users\\navn\\studyswap"]`. Kør så `/mcp`, vælg Neon og Authenticate.
+
 ## Dokumentation
 
+- [Login og autentificering](docs/login-and-authentication.md)
 - [Next.js](https://nextjs.org/docs)
 - [Vercel](https://vercel.com/docs)
 - [Neon](https://neon.com/docs)

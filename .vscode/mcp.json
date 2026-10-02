@@ -1,0 +1,23 @@
+{
+  "servers": {
+    "Neon": {
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp"
+    },
+    "shadcn": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/node_modules/shadcn/dist/index.js", "mcp"]
+    },
+    "next-devtools": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/node_modules/next-devtools-mcp/dist/index.js"],
+      "env": { "NEXT_TELEMETRY_DISABLED": "1" }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    }
+  }
+}
