@@ -1,3 +1,12 @@
 [mcp_servers.shadcn]
-command = "npx"
-args = ["-y", "shadcn@latest", "mcp"]
+command = "node"
+args = [ "node_modules/shadcn/dist/index.js", "mcp" ]
+
+[mcp_servers.next-devtools]
+command = "node"
+args = [ "node_modules/next-devtools-mcp/dist/index.js" ]
+env = { NEXT_TELEMETRY_DISABLED = "1" }
+
+[mcp_servers.Neon]
+type = "http"
+url = "https://mcp.neon.tech/mcp"
