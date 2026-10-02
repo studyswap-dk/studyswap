@@ -38,7 +38,10 @@ Login needs two environment variables. Without them, login does not work, and ev
 
 Localhost access must be switched on in Neon Auth for your branch; see [Neon Auth settings](#neon-auth-settings).
 
-**Previews and production:** both variables are set in Vercel, with a separate cookie secret for Preview and Production, so a cookie from a preview cannot be used in production. Do not copy these values to your machine.
+**Previews and production:** both variables are set in Vercel. Do not copy these values to your machine.
+
+- `NEON_AUTH_BASE_URL` is set by the Neon integration, one per Neon branch, like `DATABASE_URL`. It is switched on in the Neon Console under the project's Vercel integration, Settings, where `NEON_AUTH_BASE_URL` is ticked under Neon Auth. Every new preview gets the address for its own branch, so the users are in the same database as the preview's data
+- `NEON_AUTH_COOKIE_SECRET` is set by hand in the Vercel project's Environment Variables as type Secret, with one value for Production and another for Preview, so a cookie from a preview cannot be used in production
 
 ## Neon Auth settings
 
