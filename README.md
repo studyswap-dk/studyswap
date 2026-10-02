@@ -26,7 +26,7 @@ Vejleder: Michel.
 
 ## Teknologi
 
-Next.js 16 (App Router) og TypeScript, Tailwind CSS 4, PostgreSQL hos Neon med Drizzle, Vitest til tests, hostet på Vercel.
+Next.js 16 (App Router) og TypeScript, Tailwind CSS 4 med shadcn/ui, PostgreSQL hos Neon med Drizzle, login med Neon Auth, Vitest til tests, hostet på Vercel.
 
 ## Kom i gang
 
@@ -78,14 +78,9 @@ Hver udvikler har sin egen database-branch i Neon, så ingen roder i hinandens d
 1. I Neon: Branches, New Branch. Navn `dev-<fornavn>`, parent `production`, og sæt Auto-delete til Never
 2. Connect på din branch, database `studyswap`. Læg forbindelsesstrengen med pooling i `DATABASE_URL` og uden pooling i `DATABASE_URL_UNPOOLED` i en fil `.env.local` i roden af projektet
 3. Kør `pnpm run db:migrate`
+4. Til login, i samme fil: `NEON_AUTH_BASE_URL` fra din egen branch i Neon, og en `NEON_AUTH_COOKIE_SECRET`, som du selv laver med `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Din secret bruges kun lokalt og deles ikke. Previews og produktion har deres egne værdier i Vercel, som du ikke skal kopiere eller røre. Uden de to variabler virker login ikke, og siderne under `/listings` fejler. Se [Login og autentificering](docs/login-and-authentication.md)
 
 `.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `pnpm run db:generate --name create_post`.
-
-## Vercel og databaser
-
-Vercel-builds kører kun `pnpm run build`; de ændrer ikke databasen. Kør `pnpm run db:migrate` separat mod den tilsigtede Neon-branch, før du deployer kode, der afhænger af nye schemaændringer. Brug branchens `DATABASE_URL_UNPOOLED` til migrationer.
-
-I Vercel skal `DATABASE_URL` og `NEON_AUTH_BASE_URL` sættes for både Preview og Production, med værdier der passer til den tilsvarende Neon-branch. Brug separate Neon-branches til Preview og Production, så preview-deployments ikke ændrer eller læser produktionsdata. Sæt også `NEON_AUTH_COOKIE_SECRET` separat for hvert miljø; den skal være mindst 32 tegn og holdes hemmelig. `DATABASE_URL_UNPOOLED` skal kun sættes i Vercel, hvis en særskilt migrationsopgave dér har brug for den.
 
 ## Arbejdsgang
 

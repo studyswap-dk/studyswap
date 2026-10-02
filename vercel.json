@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build"
+  "buildCommand": "pnpm run db:migrate && pnpm run build"
 }

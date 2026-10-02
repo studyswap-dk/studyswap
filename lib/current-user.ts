@@ -1,4 +1,4 @@
-import { normalizeAuStudentEmail } from "@/lib/auth/au-email";
+import { normalizeStudentEmail } from "@/domain/student-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type CurrentUser = {
@@ -36,7 +36,7 @@ export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
       return { user: null, issue: "unauthenticated" };
     }
 
-    const email = normalizeAuStudentEmail(sessionUser.email);
+    const email = normalizeStudentEmail(sessionUser.email);
     if (!email) {
       return { user: null, issue: "not-au-student-email" };
     }

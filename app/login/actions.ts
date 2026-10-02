@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { normalizeAuStudentEmail } from "@/lib/auth/au-email";
+import { normalizeStudentEmail } from "@/domain/student-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type LoginActionState =
@@ -15,11 +15,11 @@ export async function loginAction(
 ): Promise<LoginActionState> {
   const intent = formData.get("intent");
   if (intent === "change-email") {
-    const email = normalizeAuStudentEmail(formData.get("email"));
+    const email = normalizeStudentEmail(formData.get("email"));
     return { step: "email", ...(email ? { email } : {}) };
   }
 
-  const email = normalizeAuStudentEmail(formData.get("email"));
+  const email = normalizeStudentEmail(formData.get("email"));
   if (!email) {
     return {
       step: "email",
@@ -70,7 +70,7 @@ export async function loginAction(
     return { step: "code", email, error: "Could not sign in. Please try again shortly." };
   }
 
-  if (!normalizeAuStudentEmail(authenticatedEmail)) {
+  if (!normalizeStudentEmail(authenticatedEmail)) {
     try {
       const { error } = await getNeonAuth().signOut();
       if (error) {
