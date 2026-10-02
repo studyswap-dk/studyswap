@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { getCurrentUser } from "@/lib/current-user";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  // Authentication is intentionally not enforced here yet. Replace this identity
-  // lookup with the session guard when the auth work lands.
   await connection();
   const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

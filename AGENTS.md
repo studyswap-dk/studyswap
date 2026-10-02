@@ -103,7 +103,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 
 **User interface**
 - UI text is in English
-- Use the components in `components/ui/` before writing new ones, and style with Tailwind
+- Use the components in `components/ui/` before writing new ones, and style with Tailwind classes and the theme tokens in `app/globals.css`. Do not add CSS modules or separate stylesheets, and do not hard-code colours, so light and dark themes keep working
 
 **Git and pull requests**
 - Branch from `dev`. Name branches `type/short-description` in lowercase, without æ, ø and å. Types: `feature`, `fix`, `chore`, `docs`, `ci`
