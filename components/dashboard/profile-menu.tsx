@@ -2,6 +2,7 @@
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { useTransition } from "react";
+import Link from "next/link";
 
 import { signOut } from "@/app/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,12 +41,14 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
-            <UserRound data-icon="inline-start" />
-            Profile settings
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+    <DropdownMenuGroup>
+       <Link href="/profile">
+        <DropdownMenuItem className="cursor-pointer">
+          <UserRound data-icon="inline-start" />
+          Profile settings
+        </DropdownMenuItem>
+      </Link>
+    </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isSigningOut}

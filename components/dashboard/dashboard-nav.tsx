@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Handshake, Plus } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
@@ -9,6 +9,7 @@ import type { CurrentUser } from "@/lib/current-user";
 
 const navigation = [
   { href: "/listings", label: "Browse listings", icon: BookOpen },
+  { href: "/agreements", label: "Agreements", icon: Handshake },
   { href: "/listings/new", label: "Create listing", icon: Plus },
 ];
 
