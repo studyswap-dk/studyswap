@@ -4,23 +4,23 @@ Byt hjælp med andre studerende på tværs af uddannelser, med point i stedet fo
 
 Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet. Gruppe 2.
 
-| Miljø | Adresse | Branch |
-|---|---|---|
-| Produktion | https://studyswap.dk | `main` |
-| Udvikling | https://dev.studyswap.dk | `dev` |
+| Miljø      | Adresse                  | Branch |
+| ---------- | ------------------------ | ------ |
+| Produktion | https://studyswap.dk     | `main` |
+| Udvikling  | https://dev.studyswap.dk | `dev`  |
 
 ## Gruppen
 
-| Navn | GitHub |
-|---|---|
-| Luca | |
-| Oliver | [Oliverwidemann](https://github.com/Oliverwidemann)|
-| Morten | [enghausen](https://github.com/enghausen) |
-| Julius | |
-| Phillip | [philliplam88](https://github.com/philliplam88)|
-| Viktor | |
-| Mads P | |
-| Mads S | [Madsschnell](https://github.com/Madsschnell)|
+| Navn    | GitHub                                              |
+| ------- | --------------------------------------------------- |
+| Luca    |                                                     |
+| Oliver  | [Oliverwidemann](https://github.com/Oliverwidemann) |
+| Morten  | [enghausen](https://github.com/enghausen)           |
+| Julius  |                                                     |
+| Phillip | [philliplam88](https://github.com/philliplam88)     |
+| Viktor  | [Vitraktor5001](https://github.com/Vitraktor5001)   |
+| Mads P  |                                                     |
+| Mads S  | [Madsschnell](https://github.com/Madsschnell)       |
 
 Vejleder: Michel.
 
@@ -44,28 +44,28 @@ pnpm run dev
 
 **GitHub CLI**, `gh`, bruges af AI-agenterne til at læse rapporten i `studyswap-dk/rapport`. Installér den og log ind én gang:
 
-| System | Installation |
-|---|---|
+| System  | Installation                     |
+| ------- | -------------------------------- |
 | Windows | `winget install --id GitHub.cli` |
-| Mac | `brew install gh` |
-| Arch | `sudo pacman -S github-cli` |
+| Mac     | `brew install gh`                |
+| Arch    | `sudo pacman -S github-cli`      |
 
 Kør derefter `gh auth login`, vælg GitHub.com, og log ind via browseren.
 
-| Kommando | Hvad den gør |
-|---|---|
-| `pnpm run dev` | Starter udviklingsserveren |
-| `pnpm run build` | Bygger som til produktion |
-| `pnpm run lint` | Tjekker koden med Oxlint |
-| `pnpm run format` | Formaterer TypeScript, JavaScript, JSON og CSS samt sorterer Tailwind-klasser |
-| `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI |
-| `pnpm run typecheck` | Tjekker TypeScript-typerne |
-| `pnpm run test` | Kører testene. `test:watch` kører dem igen, hver gang du gemmer |
-| `pnpm run db:generate` | Laver en migration ud fra `db/schema.ts` |
-| `pnpm run db:migrate` | Kører migrationerne mod din database |
-| `pnpm run db:studio` | Viser databasen i browseren |
-| `pnpm run skills:sync` | Kopierer skills fra `.agents/skills` til `.claude/skills`, se [AI-agenter](#ai-agenter) |
-| `pnpm run skills:check` | Kontrollerer at kopien er ens; køres også i CI |
+| Kommando                | Hvad den gør                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `pnpm run dev`          | Starter udviklingsserveren                                                              |
+| `pnpm run build`        | Bygger som til produktion                                                               |
+| `pnpm run lint`         | Tjekker koden med Oxlint                                                                |
+| `pnpm run format`       | Formaterer TypeScript, JavaScript, JSON og CSS samt sorterer Tailwind-klasser           |
+| `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI                           |
+| `pnpm run typecheck`    | Tjekker TypeScript-typerne                                                              |
+| `pnpm run test`         | Kører testene. `test:watch` kører dem igen, hver gang du gemmer                         |
+| `pnpm run db:generate`  | Laver en migration ud fra `db/schema.ts`                                                |
+| `pnpm run db:migrate`   | Kører migrationerne mod din database                                                    |
+| `pnpm run db:studio`    | Viser databasen i browseren                                                             |
+| `pnpm run skills:sync`  | Kopierer skills fra `.agents/skills` til `.claude/skills`, se [AI-agenter](#ai-agenter) |
+| `pnpm run skills:check` | Kontrollerer at kopien er ens; køres også i CI                                          |
 
 ## Lint og formatering
 
@@ -114,11 +114,11 @@ Brug disse extensions i VS Code for at få den bedste udvikleroplevelse. VS Code
 
 Repoet er sat op til Claude Code, Codex og GitHub Copilot, så de alle får de samme regler og værktøjer.
 
-| | Hvor |
-|---|---|
-| Regler for projektet | `AGENTS.md`, som alle agenterne læser. `CLAUDE.md` peger på den |
-| Skills | `.agents/skills/`. Claude Code læser en kopi i `.claude/skills/` |
-| MCP-servere | `.mcp.json` til Claude Code og Copilot CLI, `.vscode/mcp.json` til VS Code med Copilot, `.codex/config.toml` til Codex |
+|                      | Hvor                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Regler for projektet | `AGENTS.md`, som alle agenterne læser. `CLAUDE.md` peger på den                                                        |
+| Skills               | `.agents/skills/`. Claude Code læser en kopi i `.claude/skills/`                                                       |
+| MCP-servere          | `.mcp.json` til Claude Code og Copilot CLI, `.vscode/mcp.json` til VS Code med Copilot, `.codex/config.toml` til Codex |
 
 **Skills rettes kun i `.agents/skills/`.** Kør derefter `pnpm run skills:sync`, og commit begge mapper. Kopien er rigtige filer og ikke symbolske links, fordi Git på Windows som standard laver links om til tekstfiler. CI fejler, hvis kopien ikke passer.
 
