@@ -9,7 +9,7 @@ export type LedgerEntry = Posting & {
   createdAt: Date;
 };
 
-// Startsaldo til en ny bruger. Point opstår kun her.
+// Startsaldo til en ny bruger. Point opstår kun her indtil videre
 export function initialPosting(userId: string): Posting {
   return { userId, amount: INITIAL_POINTS, type: "initial" };
 }
