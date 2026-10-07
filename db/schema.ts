@@ -93,7 +93,7 @@ export const profile = pgTable("profile", {
 
 // F8, F9: a student sends a proposal on someone else's post, and the owner
 // accepts or declines it. The rules that need other tables (not on your own post,
-// enough available points, closing a seeking post) belong in domain/.
+// enough available points, closing a seeking post) live in domain/proposal.ts.
 export const proposalStatus = pgEnum("proposalStatus", [
   "pending",
   "accepted",
