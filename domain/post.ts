@@ -57,11 +57,12 @@ export function validateDescription(value: unknown): string | null {
   return null;
 }
 
-export function validatePost(input: {
-  type: unknown;
-  title: unknown;
-  description: unknown;
-}): PostValidation {
+// The input is unknown on purpose: a Server Action can be called with anything,
+// not only with what the form sends.
+export function validatePost(value: unknown): PostValidation {
+  const input: Partial<Record<PostField, unknown>> =
+    typeof value === "object" && value !== null ? value : {};
+
   const checks: [PostField, string | null][] = [
     ["type", validateType(input.type)],
     ["title", validateTitle(input.title)],

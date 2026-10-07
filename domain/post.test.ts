@@ -28,7 +28,7 @@ describe("validateType", () => {
     expect(validateType(type)).toBeNull();
   });
 
-  it.each(["offer", "need", "", undefined, null, 1])("F3, F4: %s is not a valid type", (type) => {
+  it.each(["other", undefined, 1])("F3, F4: %j is not a valid type", (type) => {
     expect(validateType(type)).not.toBeNull();
   });
 });
@@ -50,7 +50,7 @@ describe("validateTitle", () => {
     expect(validateTitle("a".repeat(TITLE_MAX_LENGTH + 1))).not.toBeNull();
   });
 
-  it.each(["", "     ", undefined, null, 12345])("F5: %j is not a title", (title) => {
+  it.each(["", "     ", undefined, 12345])("F5: %j is not a title", (title) => {
     expect(validateTitle(title)).not.toBeNull();
   });
 
@@ -81,7 +81,7 @@ describe("validateDescription", () => {
     expect(validateDescription("a".repeat(DESCRIPTION_MAX_LENGTH + 1))).not.toBeNull();
   });
 
-  it.each(["", "   \n  ", undefined, null])("F5: %j is not a description", (description) => {
+  it.each(["", "   \n  ", undefined])("F5: %j is not a description", (description) => {
     expect(validateDescription(description)).not.toBeNull();
   });
 
@@ -109,7 +109,7 @@ describe("validatePost", () => {
   });
 
   it.each([
-    { field: "type", input: { ...valid, type: "offer" } },
+    { field: "type", input: { ...valid, type: "other" } },
     { field: "title", input: { ...valid, title: "abc" } },
     { field: "description", input: { ...valid, description: "too short" } },
   ])("F3, F4, F5: an invalid $field is reported on that field", ({ field, input }) => {
@@ -119,6 +119,19 @@ describe("validatePost", () => {
     if (result.ok) return;
     expect(result.field).toBe(field);
   });
+
+  it("F3, F4, F5: fields other than type, title and description are dropped", () => {
+    const result = validatePost({ ...valid, authorId: "someone-else", status: "removed" });
+
+    expect(result).toEqual({ ok: true, post: valid });
+  });
+
+  it.each([null, undefined, []])(
+    "F3, F4, F5: %j is rejected instead of causing an error",
+    (value) => {
+      expect(validatePost(value).ok).toBe(false);
+    },
+  );
 
   it("F5: the first invalid field is reported when several are invalid", () => {
     const result = validatePost({ type: "seeking", title: "", description: "" });
