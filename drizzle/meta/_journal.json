@@ -29,6 +29,13 @@
       "when": 1790328937143,
       "tag": "0003_create_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791367538139,
+      "tag": "0004_create_proposal_agreement",
+      "breakpoints": true
     }
   ]
 }
