@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-import { createListing, type CreateListingValues } from "@/app/actions/listings";
+import { createPost, type CreatePostValues } from "@/app/actions/posts";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ListingForm() {
+export function PostForm() {
   const router = useRouter();
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const {
@@ -19,13 +19,13 @@ export function ListingForm() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateListingValues>({
+  } = useForm<CreatePostValues>({
     defaultValues: { type: "seeking", title: "", description: "" },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setResult(null);
-    const response = await createListing(values);
+    const response = await createPost(values);
     setResult(response);
     if (response.ok) {
       reset();
@@ -57,7 +57,7 @@ export function ListingForm() {
             aria-invalid={Boolean(errors.title)}
             maxLength={100}
             {...register("title", {
-              required: "Add a title for your listing.",
+              required: "Add a title for your post.",
               minLength: { value: 5, message: "Use at least 5 characters." },
               maxLength: { value: 100, message: "Keep the title under 100 characters." },
               validate: (value) => Boolean(value.trim()) || "The title cannot be blank.",
@@ -78,7 +78,7 @@ export function ListingForm() {
             aria-invalid={Boolean(errors.description)}
             maxLength={2000}
             {...register("description", {
-              required: "Add a description for your listing.",
+              required: "Add a description for your post.",
               minLength: {
                 value: 20,
                 message: "Use at least 20 characters so students know what you need.",
@@ -107,7 +107,7 @@ export function ListingForm() {
       )}
 
       <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Publishing…" : "Publish listing"}
+        {isSubmitting ? "Publishing…" : "Publish post"}
       </Button>
     </form>
   );

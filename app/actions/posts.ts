@@ -6,13 +6,13 @@ import { db } from "@/db";
 import { post } from "@/db/schema";
 import { lookupCurrentUser } from "@/lib/current-user";
 
-export type CreateListingValues = {
+export type CreatePostValues = {
   type: "seeking" | "offering";
   title: string;
   description: string;
 };
 
-export async function createListing(values: CreateListingValues) {
+export async function createPost(values: CreatePostValues) {
   const type = values.type;
   const title = typeof values.title === "string" ? values.title.trim() : "";
   const description = typeof values.description === "string" ? values.description.trim() : "";
@@ -36,11 +36,11 @@ export async function createListing(values: CreateListingValues) {
       };
     }
     if (currentUser.issue === "not-au-student-email") {
-      return { ok: false, message: "Only AU student email addresses can create listings." };
+      return { ok: false, message: "Only AU student email addresses can create posts." };
     }
     return {
       ok: false,
-      message: "Sign in with your AU student email before creating a listing.",
+      message: "Sign in with your AU student email before creating a post.",
     };
   }
 
@@ -49,10 +49,10 @@ export async function createListing(values: CreateListingValues) {
   } catch {
     return {
       ok: false,
-      message: "The listing could not be saved. Check the database connection and migration.",
+      message: "The post could not be saved. Check the database connection and migration.",
     };
   }
 
-  revalidatePath("/listings");
-  return { ok: true, message: "Your listing is live." };
+  revalidatePath("/posts");
+  return { ok: true, message: "Your post is live." };
 }
