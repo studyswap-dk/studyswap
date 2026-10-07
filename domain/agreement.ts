@@ -112,6 +112,11 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (agreement.helperConfirmedAt === null) {
         return { ok: false, reason: "Cannot dispute before helper has marked as done" };
       }
+      // F13, F15: after 24 hours the points are released, also when no one has
+      // read the agreement since, so a late dispute must not get in first.
+      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + DAY_MS) {
+        return { ok: false, reason: "The 24 hour window for disputes has passed" };
+      }
       return {
         ok: true,
         newStatus: "disputed",
