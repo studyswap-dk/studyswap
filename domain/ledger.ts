@@ -1,16 +1,18 @@
-// F2: pointkonto. Saldo og reserveret udledes fra posteringer, der gemmes kun posteringer.
-import type { Agreement, Posting } from "./agreement";
+// F2: point account. The balance and the reserved points are stored on pointAccount.
+// These functions derive the same numbers from the transactions and the open
+// agreements, which is how the stored values can be checked (NF2, NF7).
+import type { Agreement, PointTransaction } from "./agreement";
 
-export const INITIAL_POINTS = 5; //Starting poinst. Den kan selvfølgelig ændres
+export const INITIAL_POINTS = 5;
 
-export type LedgerEntry = Posting & {
+export type LedgerEntry = PointTransaction & {
   id: string;
   agreementId: string | null;
   createdAt: Date;
 };
 
-// Startsaldo til en ny bruger. Point opstår kun her indtil videre
-export function initialPosting(userId: string): Posting {
+// The starting balance of a new user. This is the only place points are created.
+export function initialTransaction(userId: string): PointTransaction {
   return { userId, amount: INITIAL_POINTS, type: "initial" };
 }
 
@@ -18,7 +20,7 @@ export function balance(entries: LedgerEntry[], userId: string): number {
   return entries.filter((e) => e.userId === userId).reduce((s, e) => s + e.amount, 0);
 }
 
-// Point bundet i aftaler der endnu ikke er afgjort.
+// Points held in agreements that are not yet settled.
 export function reservedPoints(agreements: Agreement[], userId: string): number {
   return agreements
     .filter((a) => a.receiverId === userId && (a.status === "accepted" || a.status === "disputed"))
@@ -33,7 +35,7 @@ export function availablePoints(
   return balance(entries, userId) - reservedPoints(agreements, userId);
 }
 
-// "Hvad jeg har tjent og brugt" *
+// What the user has earned and spent.
 export function summarize(entries: LedgerEntry[], userId: string) {
   const releases = entries.filter((e) => e.userId === userId && e.type === "release");
   return {

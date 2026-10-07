@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { decide, SYSTEM_ACTOR, type Action, type Agreement, type Posting } from "./agreement";
+import {
+  decide,
+  SYSTEM_ACTOR,
+  type Action,
+  type Agreement,
+  type PointTransaction,
+} from "./agreement";
 
 const base: Agreement = {
   id: "a1",
@@ -18,15 +24,15 @@ const disputed: Agreement = { ...marked, status: "disputed" };
 
 const oneMsBefore = (date: Date) => new Date(date.getTime() - 1);
 
-function applyPostings(
+function applyTransactions(
   balance: Record<string, number>,
-  postings: Posting[],
+  transactions: PointTransaction[],
 ): Record<string, number> {
   const result = { ...balance };
-  for (const posting of postings) {
-    result[posting.userId] = (result[posting.userId] ?? 0) + posting.amount;
+  for (const transaction of transactions) {
+    result[transaction.userId] = (result[transaction.userId] ?? 0) + transaction.amount;
   }
-  // For each posting, add the posting.amount to result[posting.userId]
+  // For each transaction, add the transaction.amount to result[transaction.userId]
   return result;
 }
 
@@ -82,7 +88,7 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("accepted");
-    expect(result.postings).toHaveLength(0);
+    expect(result.transactions).toHaveLength(0);
     expect(result.timestamps?.helperConfirmedAt).toEqual(now);
   });
   it("F11: the receiver cancels an accepted agreement", () => {
@@ -90,7 +96,7 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("cancelled");
-    expect(result.postings).toHaveLength(0);
+    expect(result.transactions).toHaveLength(0);
   });
 
   it("F11: the helper can also cancel", () => {
@@ -140,7 +146,7 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("cancelled");
-    expect(result.postings).toHaveLength(0);
+    expect(result.transactions).toHaveLength(0);
   });
 
   it("F16: a rejected dispute releases the points to the helper", () => {
@@ -153,7 +159,7 @@ describe("decide", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("completed");
-    const sum = result.postings.reduce((acc, p) => acc + p.amount, 0);
+    const sum = result.transactions.reduce((acc, p) => acc + p.amount, 0);
     expect(sum).toBe(0);
   });
 
@@ -166,7 +172,7 @@ describe("decide", () => {
     ({ agreement, action, actor }) => {
       const result = decide(agreement, action, actor, now);
       if (!result.ok) throw new Error("expected ok");
-      const sum = result.postings.reduce((acc, p) => acc + p.amount, 0);
+      const sum = result.transactions.reduce((acc, p) => acc + p.amount, 0);
       expect(sum).toBe(0);
     },
   );
@@ -175,14 +181,14 @@ describe("decide", () => {
     const start = { receiver: 5, helper: 5 };
     const result = decide(base, { kind: "cancel" }, "receiver", now);
     if (!result.ok) throw new Error("expected ok");
-    expect(applyPostings(start, result.postings)).toEqual({ receiver: 5, helper: 5 });
+    expect(applyTransactions(start, result.transactions)).toEqual({ receiver: 5, helper: 5 });
   });
 
   it("lifecycle: a confirmed agreement moves one point to the helper", () => {
     const start = { receiver: 5, helper: 5 };
     const result = decide(base, { kind: "confirm" }, "receiver", now);
     if (!result.ok) throw new Error("expected ok");
-    expect(applyPostings(start, result.postings)).toEqual({ receiver: 4, helper: 6 });
+    expect(applyTransactions(start, result.transactions)).toEqual({ receiver: 4, helper: 6 });
   });
 });
 
@@ -198,7 +204,7 @@ describe("decide: system actions and deadlines", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("expired");
-    expect(result.postings).toHaveLength(0);
+    expect(result.transactions).toHaveLength(0);
   });
 
   it("F14: the agreement does not expire one millisecond before the expiry time", () => {
@@ -236,11 +242,11 @@ describe("decide: system actions and deadlines", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.newStatus).toBe("completed");
-    expect(applyPostings({ helper: 0, receiver: 1 }, result.postings)).toEqual({
+    expect(applyTransactions({ helper: 0, receiver: 1 }, result.transactions)).toEqual({
       helper: 1,
       receiver: 0,
     });
-    expect(result.postings.every((posting) => posting.type === "release")).toBe(true);
+    expect(result.transactions.every((transaction) => transaction.type === "release")).toBe(true);
   });
 
   it("F13: the points are not released one millisecond before the 24 hours have passed", () => {

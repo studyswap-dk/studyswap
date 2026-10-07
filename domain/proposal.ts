@@ -1,28 +1,28 @@
-// F8 (send / træk tilbage) og F9 (accepter / afvis).
+// F8 (send, withdraw) and F9 (accept, decline).
 
-export const POINTS_PER_AGREEMENT = 1; //Tænker den skal ændres, men indtil videre får man et point pr. aftale
+export const POINTS_PER_AGREEMENT = 1;
 
 export type Post = {
   id: string;
-  ownerId: string;
-  type: "offer" | "need"; // offer: ejeren hjælper. need: ejeren søger hjælp
+  authorId: string;
+  type: "offering" | "seeking"; // offering: the author helps. seeking: the author needs help
   status: "open" | "closed" | "removed";
 };
 
-export type ProposalStatus = "pending" | "accepted" | "rejected" | "withdrawn";
+export type ProposalStatus = "pending" | "accepted" | "declined" | "withdrawn";
 
 export type Proposal = {
   id: string;
   postId: string;
-  senderId: string;
+  proposerId: string;
   status: ProposalStatus;
 };
 
-export type ProposalAction = { kind: "withdraw" } | { kind: "accept" } | { kind: "reject" };
+export type ProposalAction = { kind: "withdraw" } | { kind: "accept" } | { kind: "decline" };
 
 export type ProposalContext = {
   post: Post;
-  // saldo minus reserveret pr. bruger. Se ledger.ts
+  // Balance minus reserved points per user, see ledger.ts.
   available: Record<string, number>;
 };
 
@@ -32,28 +32,28 @@ export type ProposalDecision =
       newStatus: ProposalStatus;
       newAgreement?: { helperId: string; receiverId: string; points: number };
       closePost?: boolean;
-      rejectOtherProposals?: boolean;
+      declineOtherProposals?: boolean;
     }
   | { ok: false; reason: string };
 
-// F8: må denne bruger sende en forespørgsel på opslaget?
+// F8: may this user send a proposal on the post?
 export function decideSend(
   post: Post,
-  senderId: string,
+  proposerId: string,
   existing: Proposal[],
 ): { ok: true } | { ok: false; reason: string } {
   if (post.status !== "open") return { ok: false, reason: "Post is not open" };
-  if (senderId === post.ownerId) {
+  if (proposerId === post.authorId) {
     return { ok: false, reason: "Cannot send a proposal on your own post" };
   }
-  //Denne kan måske gentænkes. Jeg kunne bare ikke lige komme på en smart måde at komme udenom
-  if (existing.some((p) => p.senderId === senderId && p.status === "pending")) {
+  // At most one pending proposal per student per post.
+  if (existing.some((p) => p.proposerId === proposerId && p.status === "pending")) {
     return { ok: false, reason: "You already have an unanswered proposal on this post" };
   }
   return { ok: true };
 }
 
-//F8 (tilbagetræk) og F9 (accept/afvis)
+// F8 (withdraw) and F9 (accept, decline).
 export function decideProposal(
   proposal: Proposal,
   action: ProposalAction,
@@ -66,32 +66,32 @@ export function decideProposal(
   }
   switch (action.kind) {
     case "withdraw":
-      if (actorId !== proposal.senderId) {
-        return { ok: false, reason: "Only the sender can withdraw" };
+      if (actorId !== proposal.proposerId) {
+        return { ok: false, reason: "Only the proposer can withdraw" };
       }
       return { ok: true, newStatus: "withdrawn" };
-    case "reject":
-      if (actorId !== post.ownerId) return { ok: false, reason: "Only the owner can reject" };
-      return { ok: true, newStatus: "rejected" };
+    case "decline":
+      if (actorId !== post.authorId) return { ok: false, reason: "Only the author can decline" };
+      return { ok: true, newStatus: "declined" };
     case "accept": {
-      if (actorId !== post.ownerId) return { ok: false, reason: "Only the owner can accept" };
+      if (actorId !== post.authorId) return { ok: false, reason: "Only the author can accept" };
       if (post.status !== "open") return { ok: false, reason: "Post is not open" };
 
       const [helperId, receiverId] =
-        post.type === "offer"
-          ? [post.ownerId, proposal.senderId]
-          : [proposal.senderId, post.ownerId];
+        post.type === "offering"
+          ? [post.authorId, proposal.proposerId]
+          : [proposal.proposerId, post.authorId];
 
       if ((ctx.available[receiverId] ?? 0) < POINTS_PER_AGREEMENT) {
         return { ok: false, reason: "Receiver has insufficient available points" };
       }
-      const closes = post.type === "need"; // kun opslag der søger hjælp lukkes
+      const closes = post.type === "seeking"; // only a post seeking help is closed
       return {
         ok: true,
         newStatus: "accepted",
         newAgreement: { helperId, receiverId, points: POINTS_PER_AGREEMENT },
         closePost: closes,
-        rejectOtherProposals: closes,
+        declineOtherProposals: closes,
       };
     }
   }

@@ -4,7 +4,7 @@ import {
   availablePoints,
   balance,
   INITIAL_POINTS,
-  initialPosting,
+  initialTransaction,
   type LedgerEntry,
   reservedPoints,
   summarize,
@@ -37,15 +37,15 @@ function agreement(overrides: Partial<Agreement>): Agreement {
   };
 }
 
-describe("initialPosting", () => {
-  it("F2: a new user gets the starting balance as one posting of type initial", () => {
-    expect(initialPosting("anna")).toEqual({ userId: "anna", amount: 5, type: "initial" });
+describe("initialTransaction", () => {
+  it("F2: a new user gets the starting balance as one transaction of type initial", () => {
+    expect(initialTransaction("anna")).toEqual({ userId: "anna", amount: 5, type: "initial" });
     expect(INITIAL_POINTS).toBe(5);
   });
 });
 
 describe("balance", () => {
-  it("F2: the balance is the sum of the user's own postings", () => {
+  it("F2: the balance is the sum of the user's own transactions", () => {
     const entries = [
       entry("anna", 5, "initial"),
       entry("anna", -1, "release"),
@@ -57,7 +57,7 @@ describe("balance", () => {
     expect(balance(entries, "bo")).toBe(5);
   });
 
-  it("F2: a user without postings has a balance of 0", () => {
+  it("F2: a user without transactions has a balance of 0", () => {
     expect(balance([entry("anna", 5, "initial")], "bo")).toBe(0);
     expect(balance([], "anna")).toBe(0);
   });
@@ -109,7 +109,7 @@ describe("availablePoints", () => {
 });
 
 describe("summarize", () => {
-  it("F2: earned and spent count only postings of type release", () => {
+  it("F2: earned and spent count only transactions of type release", () => {
     const entries = [
       entry("anna", 5, "initial"),
       entry("anna", 1, "release"),

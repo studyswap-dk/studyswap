@@ -1,10 +1,10 @@
 export type AgreementStatus = "accepted" | "completed" | "cancelled" | "expired" | "disputed";
 
-export type TransactionType = "initial" | "reserve" | "release" | "refund";
+export type TransactionType = "initial" | "release";
 
 export const SYSTEM_ACTOR = "system";
 
-const DAY_MS = 24 * 60 * 60 * 1000; //Til expire
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type Action =
   | { kind: "confirm" } // F12, receiver confirms help was given
@@ -12,11 +12,11 @@ export type Action =
   | { kind: "cancel" } // F11, either party
   | { kind: "dispute"; reason: string } // F15, receiver
   | { kind: "expire" } // F14, system
-  | { kind: "autoRelease" } // F17, system
+  | { kind: "autoRelease" } // F13, system
   | { kind: "resolveDispute"; outcome: "upheld" | "rejected" }; // F16, moderator
 
-function releasePostings(a: Agreement): Posting[] {
-  //Til expire og autorelesae
+function releaseTransactions(a: Agreement): PointTransaction[] {
+  // The two transactions that move the points from the receiver to the helper.
   return [
     { userId: a.helperId, amount: a.points, type: "release" },
     { userId: a.receiverId, amount: -a.points, type: "release" },
@@ -34,7 +34,7 @@ export type Agreement = {
   receiverConfirmedAt: Date | null;
 };
 
-export type Posting = {
+export type PointTransaction = {
   userId: string;
   amount: number; // negative debits, positive credits
   type: TransactionType;
@@ -44,7 +44,7 @@ export type Decision =
   | {
       ok: true;
       newStatus: AgreementStatus;
-      postings: Posting[];
+      transactions: PointTransaction[];
       timestamps?: Partial<Pick<Agreement, "helperConfirmedAt" | "receiverConfirmedAt">>;
       disputeReason?: string; // only for dispute action
     }
@@ -62,7 +62,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return {
         ok: true,
         newStatus: "completed",
-        postings: [
+        transactions: [
           { userId: agreement.helperId, amount: agreement.points, type: "release" },
           { userId: agreement.receiverId, amount: -agreement.points, type: "release" },
         ],
@@ -82,7 +82,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return {
         ok: true,
         newStatus: "accepted",
-        postings: [],
+        transactions: [],
         timestamps: { helperConfirmedAt: now },
       };
     }
@@ -99,7 +99,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return {
         ok: true,
         newStatus: "cancelled",
-        postings: [],
+        transactions: [],
       };
     }
     case "dispute": {
@@ -120,7 +120,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return {
         ok: true,
         newStatus: "disputed",
-        postings: [],
+        transactions: [],
         disputeReason: action.reason,
       };
     }
@@ -133,20 +133,21 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return {
           ok: true,
           newStatus: "cancelled",
-          postings: [],
+          transactions: [],
         };
       }
       return {
         ok: true,
         newStatus: "completed",
-        postings: [
+        transactions: [
           { userId: agreement.helperId, amount: agreement.points, type: "release" },
           { userId: agreement.receiverId, amount: -agreement.points, type: "release" },
         ],
       };
     }
 
-    //hvis der ikke sker noget indenfor 7 dage, så udløber hele reservationen
+    // F14: if the help is neither marked as done nor confirmed before expiresAt,
+    // the reservation lapses.
     case "expire": {
       if (actorId !== SYSTEM_ACTOR) return { ok: false, reason: "Only the system can expire" };
       if (agreement.status !== "accepted")
@@ -155,11 +156,11 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return { ok: false, reason: "Help has already been marked as done or confirmed" };
       }
       if (now < agreement.expiresAt) return { ok: false, reason: "Agreement has not expired yet" };
-      return { ok: true, newStatus: "expired", postings: [] };
+      return { ok: true, newStatus: "expired", transactions: [] };
     }
 
-    //Hvis hjælperen har sagt at hjælpen er udført, og 24 timer er gået uden at modtageren har bekræftet, kan systemet auto-release pointene til hjælperen.
-    //Den skal måske gentænkes rent businesslogik, men ellers kan man jo vente på point i evig tid
+    // F13: 24 hours after the helper marked the help as done, the points are released
+    // if the receiver has neither confirmed nor disputed.
     case "autoRelease": {
       if (actorId !== SYSTEM_ACTOR)
         return { ok: false, reason: "Only the system can auto-release" };
@@ -170,7 +171,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (now.getTime() < agreement.helperConfirmedAt.getTime() + DAY_MS) {
         return { ok: false, reason: "The 24 hour window has not passed" };
       }
-      return { ok: true, newStatus: "completed", postings: releasePostings(agreement) };
+      return { ok: true, newStatus: "completed", transactions: releaseTransactions(agreement) };
     }
     default:
       return { ok: false, reason: "Action not implemented" };
