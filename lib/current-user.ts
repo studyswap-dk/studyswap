@@ -1,7 +1,5 @@
-import { eq, sql } from "drizzle-orm";
-
-import { db } from "@/db";
-import { userInNeonAuth } from "@/db/neon-auth";
+import { normalizeStudentEmail } from "@/domain/student-email";
+import { getNeonAuth } from "@/lib/auth/server";
 
 export type CurrentUser = {
   id: string;
@@ -12,39 +10,48 @@ export type CurrentUser = {
 
 export type CurrentUserLookup =
   | { user: CurrentUser; issue: null }
-  | { user: null; issue: "database-unavailable" | "user-not-found" };
+  | {
+      user: null;
+      issue: "authentication-unavailable" | "unauthenticated" | "not-au-student-email";
+    };
 
-/**
- * Temporary development identity until the authentication work is integrated.
- * Set STUDYSWAP_DEMO_USER_ID to select a specific Neon user; otherwise the
- * first registered user is used. Replace this function with the session lookup.
- */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const result = await lookupCurrentUser();
+  if (result.issue === "authentication-unavailable") {
+    throw new Error("Could not verify the current Neon Auth session.");
+  }
   return result.user;
 }
 
 export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
   try {
-    const [user] = await db
-      .select({
-        id: userInNeonAuth.id,
-        name: userInNeonAuth.name,
-        email: userInNeonAuth.email,
-        image: userInNeonAuth.image,
-      })
-      .from(userInNeonAuth)
-      .where(
-        process.env.STUDYSWAP_DEMO_USER_ID
-          ? eq(userInNeonAuth.id, process.env.STUDYSWAP_DEMO_USER_ID)
-          : sql`true`,
-      )
-      .limit(1);
+    const { data: session, error } = await getNeonAuth().getSession();
+    if (error) {
+      console.error("Neon Auth session lookup failed:", error);
+      return { user: null, issue: "authentication-unavailable" };
+    }
 
-    return user ? { user, issue: null } : { user: null, issue: "user-not-found" };
-  } catch {
-    // The shell remains viewable without local Neon credentials. The action
-    // can still report this separately from a reachable database with no user.
-    return { user: null, issue: "database-unavailable" };
+    const sessionUser = session?.user;
+    if (!sessionUser) {
+      return { user: null, issue: "unauthenticated" };
+    }
+
+    const email = normalizeStudentEmail(sessionUser.email);
+    if (!email) {
+      return { user: null, issue: "not-au-student-email" };
+    }
+
+    return {
+      user: {
+        id: sessionUser.id,
+        name: sessionUser.name || email,
+        email,
+        image: sessionUser.image ?? null,
+      },
+      issue: null,
+    };
+  } catch (error) {
+    console.error("Neon Auth session lookup failed:", error);
+    return { user: null, issue: "authentication-unavailable" };
   }
 }

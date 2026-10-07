@@ -14,10 +14,13 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "skills:sync": "node scripts/sync-claude-skills.mjs",
+    "skills:check": "node scripts/sync-claude-skills.mjs --check"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@neondatabase/auth": "0.5.0-beta",
     "@vercel/functions": "^3.9.9",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
@@ -39,6 +42,7 @@
     "@types/react-dom": "^19",
     "dotenv": "^18.0.3",
     "drizzle-kit": "^0.31.11",
+    "next-devtools-mcp": "^0.4.0",
     "oxfmt": "0.70.0",
     "oxlint": "1.85.0",
     "tailwindcss": "^4",

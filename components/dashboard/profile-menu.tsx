@@ -1,7 +1,9 @@
 "use client";
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import { useTransition } from "react";
 
+import { signOut } from "@/app/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -14,6 +16,7 @@ import {
 import type { CurrentUser } from "@/lib/current-user";
 
 export function ProfileMenu({ user }: { user: CurrentUser | null }) {
+  const [isSigningOut, startTransition] = useTransition();
   const name = user?.name ?? "Student account";
   const initials =
     name
@@ -44,9 +47,12 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem
+          disabled={isSigningOut}
+          onClick={() => startTransition(() => void signOut())}
+        >
           <LogOut data-icon="inline-start" />
-          Sign out (auth coming soon)
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
