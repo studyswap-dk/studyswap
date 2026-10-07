@@ -4,28 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { post } from "@/db/schema";
+import { type NewPost, validatePost } from "@/domain/post";
 import { lookupCurrentUser } from "@/lib/current-user";
 
-export type CreatePostValues = {
-  type: "seeking" | "offering";
-  title: string;
-  description: string;
-};
-
-export async function createPost(values: CreatePostValues) {
-  const type = values.type;
-  const title = typeof values.title === "string" ? values.title.trim() : "";
-  const description = typeof values.description === "string" ? values.description.trim() : "";
-
-  if (type !== "seeking" && type !== "offering") {
-    return { ok: false, message: "Choose whether you are seeking or offering help." };
+export async function createPost(values: NewPost) {
+  // F3, F4, F5: a Server Action is a public endpoint, so the rules are checked again here.
+  const validation = validatePost(values);
+  if (!validation.ok) {
+    return { ok: false, message: validation.message };
   }
-  if (title.length < 5 || title.length > 100) {
-    return { ok: false, message: "The title must be between 5 and 100 characters." };
-  }
-  if (description.length < 20 || description.length > 2000) {
-    return { ok: false, message: "The description must be between 20 and 2,000 characters." };
-  }
+  const { type, title, description } = validation.post;
 
   const currentUser = await lookupCurrentUser();
   if (!currentUser.user) {
