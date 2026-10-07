@@ -15,7 +15,7 @@ export type Action =
   | { kind: "autoRelease" } // F13, system
   | { kind: "resolveDispute"; outcome: "upheld" | "rejected" }; // F16, moderator
 
-function releaseTransactions(a: Agreement): PointTransaction[] {
+function releaseTransactions(a: Agreement): NewPointTransaction[] {
   // The two transactions that move the points from the receiver to the helper.
   return [
     { userId: a.helperId, amount: a.points, type: "release" },
@@ -34,7 +34,7 @@ export type Agreement = {
   receiverConfirmedAt: Date | null;
 };
 
-export type PointTransaction = {
+export type NewPointTransaction = {
   userId: string;
   amount: number; // negative debits, positive credits
   type: TransactionType;
@@ -44,7 +44,7 @@ export type Decision =
   | {
       ok: true;
       newStatus: AgreementStatus;
-      transactions: PointTransaction[];
+      transactions: NewPointTransaction[];
       timestamps?: Partial<Pick<Agreement, "helperConfirmedAt" | "receiverConfirmedAt">>;
       disputeReason?: string; // only for dispute action
     }

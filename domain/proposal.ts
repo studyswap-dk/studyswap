@@ -22,7 +22,7 @@ export type ProposalAction = { kind: "withdraw" } | { kind: "accept" } | { kind:
 
 export type ProposalContext = {
   post: Post;
-  // Balance minus reserved points per user, see ledger.ts.
+  // Balance minus reserved points per user, see point-account.ts.
   available: Record<string, number>;
 };
 

@@ -5,14 +5,18 @@ import {
   balance,
   INITIAL_POINTS,
   initialTransaction,
-  type LedgerEntry,
+  type PointTransaction,
   reservedPoints,
   summarize,
-} from "./ledger";
+} from "./point-account";
 
 let nextId = 1;
 
-function entry(userId: string, amount: number, type: LedgerEntry["type"]): LedgerEntry {
+function transaction(
+  userId: string,
+  amount: number,
+  type: PointTransaction["type"],
+): PointTransaction {
   return {
     id: `e${nextId++}`,
     userId,
@@ -46,19 +50,19 @@ describe("initialTransaction", () => {
 
 describe("balance", () => {
   it("F2: the balance is the sum of the user's own transactions", () => {
-    const entries = [
-      entry("anna", 5, "initial"),
-      entry("anna", -1, "release"),
-      entry("anna", 1, "release"),
-      entry("bo", 5, "initial"),
+    const transactions = [
+      transaction("anna", 5, "initial"),
+      transaction("anna", -1, "release"),
+      transaction("anna", 1, "release"),
+      transaction("bo", 5, "initial"),
     ];
 
-    expect(balance(entries, "anna")).toBe(5);
-    expect(balance(entries, "bo")).toBe(5);
+    expect(balance(transactions, "anna")).toBe(5);
+    expect(balance(transactions, "bo")).toBe(5);
   });
 
   it("F2: a user without transactions has a balance of 0", () => {
-    expect(balance([entry("anna", 5, "initial")], "bo")).toBe(0);
+    expect(balance([transaction("anna", 5, "initial")], "bo")).toBe(0);
     expect(balance([], "anna")).toBe(0);
   });
 });
@@ -95,36 +99,36 @@ describe("reservedPoints", () => {
 
 describe("availablePoints", () => {
   it("F2: available points are the balance minus the reserved points", () => {
-    const entries = [entry("receiver", 5, "initial")];
+    const transactions = [transaction("receiver", 5, "initial")];
     const agreements = [agreement({ id: "a1" }), agreement({ id: "a2" })];
 
-    expect(availablePoints(entries, agreements, "receiver")).toBe(3);
+    expect(availablePoints(transactions, agreements, "receiver")).toBe(3);
   });
 
   it("F2: boundary: with every point reserved, 0 are available", () => {
-    const entries = [entry("receiver", 1, "initial")];
+    const transactions = [transaction("receiver", 1, "initial")];
 
-    expect(availablePoints(entries, [agreement({})], "receiver")).toBe(0);
+    expect(availablePoints(transactions, [agreement({})], "receiver")).toBe(0);
   });
 });
 
 describe("summarize", () => {
   it("F2: earned and spent count only transactions of type release", () => {
-    const entries = [
-      entry("anna", 5, "initial"),
-      entry("anna", 1, "release"),
-      entry("anna", 1, "release"),
-      entry("anna", -1, "release"),
-      entry("bo", 5, "initial"),
-      entry("bo", -1, "release"),
+    const transactions = [
+      transaction("anna", 5, "initial"),
+      transaction("anna", 1, "release"),
+      transaction("anna", 1, "release"),
+      transaction("anna", -1, "release"),
+      transaction("bo", 5, "initial"),
+      transaction("bo", -1, "release"),
     ];
 
-    expect(summarize(entries, "anna")).toEqual({ balance: 6, earned: 2, spent: 1 });
-    expect(summarize(entries, "bo")).toEqual({ balance: 4, earned: 0, spent: 1 });
+    expect(summarize(transactions, "anna")).toEqual({ balance: 6, earned: 2, spent: 1 });
+    expect(summarize(transactions, "bo")).toEqual({ balance: 4, earned: 0, spent: 1 });
   });
 
   it("F2: the starting balance does not count as earned", () => {
-    expect(summarize([entry("anna", 5, "initial")], "anna")).toEqual({
+    expect(summarize([transaction("anna", 5, "initial")], "anna")).toEqual({
       balance: 5,
       earned: 0,
       spent: 0,

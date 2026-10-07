@@ -4,7 +4,7 @@ import {
   SYSTEM_ACTOR,
   type Action,
   type Agreement,
-  type PointTransaction,
+  type NewPointTransaction,
 } from "./agreement";
 
 const base: Agreement = {
@@ -26,7 +26,7 @@ const oneMsBefore = (date: Date) => new Date(date.getTime() - 1);
 
 function applyTransactions(
   balance: Record<string, number>,
-  transactions: PointTransaction[],
+  transactions: NewPointTransaction[],
 ): Record<string, number> {
   const result = { ...balance };
   for (const transaction of transactions) {
