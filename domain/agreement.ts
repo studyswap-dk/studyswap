@@ -79,6 +79,9 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (agreement.helperConfirmedAt !== null) {
         return { ok: false, reason: "Help has already been marked as done" };
       }
+      if (now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot mark as done after the agreement has expired" };
+      }
       return {
         ok: true,
         newStatus: "accepted",

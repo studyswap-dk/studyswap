@@ -320,6 +320,20 @@ describe("decide: system actions and deadlines", () => {
       expect(released).not.toBe(disputedNow);
     }
   });
+  
+  it("F13, F14: the help cannot be marked as done once the agreement has expired", () => {
+    expect(decide(base, { kind: "markDone" }, "helper", expiresAt).ok).toBe(false);
+  });
+
+  it("F13, F14: at any moment exactly one of expiry and marking the help as done is possible", () => {
+    for (const moment of [oneMsBefore(expiresAt), expiresAt]) {
+      const expired = decide(base, { kind: "expire" }, SYSTEM_ACTOR, moment).ok;
+      const markedNow = decide(base, { kind: "markDone" }, "helper", moment).ok;
+
+      expect(expired).not.toBe(markedNow);
+    }
+  });
+
 
   it.each(["completed", "cancelled", "expired", "disputed"] as const)(
     "F13: an agreement with status %s is not released automatically",
