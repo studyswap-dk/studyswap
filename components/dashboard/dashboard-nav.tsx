@@ -8,15 +8,15 @@ import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/current-user";
 
 const navigation = [
-  { href: "/listings", label: "Browse listings", icon: BookOpen },
-  { href: "/listings/new", label: "Create listing", icon: Plus },
+  { href: "/posts", label: "Browse posts", icon: BookOpen },
+  { href: "/posts/new", label: "Create post", icon: Plus },
 ];
 
 export function DashboardNav({ user }: { user: CurrentUser | null }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
-        <Link href="/listings" aria-label="StudySwap home" className="shrink-0">
+        <Link href="/posts" aria-label="StudySwap home" className="shrink-0">
           <Image
             src="/brand/studyswap-logo-curves.svg"
             alt="StudySwap"
