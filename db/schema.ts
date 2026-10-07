@@ -92,12 +92,12 @@ export const profile = pgTable("profile", {
 });
 
 // F8, F9: a student sends a proposal on someone else's post, and the owner
-// accepts or rejects it. The rules that need other tables (not on your own post,
-// enough available points, closing a seeking post) live in domain/proposal.ts.
+// accepts or declines it. The rules that need other tables (not on your own post,
+// enough available points, closing a seeking post) belong in domain/.
 export const proposalStatus = pgEnum("proposalStatus", [
   "pending",
   "accepted",
-  "rejected",
+  "declined",
   "withdrawn",
 ]);
 
@@ -108,22 +108,21 @@ export const proposal = pgTable(
     postId: uuid()
       .notNull()
       .references(() => post.id),
-    senderId: uuid()
+    proposerId: uuid()
       .notNull()
       .references(() => userInNeonAuth.id),
     status: proposalStatus().notNull().default("pending"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    // Set when the proposal is accepted, rejected or withdrawn.
-    answeredAt: timestamp({ withTimezone: true }),
+    // Set when the proposal is accepted, declined or withdrawn.
+    decidedAt: timestamp({ withTimezone: true }),
   },
   (table) => [
     // F8: at most one unanswered proposal per student per post.
-    uniqueIndex("proposal_postId_senderId_pending_key")
-      .on(table.postId, table.senderId)
+    uniqueIndex("proposal_postId_proposerId_pending_key")
+      .on(table.postId, table.proposerId)
       .where(sql`${table.status} = 'pending'`),
     // F9: the owner lists the proposals on a post.
-    index("proposal_postId_idx").on(table.postId),
-    index("proposal_senderId_idx").on(table.senderId),
+    index("proposal_postId_status_idx").on(table.postId, table.status),
   ],
 );
 
@@ -152,19 +151,21 @@ export const agreement = pgTable(
     receiverId: uuid()
       .notNull()
       .references(() => userInNeonAuth.id),
-    status: agreementStatus().notNull().default("accepted"),
+    // F11: the party who cancelled the agreement.
+    cancelledById: uuid().references(() => userInNeonAuth.id),
     points: integer().notNull(),
+    status: agreementStatus().notNull().default("accepted"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp({ withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
     // F14: the agreement expires if help is neither confirmed nor marked as done by then.
     expiresAt: timestamp({ withTimezone: true }).notNull(),
     // F13: the helper marked the help as done.
     helperConfirmedAt: timestamp({ withTimezone: true }),
     // F12: the receiver confirmed the help was given.
     receiverConfirmedAt: timestamp({ withTimezone: true }),
+    // Set when the agreement becomes completed (F12, F13, F16).
+    completedAt: timestamp({ withTimezone: true }),
+    // Set when the agreement becomes cancelled (F11, F16).
+    cancelledAt: timestamp({ withTimezone: true }),
   },
   (table) => [
     check("agreement_points_positive", sql`${table.points} > 0`),
@@ -187,12 +188,12 @@ export const message = pgTable(
     senderId: uuid()
       .notNull()
       .references(() => userInNeonAuth.id),
-    text: text().notNull(),
-    sentAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    body: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("message_text_not_blank", sql`btrim(${table.text}) <> ''`),
+    check("message_body_not_blank", sql`btrim(${table.body}) <> ''`),
     // The conversation is read per agreement, oldest first.
-    index("message_agreementId_sentAt_idx").on(table.agreementId, table.sentAt),
+    index("message_agreementId_createdAt_idx").on(table.agreementId, table.createdAt),
   ],
 );

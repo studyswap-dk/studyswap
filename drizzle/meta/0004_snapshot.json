@@ -1,5 +1,5 @@
 {
-  "id": "7ad70967-0491-4cf8-a908-416d76d9df50",
+  "id": "e22c5d1e-afe8-4f63-a870-e94cd63cd64b",
   "prevId": "b37976f9-f498-4cbf-9fb0-716fe9d9877a",
   "version": "7",
   "dialect": "postgresql",
@@ -33,6 +33,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "cancelledById": {
+          "name": "cancelledById",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "points": {
+          "name": "points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "status": {
           "name": "status",
           "type": "agreementStatus",
@@ -41,21 +53,8 @@
           "notNull": true,
           "default": "'accepted'"
         },
-        "points": {
-          "name": "points",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -75,6 +74,18 @@
         },
         "receiverConfirmedAt": {
           "name": "receiverConfirmedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cancelledAt": {
+          "name": "cancelledAt",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -147,6 +158,20 @@
           "schemaTo": "neon_auth",
           "columnsFrom": [
             "receiverId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "agreement_cancelledById_user_id_fk": {
+          "name": "agreement_cancelledById_user_id_fk",
+          "tableFrom": "agreement",
+          "tableTo": "user",
+          "schemaTo": "neon_auth",
+          "columnsFrom": [
+            "cancelledById"
           ],
           "columnsTo": [
             "id"
@@ -459,8 +484,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "senderId": {
-          "name": "senderId",
+        "proposerId": {
+          "name": "proposerId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -480,16 +505,16 @@
           "notNull": true,
           "default": "now()"
         },
-        "answeredAt": {
-          "name": "answeredAt",
+        "decidedAt": {
+          "name": "decidedAt",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {
-        "proposal_postId_senderId_pending_key": {
-          "name": "proposal_postId_senderId_pending_key",
+        "proposal_postId_proposerId_pending_key": {
+          "name": "proposal_postId_proposerId_pending_key",
           "columns": [
             {
               "expression": "postId",
@@ -498,7 +523,7 @@
               "nulls": "last"
             },
             {
-              "expression": "senderId",
+              "expression": "proposerId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -510,26 +535,17 @@
           "method": "btree",
           "with": {}
         },
-        "proposal_postId_idx": {
-          "name": "proposal_postId_idx",
+        "proposal_postId_status_idx": {
+          "name": "proposal_postId_status_idx",
           "columns": [
             {
               "expression": "postId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "proposal_senderId_idx": {
-          "name": "proposal_senderId_idx",
-          "columns": [
+            },
             {
-              "expression": "senderId",
+              "expression": "status",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -555,13 +571,13 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "proposal_senderId_user_id_fk": {
-          "name": "proposal_senderId_user_id_fk",
+        "proposal_proposerId_user_id_fk": {
+          "name": "proposal_proposerId_user_id_fk",
           "tableFrom": "proposal",
           "tableTo": "user",
           "schemaTo": "neon_auth",
           "columnsFrom": [
-            "senderId"
+            "proposerId"
           ],
           "columnsTo": [
             "id"
@@ -1491,7 +1507,7 @@
       "values": [
         "pending",
         "accepted",
-        "rejected",
+        "declined",
         "withdrawn"
       ]
     }
