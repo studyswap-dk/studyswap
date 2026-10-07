@@ -197,3 +197,60 @@ export const message = pgTable(
     index("message_agreementId_createdAt_idx").on(table.agreementId, table.createdAt),
   ],
 );
+
+// F2, NF2: each student has one point account. balance and reserved are derived
+// figures: balance is the sum of the account's transactions, and reserved is the
+// points of the agreements the student receives help in that are still running.
+// Both are updated in the same database transaction as the change behind them.
+export const pointAccount = pgTable(
+  "pointAccount",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid()
+      .notNull()
+      .unique()
+      .references(() => userInNeonAuth.id),
+    // Starts at 0; the starting balance comes from the "initial" transaction.
+    balance: integer().notNull().default(0),
+    // Points bound by accepted agreements. They are still the student's but cannot be used again.
+    reserved: integer().notNull().default(0),
+    updatedAt: timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    check("pointAccount_reserved_nonnegative", sql`${table.reserved} >= 0`),
+    // Points cannot be reserved beyond the balance, and the balance never goes below 0.
+    check("pointAccount_reserved_within_balance", sql`${table.balance} >= ${table.reserved}`),
+  ],
+);
+
+// "initial": the starting balance for a new user. "release": one of the two
+// transactions that move points from the receiver to the helper (F12, F13, F16).
+export const transactionType = pgEnum("transactionType", ["initial", "release"]);
+
+export const pointTransaction = pgTable(
+  "pointTransaction",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    accountId: uuid()
+      .notNull()
+      .references(() => pointAccount.id),
+    // The agreement that caused the transaction; none for "initial".
+    agreementId: uuid().references(() => agreement.id),
+    // Positive when points are added to the account, negative when they are taken.
+    amount: integer().notNull(),
+    type: transactionType().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("pointTransaction_amount_nonzero", sql`${table.amount} <> 0`),
+    check(
+      "pointTransaction_agreement_matches_type",
+      sql`(${table.type} = 'initial') = (${table.agreementId} IS NULL)`,
+    ),
+    // F2: a student's account movements, newest first.
+    index("pointTransaction_accountId_createdAt_idx").on(table.accountId, table.createdAt),
+  ],
+);

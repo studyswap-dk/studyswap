@@ -43,6 +43,13 @@
       "when": 1791370109305,
       "tag": "0005_create_message",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791371684896,
+      "tag": "0006_create_point_account_transaction",
+      "breakpoints": true
     }
   ]
 }
