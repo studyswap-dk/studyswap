@@ -173,3 +173,26 @@ export const agreement = pgTable(
     index("agreement_receiverId_idx").on(table.receiverId),
   ],
 );
+
+// F10: the two parties of an agreement write to each other to agree on time,
+// place and what is to happen. Only the helper and the receiver may send or read
+// messages; that check needs the agreement and is done where the message is saved.
+export const message = pgTable(
+  "message",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    agreementId: uuid()
+      .notNull()
+      .references(() => agreement.id),
+    senderId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    text: text().notNull(),
+    sentAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("message_text_not_blank", sql`btrim(${table.text}) <> ''`),
+    // The conversation is read per agreement, oldest first.
+    index("message_agreementId_sentAt_idx").on(table.agreementId, table.sentAt),
+  ],
+);
