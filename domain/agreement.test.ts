@@ -167,6 +167,34 @@ describe("decide", () => {
     const result = decide(base, { kind: "resolveDispute", outcome: "upheld" }, "moderator", now);
     expect(result.ok).toBe(false);
   });
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F13: the help cannot be marked as done on an agreement with status %s",
+    (status) => {
+      const agreement = { ...base, status };
+      expect(decide(agreement, { kind: "markDone" }, "helper", now).ok).toBe(false);
+    },
+  );
+
+  it.each(["receiver", "someone-else"])("F13: %s cannot mark the help as done", (actor) => {
+    expect(decide(base, { kind: "markDone" }, actor, now).ok).toBe(false);
+  });
+
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F11: an agreement with status %s cannot be cancelled",
+    (status) => {
+      const agreement = { ...base, status };
+      expect(decide(agreement, { kind: "cancel" }, "receiver", now).ok).toBe(false);
+    },
+  );
+
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F15: an agreement with status %s cannot be disputed",
+    (status) => {
+      const agreement = { ...marked, status };
+      const dispute = { kind: "dispute", reason: "The help was never given" } as const;
+      expect(decide(agreement, dispute, "receiver", now).ok).toBe(false);
+    },
+  );
   it.each(validCases)(
     "invariant: $name neither creates nor removes points",
     ({ agreement, action, actor }) => {
