@@ -6,27 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-import { getListings, LISTINGS_PER_PAGE } from "@/lib/listings";
+import { getPosts, POSTS_PER_PAGE } from "@/lib/posts";
 
-export async function ListingsList({ query, page }: { query: string; page: number }) {
-  const {
-    items,
-    total,
-    pages,
-    page: currentPage,
-    unavailable,
-  } = await getListings({ query, page });
-  const firstItem = total === 0 ? 0 : (currentPage - 1) * LISTINGS_PER_PAGE + 1;
-  const lastItem = Math.min(currentPage * LISTINGS_PER_PAGE, total);
+export async function PostsList({ query, page }: { query: string; page: number }) {
+  const { items, total, pages, page: currentPage, unavailable } = await getPosts({ query, page });
+  const firstItem = total === 0 ? 0 : (currentPage - 1) * POSTS_PER_PAGE + 1;
+  const lastItem = Math.min(currentPage * POSTS_PER_PAGE, total);
 
   if (unavailable) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Listings are unavailable</CardTitle>
+          <CardTitle>Posts are unavailable</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Connect the database and apply its migrations to browse listings.
+          Connect the database and apply its migrations to browse posts.
         </CardContent>
       </Card>
     );
@@ -35,10 +29,10 @@ export async function ListingsList({ query, page }: { query: string; page: numbe
   if (items.length === 0) {
     return (
       <Empty>
-        <EmptyTitle>{query ? "No matching listings" : "No listings yet"}</EmptyTitle>
+        <EmptyTitle>{query ? "No matching posts" : "No posts yet"}</EmptyTitle>
         <EmptyDescription>
           {query
-            ? "Try another search phrase, or clear the search to see all open listings."
+            ? "Try another search phrase, or clear the search to see all open posts."
             : "Be the first to share a skill or ask another student for help."}
         </EmptyDescription>
       </Empty>
@@ -46,7 +40,7 @@ export async function ListingsList({ query, page }: { query: string; page: numbe
   }
 
   return (
-    <section aria-label="StudySwap listings" className="flex flex-col gap-4">
+    <section aria-label="StudySwap posts" className="flex flex-col gap-4">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <p>
           Showing {firstItem}–{lastItem} of {total}
@@ -57,40 +51,40 @@ export async function ListingsList({ query, page }: { query: string; page: numbe
       </div>
 
       <ul className="grid gap-4 md:grid-cols-2">
-        {items.map((listing) => (
-          <li key={listing.id}>
+        {items.map((post) => (
+          <li key={post.id}>
             <Card className="h-full gap-5 transition-shadow hover:shadow-md">
               <CardHeader className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Badge variant={listing.type === "seeking" ? "secondary" : "outline"}>
-                    {listing.type === "seeking" ? "Seeking help" : "Offering help"}
+                  <Badge variant={post.type === "seeking" ? "secondary" : "outline"}>
+                    {post.type === "seeking" ? "Seeking help" : "Offering help"}
                   </Badge>
                   <time
-                    dateTime={listing.createdAt.toISOString()}
+                    dateTime={post.createdAt.toISOString()}
                     className="text-xs text-muted-foreground"
                   >
                     {new Intl.DateTimeFormat("en-GB", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
-                    }).format(listing.createdAt)}
+                    }).format(post.createdAt)}
                   </time>
                 </div>
-                <CardTitle className="text-xl leading-snug">{listing.title}</CardTitle>
+                <CardTitle className="text-xl leading-snug">{post.title}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-5">
                 <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                  {trimDescription(listing.description)}
+                  {trimDescription(post.description)}
                 </p>
                 <div className="mt-auto flex items-center gap-2 border-t pt-4 text-sm">
                   <span
                     aria-hidden="true"
                     className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
                   >
-                    {listing.sellerName.slice(0, 1).toUpperCase()}
+                    {post.authorName.slice(0, 1).toUpperCase()}
                   </span>
                   <span className="text-muted-foreground">By</span>
-                  <span className="font-medium">{listing.sellerName}</span>
+                  <span className="font-medium">{post.authorName}</span>
                 </div>
               </CardContent>
             </Card>
@@ -112,7 +106,7 @@ function Pagination({ query, page, pages }: { query: string; page: number; pages
   );
 
   return (
-    <nav aria-label="Listings pages" className="flex items-center justify-center gap-2 pt-3">
+    <nav aria-label="Posts pages" className="flex items-center justify-center gap-2 pt-3">
       {page > 1 ? (
         <Link
           href={pageHref(page - 1, query)}
@@ -173,7 +167,7 @@ function pageHref(page: number, query: string) {
   if (query) searchParams.set("q", query);
   if (page > 1) searchParams.set("page", String(page));
   const search = searchParams.toString();
-  return search ? `/listings?${search}` : "/listings";
+  return search ? `/posts?${search}` : "/posts";
 }
 
 function trimDescription(description: string) {
