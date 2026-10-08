@@ -24,4 +24,6 @@ CREATE TABLE "pointTransaction" (
 ALTER TABLE "pointAccount" ADD CONSTRAINT "pointAccount_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "neon_auth"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pointTransaction" ADD CONSTRAINT "pointTransaction_accountId_pointAccount_id_fk" FOREIGN KEY ("accountId") REFERENCES "public"."pointAccount"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pointTransaction" ADD CONSTRAINT "pointTransaction_agreementId_agreement_id_fk" FOREIGN KEY ("agreementId") REFERENCES "public"."agreement"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "pointTransaction_accountId_createdAt_idx" ON "pointTransaction" USING btree ("accountId","createdAt");
+CREATE INDEX "pointTransaction_accountId_createdAt_idx" ON "pointTransaction" USING btree ("accountId","createdAt");--> statement-breakpoint
+CREATE UNIQUE INDEX "pointTransaction_agreementId_accountId_key" ON "pointTransaction" USING btree ("agreementId","accountId");--> statement-breakpoint
+CREATE UNIQUE INDEX "pointTransaction_accountId_initial_key" ON "pointTransaction" USING btree ("accountId") WHERE "pointTransaction"."type" = 'initial';

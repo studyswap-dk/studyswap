@@ -1,5 +1,5 @@
 {
-  "id": "45edf286-f8a5-4a91-b5eb-accdae6fd050",
+  "id": "0542bc0b-eed9-4a05-9bbc-43b87df52cbd",
   "prevId": "e9e2aa0d-ddbb-44eb-bf05-95f151cfdce4",
   "version": "7",
   "dialect": "postgresql",
@@ -444,6 +444,43 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pointTransaction_agreementId_accountId_key": {
+          "name": "pointTransaction_agreementId_accountId_key",
+          "columns": [
+            {
+              "expression": "agreementId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "accountId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pointTransaction_accountId_initial_key": {
+          "name": "pointTransaction_accountId_initial_key",
+          "columns": [
+            {
+              "expression": "accountId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"pointTransaction\".\"type\" = 'initial'",
           "concurrently": false,
           "method": "btree",
           "with": {}

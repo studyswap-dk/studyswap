@@ -252,5 +252,14 @@ export const pointTransaction = pgTable(
     ),
     // F2: a student's account movements, newest first.
     index("pointTransaction_accountId_createdAt_idx").on(table.accountId, table.createdAt),
+    // NF2: an agreement releases points once per account, so a second release is refused.
+    uniqueIndex("pointTransaction_agreementId_accountId_key").on(
+      table.agreementId,
+      table.accountId,
+    ),
+    // NF2: the starting balance is given once per account.
+    uniqueIndex("pointTransaction_accountId_initial_key")
+      .on(table.accountId)
+      .where(sql`${table.type} = 'initial'`),
   ],
 );
