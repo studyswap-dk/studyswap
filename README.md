@@ -13,13 +13,13 @@ Semesterprojekt på 4. semester (SW4PRJ4), Softwareteknologi, Aarhus Universitet
 
 | Navn    | GitHub                                              |
 | ------- | --------------------------------------------------- |
-| Luca    |                                                     |
+| Luca    | [LucaAbildgaard](https://github.com/LucaAbildgaard) |
 | Oliver  | [Oliverwidemann](https://github.com/Oliverwidemann) |
 | Morten  | [enghausen](https://github.com/enghausen)           |
-| Julius  |                                                     |
+| Julius  | [jullemand12](https://github.com/jullemand12)       |
 | Phillip | [philliplam88](https://github.com/philliplam88)     |
 | Viktor  | [Vitraktor5001](https://github.com/Vitraktor5001)   |
-| Mads P  |                                                     |
+| Mads P  | [Posborg](https://github.com/Posborg)               |
 | Mads S  | [Madsschnell](https://github.com/Madsschnell)       |
 
 Vejleder: Michel.
@@ -78,7 +78,7 @@ Hver udvikler har sin egen database-branch i Neon, så ingen roder i hinandens d
 1. I Neon: Branches, New Branch. Navn `dev-<fornavn>`, parent `production`, og sæt Auto-delete til Never
 2. Connect på din branch, database `studyswap`. Læg forbindelsesstrengen med pooling i `DATABASE_URL` og uden pooling i `DATABASE_URL_UNPOOLED` i en fil `.env.local` i roden af projektet
 3. Kør `pnpm run db:migrate`
-4. Til login, i samme fil: `NEON_AUTH_BASE_URL` fra din egen branch i Neon, og en `NEON_AUTH_COOKIE_SECRET`, som du selv laver med `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Din secret bruges kun lokalt og deles ikke. Previews og produktion har deres egne værdier i Vercel, som du ikke skal kopiere eller røre. Uden de to variabler virker login ikke, og siderne under `/listings` fejler. Se [Login og autentificering](docs/login-and-authentication.md)
+4. Til login, i samme fil: `NEON_AUTH_BASE_URL` fra din egen branch i Neon, og en `NEON_AUTH_COOKIE_SECRET`, som du selv laver med `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Din secret bruges kun lokalt og deles ikke. Previews og produktion har deres egne værdier i Vercel, som du ikke skal kopiere eller røre. Uden de to variabler virker login ikke, og siderne under `/posts` fejler. Se [Login og autentificering](docs/login-and-authentication.md)
 
 `.env.local` kommer aldrig med i git. Giv nye migrationer et navn: `pnpm run db:generate --name create_post`.
 
