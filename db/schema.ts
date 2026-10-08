@@ -91,7 +91,7 @@ export const profile = pgTable("profile", {
     .$onUpdate(() => new Date()),
 });
 
-// F8, F9: a student sends a proposal on someone else's post, and the owner
+// F8, F9: a student sends a proposal on someone else's post, and the author
 // accepts or declines it. The rules that need other tables (not on your own post,
 // enough available points, closing a seeking post) live in domain/proposal.ts.
 export const proposalStatus = pgEnum("proposalStatus", [
@@ -121,7 +121,7 @@ export const proposal = pgTable(
     uniqueIndex("proposal_postId_proposerId_pending_key")
       .on(table.postId, table.proposerId)
       .where(sql`${table.status} = 'pending'`),
-    // F9: the owner lists the proposals on a post.
+    // F9: the author lists the proposals on a post.
     index("proposal_postId_status_idx").on(table.postId, table.status),
   ],
 );
