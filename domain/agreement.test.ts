@@ -19,7 +19,9 @@ const base: Agreement = {
 };
 
 const now = new Date("2026-09-25T12:00:00Z");
-const marked: Agreement = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
+const dayMs = 24 * 60 * 60 * 1000;
+const markedAt = new Date("2026-09-25T10:00:00Z");
+const marked: Agreement = { ...base, helperConfirmedAt: markedAt };
 const disputed: Agreement = { ...marked, status: "disputed" };
 
 const oneMsBefore = (date: Date) => new Date(date.getTime() - 1);
@@ -32,11 +34,16 @@ function applyTransactions(
   for (const transaction of transactions) {
     result[transaction.userId] = (result[transaction.userId] ?? 0) + transaction.amount;
   }
-  // For each transaction, add the transaction.amount to result[transaction.userId]
   return result;
 }
 
-const validCases: { name: string; agreement: Agreement; action: Action; actor: string }[] = [
+const validCases: {
+  name: string;
+  agreement: Agreement;
+  action: Action;
+  actor: string;
+  at?: Date;
+}[] = [
   { name: "confirm", agreement: base, action: { kind: "confirm" }, actor: "receiver" },
   { name: "markDone", agreement: base, action: { kind: "markDone" }, actor: "helper" },
   { name: "cancel", agreement: base, action: { kind: "cancel" }, actor: "receiver" },
@@ -57,6 +64,20 @@ const validCases: { name: string; agreement: Agreement; action: Action; actor: s
     agreement: disputed,
     action: { kind: "resolveDispute", outcome: "rejected" },
     actor: "moderator",
+  },
+  {
+    name: "expire",
+    agreement: base,
+    action: { kind: "expire" },
+    actor: SYSTEM_ACTOR,
+    at: base.expiresAt,
+  },
+  {
+    name: "autoRelease",
+    agreement: marked,
+    action: { kind: "autoRelease" },
+    actor: SYSTEM_ACTOR,
+    at: new Date(markedAt.getTime() + dayMs),
   },
 ];
 
@@ -167,10 +188,38 @@ describe("decide", () => {
     const result = decide(base, { kind: "resolveDispute", outcome: "upheld" }, "moderator", now);
     expect(result.ok).toBe(false);
   });
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F13: the help cannot be marked as done on an agreement with status %s",
+    (status) => {
+      const agreement = { ...base, status };
+      expect(decide(agreement, { kind: "markDone" }, "helper", now).ok).toBe(false);
+    },
+  );
+
+  it.each(["receiver", "someone-else"])("F13: %s cannot mark the help as done", (actor) => {
+    expect(decide(base, { kind: "markDone" }, actor, now).ok).toBe(false);
+  });
+
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F11: an agreement with status %s cannot be cancelled",
+    (status) => {
+      const agreement = { ...base, status };
+      expect(decide(agreement, { kind: "cancel" }, "receiver", now).ok).toBe(false);
+    },
+  );
+
+  it.each(["completed", "cancelled", "expired", "disputed"] as const)(
+    "F15: an agreement with status %s cannot be disputed",
+    (status) => {
+      const agreement = { ...marked, status };
+      const dispute = { kind: "dispute", reason: "The help was never given" } as const;
+      expect(decide(agreement, dispute, "receiver", now).ok).toBe(false);
+    },
+  );
   it.each(validCases)(
     "invariant: $name neither creates nor removes points",
-    ({ agreement, action, actor }) => {
-      const result = decide(agreement, action, actor, now);
+    ({ agreement, action, actor, at }) => {
+      const result = decide(agreement, action, actor, at ?? now);
       if (!result.ok) throw new Error("expected ok");
       const sum = result.transactions.reduce((acc, p) => acc + p.amount, 0);
       expect(sum).toBe(0);
@@ -194,8 +243,6 @@ describe("decide", () => {
 
 describe("decide: system actions and deadlines", () => {
   const expiresAt = base.expiresAt;
-  const dayMs = 24 * 60 * 60 * 1000;
-  const markedAt = marked.helperConfirmedAt as Date;
   const releaseAt = new Date(markedAt.getTime() + dayMs);
 
   it("F14: the agreement expires exactly at the expiry time, without moving points", () => {
@@ -290,6 +337,19 @@ describe("decide: system actions and deadlines", () => {
       const disputedNow = decide(marked, dispute, "receiver", moment).ok;
 
       expect(released).not.toBe(disputedNow);
+    }
+  });
+
+  it("F13, F14: the help cannot be marked as done once the agreement has expired", () => {
+    expect(decide(base, { kind: "markDone" }, "helper", expiresAt).ok).toBe(false);
+  });
+
+  it("F13, F14: at any moment exactly one of expiry and marking the help as done is possible", () => {
+    for (const moment of [oneMsBefore(expiresAt), expiresAt]) {
+      const expired = decide(base, { kind: "expire" }, SYSTEM_ACTOR, moment).ok;
+      const markedNow = decide(base, { kind: "markDone" }, "helper", moment).ok;
+
+      expect(expired).not.toBe(markedNow);
     }
   });
 
