@@ -353,6 +353,35 @@ describe("decide: system actions and deadlines", () => {
     }
   });
 
+  it("F12, F14: the receiver cannot confirm once the agreement has expired", () => {
+    expect(decide(base, { kind: "confirm" }, "receiver", oneMsBefore(expiresAt)).ok).toBe(true);
+    expect(decide(base, { kind: "confirm" }, "receiver", expiresAt).ok).toBe(false);
+  });
+
+  it("F12, F13: the receiver can confirm after the expiry time when the help was marked as done in time", () => {
+    expect(decide(marked, { kind: "confirm" }, "receiver", expiresAt).ok).toBe(true);
+  });
+
+  it("F11, F14: an agreement cannot be cancelled once it has expired", () => {
+    expect(decide(base, { kind: "cancel" }, "helper", oneMsBefore(expiresAt)).ok).toBe(true);
+    expect(decide(base, { kind: "cancel" }, "helper", expiresAt).ok).toBe(false);
+  });
+
+  it.each([
+    { name: "confirm", action: { kind: "confirm" }, actor: "receiver" },
+    { name: "cancel", action: { kind: "cancel" }, actor: "receiver" },
+  ] as const)(
+    "F14: at any moment exactly one of expiry and $name is possible",
+    ({ action, actor }) => {
+      for (const moment of [oneMsBefore(expiresAt), expiresAt]) {
+        const expired = decide(base, { kind: "expire" }, SYSTEM_ACTOR, moment).ok;
+        const acted = decide(base, action, actor, moment).ok;
+
+        expect(expired).not.toBe(acted);
+      }
+    },
+  );
+
   it.each(["completed", "cancelled", "expired", "disputed"] as const)(
     "F13: an agreement with status %s is not released automatically",
     (status) => {
