@@ -59,6 +59,11 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (actorId !== agreement.receiverId) {
         return { ok: false, reason: "Only the receiver can confirm" };
       }
+      // F14: when the deadline passes without the help being marked as done, the
+      // agreement has expired, also when no one has read it since.
+      if (agreement.helperConfirmedAt === null && now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot confirm after the agreement has expired" };
+      }
       return {
         ok: true,
         newStatus: "completed",
@@ -98,6 +103,9 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       }
       if (agreement.helperConfirmedAt !== null || agreement.receiverConfirmedAt !== null) {
         return { ok: false, reason: "Cannot cancel after confirmation" };
+      }
+      if (now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot cancel after the agreement has expired" };
       }
       return {
         ok: true,
