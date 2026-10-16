@@ -40,15 +40,16 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
         <span className="hidden max-w-36 truncate text-sm font-medium sm:block">{name}</span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
+
       <DropdownMenuContent>
-    <DropdownMenuGroup>
-       <Link href="/profile">
-        <DropdownMenuItem className="cursor-pointer">
-          <UserRound data-icon="inline-start" />
-          Profile settings
-        </DropdownMenuItem>
-      </Link>
-    </DropdownMenuGroup>
+        <DropdownMenuGroup>
+          <Link href="/profile">
+            <DropdownMenuItem className="cursor-pointer">
+              <UserRound data-icon="inline-start" />
+              Profile settings
+            </DropdownMenuItem>
+          </Link>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isSigningOut}

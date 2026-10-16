@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import { PageHeader } from "@/components/page-header";
 import { ListingSearch } from "@/components/listings/listing-search";
 import { ListingsList } from "@/components/listings/listings-list";
 import { buttonVariants } from "@/components/ui/button";
@@ -18,13 +18,11 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold tracking-wide text-primary">LEARN TOGETHER</p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Browse listings</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Find a student to learn with, or share what you know with the community.
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Learn together"
+          title="Browse listings"
+          description="Find a student to learn with, or share what you know with the community."
+        />
         <Link href="/listings/new" className={cn(buttonVariants(), "w-fit")}>
           Create listing
         </Link>
