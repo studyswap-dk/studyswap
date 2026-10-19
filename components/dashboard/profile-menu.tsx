@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
-import { useTransition } from "react";
 import Link from "next/link";
+import { useTransition } from "react";
 
 import { signOut } from "@/app/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -40,15 +41,12 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
         <span className="hidden max-w-36 truncate text-sm font-medium sm:block">{name}</span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
-
       <DropdownMenuContent>
         <DropdownMenuGroup>
-          <Link href="/profile">
-            <DropdownMenuItem className="cursor-pointer">
-              <UserRound data-icon="inline-start" />
-              Profile settings
-            </DropdownMenuItem>
-          </Link>
+          <DropdownMenuLinkItem render={<Link href="/profile" />}>
+            <UserRound data-icon="inline-start" />
+            Profile settings
+          </DropdownMenuLinkItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

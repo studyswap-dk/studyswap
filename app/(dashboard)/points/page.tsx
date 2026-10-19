@@ -1,25 +1,23 @@
 import { Coins } from "lucide-react";
+
 import { PageHeader } from "@/components/page-header";
+import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 
 export default function PointsPage() {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Wallet"
-        title="Point Account"
-        description="Monitor your earned points, current balance, and reserved points."
+        eyebrow="Points"
+        title="Your points"
+        description="See your balance, your reserved points and how you earned and spent them."
       />
-
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <Coins className="size-6 text-muted-foreground" />
-        </div>
-        <h2 className="mt-4 text-base font-semibold">Point history coming soon</h2>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          Track point earnings from helping others, view escrow reservations, and check your
-          transaction log.
-        </p>
-      </div>
+      <Empty>
+        <Coins aria-hidden="true" className="size-8 text-muted-foreground" />
+        <EmptyTitle>No point history yet</EmptyTitle>
+        <EmptyDescription>
+          Points you earn by helping and spend on help will show up here.
+        </EmptyDescription>
+      </Empty>
     </div>
   );
 }

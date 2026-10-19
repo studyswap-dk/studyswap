@@ -1,25 +1,23 @@
 import { Inbox } from "lucide-react";
+
 import { PageHeader } from "@/components/page-header";
+import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 
 export default function ProposalsPage() {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-8">
       <PageHeader
-        eyebrow="Requests"
+        eyebrow="Proposals"
         title="Proposals"
-        description="Review incoming help proposals and track the ones you have sent."
+        description="Proposals you have sent, and proposals other students have sent on your posts."
       />
-
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <Inbox className="size-6 text-muted-foreground" />
-        </div>
-        <h2 className="mt-4 text-base font-semibold">No proposals yet</h2>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          When other students offer to help with your listings or respond to your bids, they will
-          show up here.
-        </p>
-      </div>
+      <Empty>
+        <Inbox aria-hidden="true" className="size-8 text-muted-foreground" />
+        <EmptyTitle>No proposals yet</EmptyTitle>
+        <EmptyDescription>
+          When you send a proposal, or another student sends one on your post, it shows up here.
+        </EmptyDescription>
+      </Empty>
     </div>
   );
 }

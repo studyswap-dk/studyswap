@@ -7,7 +7,6 @@ import { ProfileMenu } from "@/components/dashboard/profile-menu";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/current-user";
 
-// De 4 primære sektioner som almindelige navigationslinks
 const navigation = [
   { href: "/posts", label: "Posts", icon: BookOpen },
   { href: "/proposals", label: "Proposals", icon: Inbox },
@@ -19,7 +18,6 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
-        {/* Logo */}
         <Link href="/posts" aria-label="StudySwap home" className="shrink-0">
           <Image
             src="/brand/studyswap-logo-curves.svg"
@@ -31,7 +29,6 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
           />
         </Link>
 
-        {/* Navigation */}
         <nav aria-label="Dashboard" className="flex items-center gap-1 sm:gap-1.5">
           {navigation.map(({ href, label, icon: Icon }) => (
             <Link
@@ -44,12 +41,11 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
               )}
             >
               <Icon data-icon="inline-start" className="size-4" />
-              {/* Teksten skjules på mobil og vises først fra mellemstor skærm */}
+              {/* The labels are hidden on small screens, where only the icons fit. */}
               <span className="hidden md:inline">{label}</span>
             </Link>
           ))}
 
-          {/* Opret opslag - separat fremhævet knap */}
           <Link
             href="/posts/new"
             aria-label="Create post"
@@ -63,7 +59,6 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
           </Link>
         </nav>
 
-        {/* Brugerprofil / Dropdown */}
         <ProfileMenu user={user} />
       </div>
     </header>

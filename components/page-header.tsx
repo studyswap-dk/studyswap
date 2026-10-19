@@ -1,19 +1,18 @@
-interface PageHeaderProps {
+type PageHeaderProps = {
   eyebrow?: string;
   title: string;
   description?: string;
-}
+};
 
+// The heading every page in the dashboard starts with, so the pages look the same.
 export function PageHeader({ eyebrow, title, description }: PageHeaderProps) {
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-2">
       {eyebrow && (
-        <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          {eyebrow}
-        </p>
+        <p className="text-sm font-semibold tracking-wide text-primary uppercase">{eyebrow}</p>
       )}
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-      {description && <p className="text-sm text-muted-foreground sm:text-base">{description}</p>}
+      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+      {description && <p className="max-w-2xl text-muted-foreground">{description}</p>}
     </div>
   );
 }
