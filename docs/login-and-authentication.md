@@ -24,7 +24,7 @@ A session lasts 7 days: on `dev-morten` on 2 October 2026, `expiresAt` was exact
 
 ## Setup
 
-Login needs two environment variables. Without them, login does not work, and every page under `/listings` fails.
+Login needs two environment variables. Without them, login does not work, and every page under `/posts` fails.
 
 | Variable | Purpose |
 |---|---|

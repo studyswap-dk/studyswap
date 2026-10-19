@@ -34,19 +34,70 @@ Refer to requirements by their number, for example "F12", in code comments, test
 
 ## Domain terms
 
-The report uses Danish terms, the code uses English ones.
+The report uses Danish terms, the code uses English ones. The ER diagram in the report decides the names of tables, columns and enum values: `assets/figures/er-diagram.drawio`, described in `content/chapters/architecture.tex` and `content/chapters/design.tex` in `studyswap-dk/rapport`. Where the domain model and the ER diagram use different names, the ER diagram wins.
+
+Use exactly the words below in code, file names, URLs, UI text, tests and comments. Do not introduce a synonym. If a concept is missing, add it here in the same pull request that introduces it.
+
+**People and roles**
+
+| Danish | Code | Note |
+|---|---|---|
+| studerende | `user` | A row in `neon_auth.user` |
+| moderator | `moderator` | A student with extended rights |
+| ejer (af et opslag) | `author`, `authorId` | Never `owner` or `seller` |
+| forespørger | `proposer`, `proposerId` | The student who sent a proposal |
+| hjælper, modtager | `helper`, `receiver` | The two parties of an agreement |
+| afsender (af en besked) | `sender`, `senderId` | Only for messages |
+
+**Things**
+
+| Danish | Code | Note |
+|---|---|---|
+| opslag | `post` | Never `listing` |
+| tag | `tag`, `postTag` | |
+| profil, uddannelse | `profile`, `programme` | |
+| forespørgsel | `proposal` | |
+| aftale | `agreement` | |
+| besked | `message`, `body` | |
+| pointkonto | `pointAccount` | |
+| saldo, reserveret, til rådighed | `balance`, `reserved`, `available` | Available is balance minus reserved |
+| postering | `pointTransaction` | Never `posting`. One that is not saved yet is a `NewPointTransaction` |
+| indsigelse | `dispute` | |
+| vurdering | `review`, `reviewer`, `reviewee`, `score` | |
+| rapportering | `report`, `reporter` | |
+
+**States**
+
+| Enum | Values | Danish |
+|---|---|---|
+| `postType` | `seeking`, `offering` | søger hjælp, tilbyder hjælp |
+| `postStatus` | `open`, `closed`, `removed` | åbent, lukket, fjernet |
+| `proposalStatus` | `pending`, `accepted`, `declined`, `withdrawn` | afventer, accepteret, afvist, trukket tilbage |
+| `agreementStatus` | `accepted`, `completed`, `cancelled`, `expired`, `disputed` | indgået, udført, annulleret, udløbet, under indsigelse |
+| `disputeStatus` | `open`, `upheld`, `rejected` | afventer, medhold, afvist |
+| `transactionType` | `initial`, `release` | startsaldo, frigivelse |
+| `reportStatus` | `open`, `resolved`, `dismissed` | afventer, behandlet, afvist |
+
+A proposal is `declined` and a dispute is `rejected`. The two words are different on purpose.
+
+**Actions**
 
 | Danish | Code |
 |---|---|
-| opslag | `post` |
-| søger hjælp, tilbyder hjælp | `seeking`, `offering` |
-| forespørgsel | `proposal` |
-| aftale | `agreement` |
-| hjælper, modtager | `helper`, `receiver` |
-| pointkonto, postering | `pointAccount`, `pointTransaction` |
-| indsigelse | `dispute` |
-| vurdering | `review` |
-| rapportering | `report` |
+| sende, trække tilbage, acceptere, afvise en forespørgsel | `send`, `withdraw`, `accept`, `decline` |
+| modtageren bekræfter, at hjælpen er givet | `confirm` |
+| hjælperen melder, at hjælpen er givet | `markDone` |
+| annullere en aftale | `cancel` |
+| aftalen udløber | `expire` |
+| pointene frigives automatisk | `autoRelease` |
+| gøre indsigelse, afgøre en indsigelse | `dispute`, `resolveDispute` |
+
+**Naming rules**
+
+- An id of a person is the role plus `Id`: `authorId`, `proposerId`, `helperId`, `receiverId`
+- A point in time ends in `At`: `createdAt`, `decidedAt`, `expiresAt`, `helperConfirmedAt`
+- The rules in `domain/` speak about users, so they use `userId`. The database code maps a user to a `pointAccount`
+- Test names are in English, with the requirement number first, for example "F15: the receiver cannot dispute once the 24 hours have passed"
 
 ## Commands
 

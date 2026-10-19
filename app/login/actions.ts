@@ -86,5 +86,5 @@ export async function loginAction(
     };
   }
 
-  redirect("/listings");
+  redirect("/posts");
 }

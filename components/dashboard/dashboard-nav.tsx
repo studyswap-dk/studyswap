@@ -9,7 +9,7 @@ import type { CurrentUser } from "@/lib/current-user";
 
 // De 4 primære sektioner som almindelige navigationslinks
 const navigation = [
-  { href: "/listings", label: "Listings", icon: BookOpen },
+  { href: "/posts", label: "Posts", icon: BookOpen },
   { href: "/proposals", label: "Proposals", icon: Inbox },
   { href: "/agreements", label: "Agreements", icon: Handshake },
   { href: "/points", label: "Points", icon: Coins },
@@ -20,7 +20,7 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/listings" aria-label="StudySwap home" className="shrink-0">
+        <Link href="/posts" aria-label="StudySwap home" className="shrink-0">
           <Image
             src="/brand/studyswap-logo-curves.svg"
             alt="StudySwap"
@@ -51,15 +51,15 @@ export function DashboardNav({ user }: { user: CurrentUser | null }) {
 
           {/* Opret opslag - separat fremhævet knap */}
           <Link
-            href="/listings/new"
-            aria-label="Create listing"
+            href="/posts/new"
+            aria-label="Create post"
             className={cn(
               buttonVariants({ variant: "default", size: "sm" }),
               "gap-1.5 px-2.5 sm:px-3",
             )}
           >
             <Plus data-icon="inline-start" className="size-4" />
-            <span className="hidden sm:inline">New listing</span>
+            <span className="hidden sm:inline">Create post</span>
           </Link>
         </nav>
 

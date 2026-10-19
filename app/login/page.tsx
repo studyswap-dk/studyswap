@@ -10,7 +10,7 @@ export default async function LoginPage() {
   // still shown when the session cannot be checked.
   const { user } = await lookupCurrentUser();
   if (user) {
-    redirect("/listings");
+    redirect("/posts");
   }
 
   return <LoginForm />;

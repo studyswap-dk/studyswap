@@ -1,15 +1,16 @@
 import Link from "next/link";
+
 import { PageHeader } from "@/components/page-header";
-import { ListingSearch } from "@/components/listings/listing-search";
-import { ListingsList } from "@/components/listings/listings-list";
+import { PostSearch } from "@/components/posts/post-search";
+import { PostsList } from "@/components/posts/posts-list";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type ListingsPageProps = {
+type PostsPageProps = {
   searchParams: Promise<{ q?: string | string[]; page?: string | string[] }>;
 };
 
-export default async function ListingsPage({ searchParams }: ListingsPageProps) {
+export default async function PostsPage({ searchParams }: PostsPageProps) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim().slice(0, 120) : "";
   const requestedPage = typeof params.page === "string" ? Number.parseInt(params.page, 10) : 1;
@@ -20,16 +21,16 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
       <section className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <PageHeader
           eyebrow="Learn together"
-          title="Browse listings"
+          title="Browse posts"
           description="Find a student to learn with, or share what you know with the community."
         />
-        <Link href="/listings/new" className={cn(buttonVariants(), "w-fit")}>
-          Create listing
+        <Link href="/posts/new" className={cn(buttonVariants(), "w-fit")}>
+          Create post
         </Link>
       </section>
 
-      <ListingSearch query={query} />
-      <ListingsList query={query} page={page} />
+      <PostSearch query={query} />
+      <PostsList query={query} page={page} />
     </div>
   );
 }
