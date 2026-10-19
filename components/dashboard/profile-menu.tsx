@@ -43,7 +43,7 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuGroup>
-          <DropdownMenuLinkItem render={<Link href="/profile" />}>
+          <DropdownMenuLinkItem closeOnClick render={<Link href="/profile" />}>
             <UserRound data-icon="inline-start" />
             Profile settings
           </DropdownMenuLinkItem>
