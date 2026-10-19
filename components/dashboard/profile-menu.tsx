@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useTransition } from "react";
 
 import { signOut } from "@/app/actions/auth";
@@ -10,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -41,10 +43,10 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
+          <DropdownMenuLinkItem closeOnClick render={<Link href="/profile" />}>
             <UserRound data-icon="inline-start" />
             Profile settings
-          </DropdownMenuItem>
+          </DropdownMenuLinkItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
