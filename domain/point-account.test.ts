@@ -177,14 +177,14 @@ describe("decideReservation", () => {
   });
 });
 
+function changesAfter(a: Agreement, action: Action, actorId: string, at: Date) {
+  const decision = decide(a, action, actorId, at);
+  if (!decision.ok) throw new Error(decision.reason);
+  return accountChanges(a, decision.newStatus, decision.transactions);
+}
+
 describe("accountChanges", () => {
   const now = new Date("2026-10-02T12:00:00Z");
-
-  function changesAfter(a: Agreement, action: Action, actorId: string, at: Date) {
-    const decision = decide(a, action, actorId, at);
-    if (!decision.ok) throw new Error(decision.reason);
-    return accountChanges(a, decision.newStatus, decision.transactions);
-  }
 
   it("F12: a confirmed agreement moves the points and lifts the reservation", () => {
     expect(changesAfter(agreement({ points: 2 }), { kind: "confirm" }, "receiver", now)).toEqual([
