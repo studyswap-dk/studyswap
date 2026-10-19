@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, MessageCircle, Plus } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
@@ -10,6 +10,7 @@ import type { CurrentUser } from "@/lib/current-user";
 const navigation = [
   { href: "/posts", label: "Browse posts", icon: BookOpen },
   { href: "/posts/new", label: "Create post", icon: Plus },
+  { href: "/messages", label: "Messages", icon: MessageCircle },
 ];
 
 export function DashboardNav({ user }: { user: CurrentUser | null }) {
