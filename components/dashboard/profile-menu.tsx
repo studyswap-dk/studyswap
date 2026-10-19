@@ -13,9 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { CurrentUser } from "@/lib/current-user";
+import type { CurrentUserProfile } from "@/lib/current-user";
 
-export function ProfileMenu({ user }: { user: CurrentUser | null }) {
+export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
   const [isSigningOut, startTransition] = useTransition();
   const name = user?.name ?? "Student account";
   const initials =
@@ -36,10 +36,21 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
           {user?.image ? <AvatarImage src={user.image} alt="" /> : null}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <span className="hidden max-w-36 truncate text-sm font-medium sm:block">{name}</span>
+        <span className="hidden max-w-36 flex-col sm:flex">
+          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="truncate text-xs text-muted-foreground">
+            Education: {user?.programme ?? "Not added"}
+          </span>
+        </span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <div className="px-2.5 py-2">
+          <p className="truncate text-sm font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">Education</p>
+          <p className="truncate text-sm">{user?.programme ?? "Not added"}</p>
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem disabled>
             <UserRound data-icon="inline-start" />

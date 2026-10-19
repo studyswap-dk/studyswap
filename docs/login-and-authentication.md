@@ -16,6 +16,7 @@ A session lasts 7 days: on `dev-morten` on 2 October 2026, `expiresAt` was exact
 | `domain/student-email.ts` | The rule for which addresses may sign up, with tests |
 | `app/login/` | The login page and its server action |
 | `app/api/auth/[...path]/route.ts` | Forwards Neon Auth's own requests, and rejects any request whose email is not a student address |
+| `app/api/webhooks/neon-auth/route.ts` | Verifies Neon Auth webhook signatures and rejects non-student account creation (F1) |
 | `lib/auth/server.ts` | Creates the Neon Auth client and checks the environment variables |
 | `lib/current-user.ts` | Reads the signed-in user from the session |
 | `proxy.ts` | Runs on every page, refreshes the session cookie, and sends signed-out users to `/login` |
@@ -37,6 +38,20 @@ Login needs two environment variables. Without them, login does not work, and ev
 - `NEON_AUTH_COOKIE_SECRET`: make your own, for example with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. It is only used on your machine and is never shared
 
 Localhost access must be switched on in Neon Auth for your branch; see [Neon Auth settings](#neon-auth-settings).
+
+### Rejecting non-student signups
+
+The `user.before_create` webhook provides the same student email check even when account creation is sent directly to Neon Auth instead of through StudySwap's `/api/auth` route. The handler verifies Neon's Ed25519 signature against the current branch's JWKS before trusting the payload.
+
+After deploying the route to a public HTTPS URL, configure the webhook **on the same Neon branch** whose Auth URL the deployed app uses:
+
+1. In the Neon Console, open the branch's **Auth → Configuration → Webhooks**.
+2. Enable webhook delivery, set the URL to `https://<deployed-app-origin>/api/webhooks/neon-auth`, and subscribe to `user.before_create`.
+3. Save the configuration and test a non-student signup; it should be rejected.
+
+Do not use `localhost` as the webhook URL: Neon requires a publicly reachable HTTPS hostname. For local development, use an HTTPS tunnel to the local server and configure it only on the development branch. Do not point a development branch at an app deployment connected to another branch.
+
+The webhook is branch-specific and is not automatically enabled by adding the app route. Configure it only after the route is deployed and reachable. If the webhook is unavailable or its signature cannot be verified, account creation fails closed.
 
 **Previews and production:** both variables are set in Vercel. Do not copy these values to your machine.
 
@@ -67,6 +82,6 @@ The webhook that would reject other addresses at sign-up, see Known limitations,
 
 ## Known limitations
 
-- **Neon Auth itself does not know the student email rule.** Its endpoints need no key, so they can be called without the login page. `app/api/auth/[...path]/route.ts` closes this for requests through StudySwap: any request carrying an email address that is not a student address is rejected before it reaches Neon Auth, so no code is sent and no user is created. Tested 2 October 2026: before this check, a request with a Gmail address through `/api/auth` sent a code from StudySwap's domain and created the user. What remains open is a request sent straight to the branch's Neon Auth URL, which is not shown in the browser but is not a secret either. A webhook in Neon Auth that rejects other addresses at sign-up would close that too; it is on the checklist for F1
+- **Neon Auth itself does not know the student email rule.** Its endpoints need no key, so they can be called without the login page. `app/api/auth/[...path]/route.ts` rejects non-student emails sent through StudySwap, and the `user.before_create` webhook can enforce the rule for direct requests to Neon Auth as well. The webhook must be enabled per branch after its HTTPS handler is deployed; until then, direct requests to that branch's Neon Auth URL are not covered by the webhook (F1)
 - **Password sign-in and sign-up are switched off in Neon Auth**, because the app only uses email codes. Tested 2 October 2026 on `dev-morten`: with both switched off, existing users still sign in with a code, and new users can still sign up with one. Sign-in with a code does not depend on these settings
 - **Changing email is switched off in Neon Auth.** Tested 2 October 2026: `/api/auth/change-email` returns `CHANGE_EMAIL_DISABLED`. If it were on, a user could switch to another student's address and get past the student email rule
