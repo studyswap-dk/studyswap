@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
-import { redirect } from "next/navigation";
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { settleOverdueAgreements } from "@/lib/agreements";
@@ -9,10 +8,9 @@ import { ensurePointAccount } from "@/lib/point-account";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   await connection();
+  // The navigation needs the student. The access check itself is in requireStudent,
+  // which the data functions and Server Actions call; a layout cannot protect a page.
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
   await preparePoints(user.id);
 
   return (
