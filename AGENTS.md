@@ -141,6 +141,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 
 **Security**
 - Server Actions and route handlers are public endpoints. Validate all input again on the server, and take the user's identity from the session, never from the request
+- Call `requireStudent()` from `lib/current-user.ts` first in every Server Action and in every function in `lib/` that reads data for the signed-in student, and take the user from it. The dashboard layout and `proxy.ts` do not protect data: the layout does not run again on navigation, and the proxy does not check the student email
 - Never put secrets in the repository. `.env.local` is ignored by Git, and the repository is public. Preview deployments are public too
 
 **Database**

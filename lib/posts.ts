@@ -2,6 +2,7 @@ import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 
 import { db } from "@/db";
 import { post, userInNeonAuth } from "@/db/schema";
+import { requireStudent } from "@/lib/current-user";
 
 export const POSTS_PER_PAGE = 8;
 
@@ -15,6 +16,9 @@ export type Post = {
 };
 
 export async function getPosts({ query, page }: { query: string; page: number }) {
+  // Only signed-in students may read posts. Outside the try, so a visitor is sent to
+  // /login instead of being told that posts are unavailable.
+  await requireStudent();
   const searchTerm = query.trim();
   const searchCondition = searchTerm
     ? or(

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { decideSendMessage } from "@/domain/conversation";
 import { validateMessageBody } from "@/domain/message";
-import { lookupCurrentUser } from "@/lib/current-user";
+import { requireStudent } from "@/lib/current-user";
 import { getAgreementConversationKey, saveMessage } from "@/lib/messages";
 
 export type SendMessageState = {
@@ -18,6 +18,7 @@ export async function sendMessage(
   _previousState: SendMessageState,
   formData: FormData,
 ): Promise<SendMessageState> {
+  const user = await requireStudent();
   if (typeof agreementId !== "string" || !UUID_PATTERN.test(agreementId)) {
     return { error: "This conversation could not be found." };
   }
@@ -30,26 +31,18 @@ export async function sendMessage(
     return { error: validation.message };
   }
 
-  const currentUser = await lookupCurrentUser();
-  if (!currentUser.user) {
-    if (currentUser.issue === "authentication-unavailable") {
-      return { error: "Could not verify your session. Please try again." };
-    }
-    return { error: "Sign in with your AU student email to send messages." };
-  }
-
   try {
     // F10: the agreement's conversation is the one between the author of the post and
     // the student who sent the proposal.
     const key = await getAgreementConversationKey(agreementId);
     const decision = key
-      ? decideSendMessage(key.post, { participantId: key.participantId }, currentUser.user.id)
+      ? decideSendMessage(key.post, { participantId: key.participantId }, user.id)
       : { ok: false as const, reason: "Agreement not found" };
     if (!key || !decision.ok) {
       return { error: "You cannot send messages in this conversation." };
     }
 
-    await saveMessage(key.post.id, key.participantId, currentUser.user.id, validation.body);
+    await saveMessage(key.post.id, key.participantId, user.id, validation.body);
   } catch (error) {
     console.error("Could not save conversation message:", error);
     return { error: "Your message could not be saved. Please try again." };
