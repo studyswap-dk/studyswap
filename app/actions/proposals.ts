@@ -32,5 +32,7 @@ export async function acceptProposal(proposalId: unknown) {
   if (!result.ok) return { ok: false, message: result.reason };
 
   revalidatePath("/posts");
+  revalidatePath("/proposals");
+  revalidatePath("/agreements");
   return { ok: true, message: "Proposal accepted.", agreementId: result.agreementId };
 }

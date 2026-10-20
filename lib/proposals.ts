@@ -28,6 +28,9 @@ export async function acceptProposal(
     .innerJoin(post, eq(proposal.postId, post.id))
     .where(eq(proposal.id, proposalId));
   if (!found) return { ok: false, reason: "Proposal not found" };
+  // Turn away anyone but the author before settling anything. decideProposal still
+  // makes the decision below, under the lock.
+  if (found.authorId !== actorId) return { ok: false, reason: "Only the author can accept" };
   const { receiverId } = partiesOf(found, found.proposerId);
   await settleOverdueAgreements(receiverId, now);
 
