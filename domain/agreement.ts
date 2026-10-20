@@ -6,6 +6,14 @@ export const SYSTEM_ACTOR = "system";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// F14: the help must be given within this many days of the agreement being made.
+export const AGREEMENT_DURATION_DAYS = 7;
+
+// F14: the deadline of an agreement made at createdAt.
+export function agreementExpiresAt(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + AGREEMENT_DURATION_DAYS * DAY_MS);
+}
+
 export type Action =
   | { kind: "confirm" } // F12, receiver confirms help was given
   | { kind: "markDone" } // F13, helper reports help was given

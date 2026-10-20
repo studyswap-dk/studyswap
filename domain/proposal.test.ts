@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   decideProposal,
   decideSend,
+  partiesOf,
   POINTS_PER_AGREEMENT,
   type Post,
   type Proposal,
@@ -160,5 +161,21 @@ describe("decideProposal: accept", () => {
 
     expect(decideProposal(pending, { kind: "accept" }, "author", helperHasNone).ok).toBe(true);
     expect(decideProposal(pending, { kind: "accept" }, "author", receiverHasNone).ok).toBe(false);
+  });
+});
+
+describe("partiesOf", () => {
+  it("F9: on a post seeking help, the proposer helps and the author receives", () => {
+    expect(partiesOf(seekingPost, "proposer")).toEqual({
+      helperId: "proposer",
+      receiverId: "author",
+    });
+  });
+
+  it("F9: on a post offering help, the author helps and the proposer receives", () => {
+    expect(partiesOf(offeringPost, "proposer")).toEqual({
+      helperId: "author",
+      receiverId: "proposer",
+    });
   });
 });

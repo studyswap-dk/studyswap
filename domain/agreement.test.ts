@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  AGREEMENT_DURATION_DAYS,
+  agreementExpiresAt,
   decide,
   dueSystemAction,
   SYSTEM_ACTOR,
@@ -423,4 +425,20 @@ describe("dueSystemAction", () => {
       expect(dueSystemAction({ ...marked, status }, new Date("2027-01-01T00:00:00Z"))).toBeNull();
     },
   );
+});
+
+describe("agreementExpiresAt", () => {
+  it("F14: the deadline is 7 days after the agreement is made", () => {
+    const createdAt = new Date("2026-10-20T10:00:00.000Z");
+
+    expect(AGREEMENT_DURATION_DAYS).toBe(7);
+    expect(agreementExpiresAt(createdAt)).toEqual(new Date("2026-10-27T10:00:00.000Z"));
+  });
+
+  it("F14: the deadline does not change the time it was given", () => {
+    const createdAt = new Date("2026-10-20T10:00:00.000Z");
+    agreementExpiresAt(createdAt);
+
+    expect(createdAt).toEqual(new Date("2026-10-20T10:00:00.000Z"));
+  });
 });
