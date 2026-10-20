@@ -1,44 +1,30 @@
-# Agreement chat
+# Conversations
 
-StudySwap provides a persistent conversation for the two students in an agreement. The helper and receiver can coordinate the time, place, and details of their agreement (F10). Messages are stored in the existing `public.message` table and remain associated with that agreement.
+A conversation is between the author of a post and one other student, the participant (F10). It begins with the first question on the post and continues through the proposal and the agreement, so the two students write in the same place from the first question until the agreement has ended. Each message belongs to a conversation.
 
-## Using chat
+## Data model
 
-1. Sign in with an AU student account.
-2. Open **Messages** in the dashboard navigation, or go to `/messages`.
-3. Select an agreement to open its conversation.
-4. Write a message and select **Send message**.
+| Table | Columns | Rule |
+|---|---|---|
+| `conversation` | `postId`, `participantId`, `createdAt` | One conversation per post per participant, enforced by `conversation_postId_participantId_key` |
+| `message` | `conversationId`, `senderId`, `body`, `createdAt` | `body` is not blank |
 
-The conversation list shows the post title, the other student's name (or email when no name is available), and the agreement status. The conversation shows messages oldest first, with sender and time. It loads at most the latest 200 messages.
+A proposal and an agreement have no reference to their conversation. It is found from the proposal's `postId` and `proposerId`, because the proposer is the participant.
 
-## Access and validation
+## Rules
 
-- Only the signed-in agreement helper or receiver can see or send messages in that conversation. The server checks the session and agreement membership for reads and sends; a client-provided sender ID is never trusted.
-- A message must contain non-whitespace text and is limited to 2,000 characters after trimming.
-- Invalid agreement IDs and conversations the user cannot access are not shown.
-- Sending stores the message and revalidates the conversation and list pages.
+The rules are in `domain/conversation.ts`, with tests in `domain/conversation.test.ts`:
 
-## Implementation
+- A conversation can only be started on an open post, and not on one's own post
+- Only the author of the post and the participant can read the conversation and send messages
+- The two can still write when the post is closed, because an agreement continues after a post seeking help is closed. Nobody can write once a moderator has removed the post
 
-| File | Purpose |
-|---|---|
-| `domain/message.ts` | Participant authorization rule and message-body validation |
-| `domain/message.test.ts` | Tests for access and validation boundaries |
-| `lib/messages.ts` | User-scoped conversation and message queries |
-| `app/actions/messages.ts` | Authenticated, validated message insert |
-| `app/(dashboard)/messages/page.tsx` | Conversation list at `/messages` |
-| `app/(dashboard)/messages/[agreementId]/page.tsx` | Participant-protected conversation page |
-| `components/messages/send-message-form.tsx` | Message composition form |
-| `db/schema.ts` | Existing `message` table definition |
+A message must contain non-whitespace text and is at most 2,000 characters after trimming, see `domain/message.ts`. Server code takes the sender from the session, never from the request.
 
-No schema change or migration is required for chat.
+## Where it is shown today
+
+The pages at `/messages` still list agreements, and `/messages/[agreementId]` shows the conversation that belongs to an agreement. `saveMessage` in `lib/messages.ts` creates the conversation the first time a message is sent. Showing the conversation on the post, by the proposal and by the agreement, and removing the menu item, is the next step on the F10 card.
 
 ## Testing locally
 
-Start the development server with `pnpm run dev`, sign in, then visit `/messages`. A conversation appears only when the current database has an agreement involving the signed-in user. To test with two accounts, sign in as each agreement participant in separate browser profiles and send messages from both sides. Reloading the conversation shows persisted messages.
-
-There are no realtime updates yet; refresh or revisit the conversation to see messages sent in another session.
-
-### Temporary test agreement
-
-A temporary agreement titled **Temporary chat test** is currently present on the Neon `dev-julius` branch so the chat can be tried without creating a real agreement through the app. It is test data, not an application fixture or migration. Keep it while testing; when testing is finished, delete that agreement and its linked proposal, post, and any messages without touching unrelated data.
+Start the development server with `pnpm run dev` and sign in as two students in separate browser profiles. A conversation can only be opened from an agreement until the post and proposal pages show it. There are no realtime updates yet; reload the page to see new messages.

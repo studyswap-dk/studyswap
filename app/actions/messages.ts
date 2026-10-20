@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
 
-import { db } from "@/db";
-import { agreement, message } from "@/db/schema";
-import { canReadMessages, validateMessageBody } from "@/domain/message";
+import { decideSendMessage } from "@/domain/conversation";
+import { validateMessageBody } from "@/domain/message";
 import { lookupCurrentUser } from "@/lib/current-user";
+import { getAgreementConversationKey, saveMessage } from "@/lib/messages";
 
 export type SendMessageState = {
   error: string | null;
@@ -40,24 +39,17 @@ export async function sendMessage(
   }
 
   try {
-    const [agreementRecord] = await db
-      .select({
-        helperId: agreement.helperId,
-        receiverId: agreement.receiverId,
-      })
-      .from(agreement)
-      .where(eq(agreement.id, agreementId))
-      .limit(1);
-
-    if (!agreementRecord || !canReadMessages(agreementRecord, currentUser.user.id)) {
+    // F10: the agreement's conversation is the one between the author of the post and
+    // the student who sent the proposal.
+    const key = await getAgreementConversationKey(agreementId);
+    const decision = key
+      ? decideSendMessage(key.post, { participantId: key.participantId }, currentUser.user.id)
+      : { ok: false as const, reason: "Agreement not found" };
+    if (!key || !decision.ok) {
       return { error: "You cannot send messages in this conversation." };
     }
 
-    await db.insert(message).values({
-      agreementId,
-      senderId: currentUser.user.id,
-      body: validation.body,
-    });
+    await saveMessage(key.post.id, key.participantId, currentUser.user.id, validation.body);
   } catch (error) {
     console.error("Could not save conversation message:", error);
     return { error: "Your message could not be saved. Please try again." };
