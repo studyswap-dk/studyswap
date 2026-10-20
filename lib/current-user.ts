@@ -1,4 +1,7 @@
 import { normalizeStudentEmail } from "@/domain/student-email";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { profile } from "@/db/schema";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type CurrentUser = {
@@ -8,6 +11,10 @@ export type CurrentUser = {
   image: string | null;
 };
 
+export type CurrentUserProfile = CurrentUser & {
+  programme: string | null;
+};
+
 export type CurrentUserLookup =
   | { user: CurrentUser; issue: null }
   | {
@@ -15,12 +22,25 @@ export type CurrentUserLookup =
       issue: "authentication-unavailable" | "unauthenticated" | "not-au-student-email";
     };
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export async function getCurrentUser(): Promise<CurrentUserProfile | null> {
   const result = await lookupCurrentUser();
   if (result.issue === "authentication-unavailable") {
     throw new Error("Could not verify the current Neon Auth session.");
   }
-  return result.user;
+  if (!result.user) {
+    return null;
+  }
+
+  const [userProfile] = await db
+    .select({ programme: profile.programme })
+    .from(profile)
+    .where(eq(profile.userId, result.user.id))
+    .limit(1);
+
+  return {
+    ...result.user,
+    programme: userProfile?.programme ?? null,
+  };
 }
 
 export async function lookupCurrentUser(): Promise<CurrentUserLookup> {

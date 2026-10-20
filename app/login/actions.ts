@@ -11,8 +11,12 @@ export type LoginActionState =
 
 export async function loginAction(
   _previousState: LoginActionState,
-  formData: FormData,
+  formData: FormData | null | undefined,
 ): Promise<LoginActionState> {
+  if (!(formData instanceof FormData)) {
+    return { step: "email", error: "Invalid sign-in request. Please try again." };
+  }
+
   const intent = formData.get("intent");
   if (intent === "change-email") {
     const email = normalizeStudentEmail(formData.get("email"));
