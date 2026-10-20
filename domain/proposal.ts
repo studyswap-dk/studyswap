@@ -37,6 +37,16 @@ export type ProposalDecision =
     }
   | { ok: false; reason: string };
 
+// F9: who helps and who receives when a proposal on the post is accepted.
+export function partiesOf(
+  post: Pick<Post, "authorId" | "type">,
+  proposerId: string,
+): { helperId: string; receiverId: string } {
+  return post.type === "offering"
+    ? { helperId: post.authorId, receiverId: proposerId }
+    : { helperId: proposerId, receiverId: post.authorId };
+}
+
 // F8: may this user send a proposal on the post?
 export function decideSend(
   post: Post,
@@ -78,10 +88,7 @@ export function decideProposal(
       if (actorId !== post.authorId) return { ok: false, reason: "Only the author can accept" };
       if (post.status !== "open") return { ok: false, reason: "Post is not open" };
 
-      const [helperId, receiverId] =
-        post.type === "offering"
-          ? [post.authorId, proposal.proposerId]
-          : [proposal.proposerId, post.authorId];
+      const { helperId, receiverId } = partiesOf(post, proposal.proposerId);
 
       const reservation = decideReservation(ctx.available[receiverId] ?? 0, POINTS_PER_AGREEMENT);
       if (!reservation.ok) return reservation;
