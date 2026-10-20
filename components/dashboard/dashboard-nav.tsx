@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Coins, Handshake, Inbox, Plus } from "lucide-react";
+import { BookOpen, Coins, Handshake, Inbox, MessageCircle, Plus } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
@@ -12,6 +12,7 @@ const navigation = [
   { href: "/proposals", label: "Proposals", icon: Inbox },
   { href: "/agreements", label: "Agreements", icon: Handshake },
   { href: "/points", label: "Points", icon: Coins },
+  { href: "/messages", label: "Messages", icon: MessageCircle },
 ];
 
 export function DashboardNav({ user }: { user: CurrentUser | null }) {
