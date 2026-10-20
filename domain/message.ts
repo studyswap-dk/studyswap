@@ -1,14 +1,5 @@
 export const MAX_MESSAGE_LENGTH = 2_000;
 
-export type MessageAgreementParties = {
-  helperId: string;
-  receiverId: string;
-};
-
-export function canReadMessages(agreement: MessageAgreementParties, userId: string): boolean {
-  return agreement.helperId === userId || agreement.receiverId === userId;
-}
-
 export function validateMessageBody(
   value: unknown,
 ): { ok: true; body: string } | { ok: false; message: string } {

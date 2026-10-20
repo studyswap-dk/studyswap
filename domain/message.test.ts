@@ -1,22 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canReadMessages, MAX_MESSAGE_LENGTH, validateMessageBody } from "./message";
-
-describe("F10: message access", () => {
-  const agreement = { helperId: "helper-1", receiverId: "receiver-1" };
-
-  it("allows the helper to read and send messages", () => {
-    expect(canReadMessages(agreement, "helper-1")).toBe(true);
-  });
-
-  it("allows the receiver to read and send messages", () => {
-    expect(canReadMessages(agreement, "receiver-1")).toBe(true);
-  });
-
-  it("does not allow another user to read or send messages", () => {
-    expect(canReadMessages(agreement, "other-user")).toBe(false);
-  });
-});
+import { MAX_MESSAGE_LENGTH, validateMessageBody } from "./message";
 
 describe("F10: message body validation", () => {
   it("rejects a blank message", () => {

@@ -48,6 +48,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | forespørger | `proposer`, `proposerId` | The student who sent a proposal |
 | hjælper, modtager | `helper`, `receiver` | The two parties of an agreement |
 | afsender (af en besked) | `sender`, `senderId` | Only for messages |
+| den anden studerende i en samtale | `participant`, `participantId` | The student who writes to the author of a post. Never the author |
 
 **Things**
 
@@ -58,6 +59,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | profil, uddannelse | `profile`, `programme` | |
 | forespørgsel | `proposal` | |
 | aftale | `agreement` | |
+| samtale | `conversation` | One per post per student who writes to its author. It continues through the proposal and the agreement |
 | besked | `message`, `body` | |
 | pointkonto | `pointAccount` | |
 | saldo, reserveret, til rådighed | `balance`, `reserved`, `available` | Available is balance minus reserved |
