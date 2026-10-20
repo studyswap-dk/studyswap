@@ -23,7 +23,10 @@ describe("verifyNeonAuthWebhook", () => {
     const request = await createSignedRequest();
 
     await expect(
-      verifyNeonAuthWebhook(request, requestBody.replace("123456", "654321")),
+      verifyNeonAuthWebhook(
+        request,
+        requestBody.replace("202412345@post.au.dk", "202412346@post.au.dk"),
+      ),
     ).resolves.toBe(false);
   });
 
@@ -37,7 +40,7 @@ describe("verifyNeonAuthWebhook", () => {
 const requestBody = JSON.stringify({
   event_id: eventId,
   event_type: eventType,
-  user: { email: "123456@post.au.dk" },
+  user: { email: "202412345@post.au.dk" },
 });
 
 async function createSignedRequest(timestampMs = Date.now()) {
