@@ -188,3 +188,10 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       return { ok: false, reason: "Action not implemented" };
   }
 }
+
+// F13, F14: the system action that is due on an agreement when it is read, if any.
+// There are no background jobs, so the caller applies it in the same transaction.
+export function dueSystemAction(agreement: Agreement, now: Date): Action | null {
+  const actions: Action[] = [{ kind: "autoRelease" }, { kind: "expire" }];
+  return actions.find((action) => decide(agreement, action, SYSTEM_ACTOR, now).ok) ?? null;
+}

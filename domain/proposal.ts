@@ -1,4 +1,5 @@
 // F8 (send, withdraw) and F9 (accept, decline).
+import { decideReservation } from "./point-account";
 
 export const POINTS_PER_AGREEMENT = 1;
 
@@ -82,9 +83,8 @@ export function decideProposal(
           ? [post.authorId, proposal.proposerId]
           : [proposal.proposerId, post.authorId];
 
-      if ((ctx.available[receiverId] ?? 0) < POINTS_PER_AGREEMENT) {
-        return { ok: false, reason: "Receiver has insufficient available points" };
-      }
+      const reservation = decideReservation(ctx.available[receiverId] ?? 0, POINTS_PER_AGREEMENT);
+      if (!reservation.ok) return reservation;
       const closes = post.type === "seeking"; // only a post seeking help is closed
       return {
         ok: true,

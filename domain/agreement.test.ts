@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   decide,
+  dueSystemAction,
   SYSTEM_ACTOR,
   type Action,
   type Agreement,
@@ -388,6 +389,38 @@ describe("decide: system actions and deadlines", () => {
       const agreement = { ...marked, status };
 
       expect(decide(agreement, { kind: "autoRelease" }, SYSTEM_ACTOR, releaseAt).ok).toBe(false);
+    },
+  );
+});
+
+describe("dueSystemAction", () => {
+  it("F14: boundary: nothing is due one millisecond before the deadline", () => {
+    expect(dueSystemAction(base, oneMsBefore(base.expiresAt))).toBeNull();
+  });
+
+  it("F14: an agreement expires when the deadline is reached", () => {
+    expect(dueSystemAction(base, base.expiresAt)).toEqual({ kind: "expire" });
+  });
+
+  it("F13: boundary: nothing is due one millisecond before the 24 hours have passed", () => {
+    const releaseAt = new Date(markedAt.getTime() + dayMs);
+    expect(dueSystemAction(marked, oneMsBefore(releaseAt))).toBeNull();
+  });
+
+  it("F13: the points are released 24 hours after the help was marked as done", () => {
+    expect(dueSystemAction(marked, new Date(markedAt.getTime() + dayMs))).toEqual({
+      kind: "autoRelease",
+    });
+  });
+
+  it("F13, F14: help marked as done is released, not expired, after the deadline", () => {
+    expect(dueSystemAction(marked, base.expiresAt)).toEqual({ kind: "autoRelease" });
+  });
+
+  it.each(["disputed", "completed", "cancelled", "expired"] as const)(
+    "F15: nothing is due on an agreement with status %s",
+    (status) => {
+      expect(dueSystemAction({ ...marked, status }, new Date("2027-01-01T00:00:00Z"))).toBeNull();
     },
   );
 });
