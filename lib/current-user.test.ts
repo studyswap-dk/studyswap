@@ -22,12 +22,12 @@ describe("requireStudent", () => {
   });
 
   it("F1: returns the student from the session", async () => {
-    getSession.mockResolvedValue(sessionFor(" 123456@Post.AU.dk "));
+    getSession.mockResolvedValue(sessionFor(" 202412345@Post.AU.dk "));
 
     await expect(requireStudent()).resolves.toEqual({
       id: "user-1",
       name: "Anna",
-      email: "123456@post.au.dk",
+      email: "202412345@post.au.dk",
       image: null,
     });
   });
@@ -39,7 +39,7 @@ describe("requireStudent", () => {
   });
 
   it("F1: sends a signed-in user without a student email to /login", async () => {
-    getSession.mockResolvedValue(sessionFor("anna@uni.au.dk"));
+    getSession.mockResolvedValue(sessionFor("au123456@uni.au.dk"));
 
     await expect(requireStudent()).rejects.toThrow("redirect to /login");
   });

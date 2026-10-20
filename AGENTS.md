@@ -155,6 +155,21 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 - Neon Auth sends the login emails itself. The app never sends them and does not need an email API key
 - Only student addresses of the form `<student number>@post.au.dk` may sign up
 
+**Test data**
+- Never use a real student number or a real person's email address in code, tests, docs or examples. Use only the addresses below, each for the case it stands for, so a reader knows what a test checks from the address alone
+
+| Address | Stands for |
+|---|---|
+| `202412345@post.au.dk` | The student. A valid address, used wherever a test or example needs one |
+| `202412346@post.au.dk` | Another student, when a test needs two |
+| `au123456@uni.au.dk` | The same student by AU ID at uni.au.dk, which every student also has |
+| `202412345@au.dk` | A student number at the wrong AU domain |
+| `student@post.au.dk` | An address at post.au.dk without a student number |
+| `202412abc@post.au.dk` | A student number with letters in it |
+| `student@example.com` | An address outside AU |
+| `202412345@post.au.dk.example.com` | A domain that only starts like AU's |
+| `202412345@@post.au.dk` | A malformed address |
+
 **User interface**
 - UI text is in English
 - Use the components in `components/ui/` before writing new ones, and style with Tailwind classes and the theme tokens in `app/globals.css`. Do not add CSS modules or separate stylesheets, and do not hard-code colours, so light and dark themes keep working
