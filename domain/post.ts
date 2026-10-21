@@ -82,3 +82,15 @@ export function validatePost(value: unknown): PostValidation {
     },
   };
 }
+
+// The values of postStatus in db/schema.ts, written out because domain/ does not import
+// the database. A new status in the schema makes typecheck fail where lib/ passes a
+// post's status to isPostShown, so the two cannot drift apart unnoticed.
+export type PostStatus = "open" | "closed" | "removed";
+
+// F22: a post a moderator has removed is no longer shown to anyone, and nor are the
+// conversations on it. Open and closed posts are shown; a closed post only leaves the
+// list of posts that can get new proposals.
+export function isPostShown(status: PostStatus): boolean {
+  return status !== "removed";
+}
