@@ -57,7 +57,7 @@ The webhook is set per Neon branch, and it must point at the deployment that use
 | Neon branch | Webhook URL | State |
 |---|---|---|
 | `preview/dev` | `https://dev.studyswap.dk/api/webhooks/neon-auth` | On since 21 October 2026 |
-| `production` | `https://studyswap.dk/api/webhooks/neon-auth` | Switched on after the route is released to `main` |
+| `production` | `https://studyswap.dk/api/webhooks/neon-auth` | On since 22 October 2026 |
 
 To set it up on a branch:
 
