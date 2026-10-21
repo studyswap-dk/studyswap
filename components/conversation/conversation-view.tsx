@@ -111,7 +111,7 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
       <MessageScroller className="flex-1">
         <MessageScrollerViewport>
           {/* A short conversation sits at the bottom, next to the message field, as in
-                other chats. The empty state is in the middle. */}
+              other chats. The empty state is in the middle. */}
           <MessageScrollerContent
             className={cn("gap-3 p-4", messages.length === 0 ? "justify-center" : "justify-end")}
           >
