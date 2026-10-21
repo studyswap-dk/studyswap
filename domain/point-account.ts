@@ -67,7 +67,7 @@ export function decideReservation(
 // How much a user's stored balance and reserved points change.
 export type AccountChange = { userId: string; balance: number; reserved: number };
 
-// F11–F14, F16, NF2: the changes to the stored accounts when an agreement moves to
+// F11-F14, F16, NF2: the changes to the stored accounts when an agreement moves to
 // newStatus with the given transactions. The balance follows the transactions, and
 // the receiver's reservation is lifted when the agreement stops holding it.
 // Users whose account does not change are left out.

@@ -178,6 +178,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 - Branch from `dev`. Name branches `type/short-description` in lowercase, without æ, ø and å. Types: `feature`, `fix`, `chore`, `docs`, `ci`
 - Everything goes through a pull request to `dev`. Open a draft pull request as soon as work starts
 - Write commit messages in the imperative mood, saying what the commit changes
+- When a pull request changes behaviour that `README.md`, `docs/` or a code comment describes, update them in the same pull request. Search for the names you changed or removed, so nothing still points at them
 - Add dependencies with `pnpm add`, and say why in the pull request
 
 ## Agent setup

@@ -25,7 +25,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
 // F2: the first time a student reaches the app, the point account is created with
 // the starting balance. F13, F14: overdue agreements are settled when they are read.
-// A database error must not keep the student out; the pages show it themselves.
+// A database error must not keep the student out, so it is only logged. The pages do
+// not show it yet.
 async function preparePoints(userId: string) {
   try {
     await ensurePointAccount(userId);
