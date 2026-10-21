@@ -21,6 +21,7 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
+  useMessageScroller,
 } from "@/components/ui/message-scroller";
 import { MAX_MESSAGE_LENGTH } from "@/domain/message";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
@@ -32,19 +33,31 @@ type ShownMessage = ConversationMessage & { pending?: boolean };
 
 const initialState: SendMessageState = { error: null, body: "" };
 
-// F10: one conversation between the author of a post and the participant. The
-// signed-in student's own messages are on the right, the other party's on the left.
-export function ConversationView({
-  conversation,
-  currentUserId,
-  now,
-}: {
+type ConversationViewProps = {
   conversation: MyConversation;
   currentUserId: string;
   // When the server rendered the page. Given by the server, so the browser shows the
   // same "Yesterday" as the server also when it hydrates just after midnight.
   now: Date;
-}) {
+};
+
+// F10: one conversation between the author of a post and the participant. The
+// signed-in student's own messages are on the right, the other party's on the left.
+// The provider is around everything, so the form can scroll the messages too.
+export function ConversationView(props: ConversationViewProps) {
+  return (
+    <MessageScrollerProvider defaultScrollPosition="end" autoScroll>
+      <ConversationPanel {...props} />
+    </MessageScrollerProvider>
+  );
+}
+
+function ConversationPanel({ conversation, currentUserId, now }: ConversationViewProps) {
+  // The scroller follows the newest message while the student is at the bottom. A
+  // student who sends a message is taken to the bottom, also from further up, so they
+  // see their message arrive.
+  const { scrollToEnd } = useMessageScroller();
+
   // A message the student has just sent is shown at once, before the server has saved
   // it, and is replaced by the saved one when the page is refreshed.
   const [messages, addPending] = useOptimistic<ShownMessage[], ShownMessage>(
@@ -65,6 +78,7 @@ export function ConversationView({
           createdAt: new Date(),
           pending: true,
         });
+        scrollToEnd({ behavior: "smooth" });
       }
       return action(previous, formData);
     },
@@ -94,74 +108,66 @@ export function ConversationView({
         </div>
       </header>
 
-      <MessageScrollerProvider defaultScrollPosition="end" autoScroll>
-        <MessageScroller className="flex-1">
-          <MessageScrollerViewport>
-            {/* A short conversation sits at the bottom, next to the message field, as in
+      <MessageScroller className="flex-1">
+        <MessageScrollerViewport>
+          {/* A short conversation sits at the bottom, next to the message field, as in
                 other chats. The empty state is in the middle. */}
-            <MessageScrollerContent
-              className={cn("gap-3 p-4", messages.length === 0 ? "justify-center" : "justify-end")}
-            >
-              {messages.length === 0 ? (
-                <MessageScrollerItem messageId="empty">
-                  <Empty>
-                    <EmptyTitle>No messages yet</EmptyTitle>
-                    <EmptyDescription>
-                      {conversation.canWrite
-                        ? `Ask ${other.name} about the post to get started.`
-                        : "This post is closed, so a new conversation cannot be started."}
-                    </EmptyDescription>
-                  </Empty>
-                </MessageScrollerItem>
-              ) : (
-                messages.map((item, index) => {
-                  const mine = item.senderId === currentUserId;
-                  // The avatar is shown once for each run of messages from the other party.
-                  const firstInRun = index === 0 || messages[index - 1].senderId !== item.senderId;
-                  return (
-                    <MessageScrollerItem
-                      key={item.id}
-                      messageId={item.id}
-                      scrollAnchor={mine && !item.pending}
-                    >
-                      <Message align={mine ? "end" : "start"}>
-                        {mine ? null : (
-                          <MessageAvatar className={firstInRun ? undefined : "invisible"}>
-                            <Avatar className="size-8">
-                              <AvatarFallback>{initial(other.name)}</AvatarFallback>
-                            </Avatar>
-                          </MessageAvatar>
-                        )}
-                        <MessageContent>
-                          <Bubble
-                            align={mine ? "end" : "start"}
-                            variant={mine ? "default" : "secondary"}
-                            className={item.pending ? "opacity-60" : undefined}
-                          >
-                            <BubbleContent className="whitespace-pre-wrap">
-                              {item.body}
-                            </BubbleContent>
-                          </Bubble>
-                          <MessageFooter>
-                            {item.pending ? (
-                              "Sending..."
-                            ) : (
-                              <time dateTime={item.createdAt.toISOString()}>
-                                {formatMessageTime(item.createdAt, now)}
-                              </time>
-                            )}
-                          </MessageFooter>
-                        </MessageContent>
-                      </Message>
-                    </MessageScrollerItem>
-                  );
-                })
-              )}
-            </MessageScrollerContent>
-          </MessageScrollerViewport>
-          <MessageScrollerButton />
-        </MessageScroller>
-      </MessageScrollerProvider>
+          <MessageScrollerContent
+            className={cn("gap-3 p-4", messages.length === 0 ? "justify-center" : "justify-end")}
+          >
+            {messages.length === 0 ? (
+              <MessageScrollerItem messageId="empty">
+                <Empty>
+                  <EmptyTitle>No messages yet</EmptyTitle>
+                  <EmptyDescription>
+                    {conversation.canWrite
+                      ? `Ask ${other.name} about the post to get started.`
+                      : "This post is closed, so a new conversation cannot be started."}
+                  </EmptyDescription>
+                </Empty>
+              </MessageScrollerItem>
+            ) : (
+              messages.map((item, index) => {
+                const mine = item.senderId === currentUserId;
+                // The avatar is shown once for each run of messages from the other party.
+                const firstInRun = index === 0 || messages[index - 1].senderId !== item.senderId;
+                return (
+                  <MessageScrollerItem key={item.id} messageId={item.id}>
+                    <Message align={mine ? "end" : "start"}>
+                      {mine ? null : (
+                        <MessageAvatar className={firstInRun ? undefined : "invisible"}>
+                          <Avatar className="size-8">
+                            <AvatarFallback>{initial(other.name)}</AvatarFallback>
+                          </Avatar>
+                        </MessageAvatar>
+                      )}
+                      <MessageContent>
+                        <Bubble
+                          align={mine ? "end" : "start"}
+                          variant={mine ? "default" : "secondary"}
+                          className={item.pending ? "opacity-60" : undefined}
+                        >
+                          <BubbleContent className="whitespace-pre-wrap">{item.body}</BubbleContent>
+                        </Bubble>
+                        <MessageFooter>
+                          {item.pending ? (
+                            "Sending..."
+                          ) : (
+                            <time dateTime={item.createdAt.toISOString()}>
+                              {formatMessageTime(item.createdAt, now)}
+                            </time>
+                          )}
+                        </MessageFooter>
+                      </MessageContent>
+                    </Message>
+                  </MessageScrollerItem>
+                );
+              })
+            )}
+          </MessageScrollerContent>
+        </MessageScrollerViewport>
+        <MessageScrollerButton />
+      </MessageScroller>
 
       <footer className="border-t p-3">
         {conversation.canWrite ? (
