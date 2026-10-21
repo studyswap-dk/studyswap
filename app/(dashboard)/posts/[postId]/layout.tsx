@@ -6,9 +6,11 @@ import { connection } from "next/server";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { ConversationUpdates } from "@/components/conversation/conversation-updates";
 import { AuthorLine } from "@/components/posts/author-line";
+import { PostDescription } from "@/components/posts/post-description";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConversationsOnMyPost } from "@/lib/conversations";
 import { requireStudent } from "@/lib/current-user";
 import { formatDate } from "@/lib/dates";
@@ -28,23 +30,35 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
   if (!found) notFound();
   const conversations = found.authorId === user.id ? await getConversationsOnMyPost(postId) : null;
 
+  // The page is exactly as high as the screen below the navigation (4rem) and the main
+  // area's padding (2rem or 2.5rem at the top and bottom), so the conversation fills
+  // what the post leaves and its message field is always in view. On a very low screen
+  // the page scrolls instead of squeezing the conversation.
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-[calc(100dvh-8rem)] min-h-[34rem] flex-col gap-4 sm:h-[calc(100dvh-9rem)]">
       {/* For the author here and not in the conversation, so the list is kept up to date
           too. For anyone else the page below decides, see ConversationUpdates. */}
       {conversations ? <ConversationUpdates /> : null}
       <Link
         href="/posts"
-        className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 w-fit gap-2")}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "sm" }),
+          "-my-1 -ml-2 w-fit shrink-0 gap-2",
+        )}
       >
         <ArrowLeft data-icon="inline-start" />
         Back to posts
       </Link>
 
-      <Card>
-        <CardHeader className="gap-3">
+      <Card className="shrink-0 gap-3 py-4">
+        <CardHeader className="gap-2 px-4 sm:px-5">
           <div className="flex items-center justify-between gap-3">
-            <PostTypeBadge type={found.type} />
+            <div className="flex items-center gap-2">
+              <PostTypeBadge type={found.type} />
+              {/* A closed post gets no new conversations, but those that have started
+                  go on. */}
+              {found.status === "closed" ? <Badge variant="outline">Closed</Badge> : null}
+            </div>
             <time
               dateTime={found.createdAt.toISOString()}
               className="text-xs text-muted-foreground"
@@ -52,28 +66,23 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
               {formatDate(found.createdAt)}
             </time>
           </div>
-          <CardTitle className="text-2xl leading-snug">{found.title}</CardTitle>
-          <CardDescription className="text-sm leading-6 whitespace-pre-wrap">
-            {found.description}
-          </CardDescription>
+          <CardTitle className="text-xl leading-snug">{found.title}</CardTitle>
+          <PostDescription text={found.description} />
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-5">
           <AuthorLine name={found.authorName} programme={found.authorProgramme} />
-          {found.status === "closed" ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              This post is closed. Conversations that have started can go on.
-            </p>
-          ) : null}
         </CardContent>
       </Card>
 
+      {/* What is left of the page's height. min-h-0 lets it shrink below its content, so
+          the messages scroll inside the conversation and not the page. */}
       {conversations ? (
-        <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
           <ConversationList postId={postId} conversations={conversations} now={new Date()} />
           {children}
         </div>
       ) : (
-        children
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       )}
     </div>
   );

@@ -31,7 +31,7 @@ export default async function ConversationPage({
   const isAuthor = conversation.author.id === user.id;
 
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
       {/* The layout keeps the author's page up to date, see ConversationUpdates. */}
       {!isAuthor && conversation.messages.length > 0 ? <ConversationUpdates /> : null}
       {isAuthor ? (

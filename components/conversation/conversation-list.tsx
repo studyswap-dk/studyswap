@@ -29,7 +29,11 @@ export function ConversationList({
   return (
     <nav
       aria-label="Conversations on this post"
-      className={cn("flex flex-col gap-3", openParticipantId ? "hidden lg:flex" : "flex")}
+      // Scrolls on its own when there are more conversations than there is room for.
+      className={cn(
+        "flex min-h-0 flex-col gap-3 overflow-y-auto",
+        openParticipantId ? "hidden lg:flex" : "flex",
+      )}
     >
       <h2 className="text-sm font-medium text-muted-foreground">
         {conversations.length === 1 ? "1 conversation" : `${conversations.length} conversations`}

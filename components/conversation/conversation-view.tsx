@@ -26,6 +26,7 @@ import { MAX_MESSAGE_LENGTH } from "@/domain/message";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { ConversationMessage, MyConversation } from "@/lib/conversations";
 import { formatMessageTime } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 
 type ShownMessage = ConversationMessage & { pending?: boolean };
 
@@ -76,7 +77,8 @@ export function ConversationView({
   return (
     <section
       aria-label={`Conversation with ${other.name}`}
-      className="flex h-[min(42rem,calc(100dvh-12rem))] min-h-96 flex-col overflow-hidden rounded-xl border bg-card"
+      // Fills the room the post page gives it, see app/(dashboard)/posts/[postId]/layout.tsx.
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card"
     >
       <header className="flex items-center gap-3 border-b px-4 py-3">
         <Avatar className="size-9">
@@ -95,7 +97,11 @@ export function ConversationView({
       <MessageScrollerProvider defaultScrollPosition="end" autoScroll>
         <MessageScroller className="flex-1">
           <MessageScrollerViewport>
-            <MessageScrollerContent className="gap-3 p-4">
+            {/* A short conversation sits at the bottom, next to the message field, as in
+                other chats. The empty state is in the middle. */}
+            <MessageScrollerContent
+              className={cn("gap-3 p-4", messages.length === 0 ? "justify-center" : "justify-end")}
+            >
               {messages.length === 0 ? (
                 <MessageScrollerItem messageId="empty">
                   <Empty>
