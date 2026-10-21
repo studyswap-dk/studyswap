@@ -41,7 +41,7 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
         <span className="hidden max-w-36 flex-col sm:flex">
           <span className="truncate text-sm font-medium">{name}</span>
           <span className="truncate text-xs text-muted-foreground">
-            Education: {user?.programme ?? "Not added"}
+            Programme: {user?.programme ?? "Not added"}
           </span>
         </span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
@@ -49,7 +49,7 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
       <DropdownMenuContent>
         <div className="px-2.5 py-2">
           <p className="truncate text-sm font-medium">{name}</p>
-          <p className="text-xs text-muted-foreground">Education</p>
+          <p className="text-xs text-muted-foreground">Programme</p>
           <p className="truncate text-sm">{user?.programme ?? "Not added"}</p>
         </div>
         <DropdownMenuSeparator />

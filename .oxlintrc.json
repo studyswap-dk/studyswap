@@ -15,5 +15,20 @@
   "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts"],
   "env": {
     "builtin": true
-  }
+  },
+  // shadcn/ui components in components/ui/ are copied in as they come, so they can be
+  // updated with pnpm exec shadcn add. Three jsx-a11y rules flag patterns in them that
+  // are not real barriers: input-group.tsx uses role="group" on a div and lets a mouse
+  // click next to the field move focus into it, while keyboard users reach the field and
+  // its buttons directly. Our own code is still checked by all rules.
+  "overrides": [
+    {
+      "files": ["components/ui/**"],
+      "rules": {
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/prefer-tag-over-role": "off"
+      }
+    }
+  ]
 }
