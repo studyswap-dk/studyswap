@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { agreement } from "@/db/schema";
 import {
   type Action,
+  AUTO_RELEASE_AFTER_MS,
   type Decision,
   decide,
   dueSystemAction,
@@ -11,7 +12,14 @@ import {
 } from "@/domain/agreement";
 import { PointAccountError, settlePoints, type Transaction } from "@/lib/point-account";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+// Another request changed the agreement between the read and the update. The message
+// can be shown to the user.
+export class AgreementConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgreementConflictError";
+  }
+}
 
 const agreementColumns = {
   id: agreement.id,
@@ -61,7 +69,7 @@ export async function applyAgreementAction(
     .where(and(eq(agreement.id, agreementId), eq(agreement.status, current.status)))
     .returning({ id: agreement.id });
   if (updated.length === 0) {
-    throw new PointAccountError("The agreement was changed at the same time. Try again");
+    throw new AgreementConflictError("The agreement was changed at the same time. Try again");
   }
 
   await settlePoints(tx, current, decision.newStatus, decision.transactions);
@@ -81,7 +89,9 @@ export async function runAgreementAction(
       applyAgreementAction(tx, agreementId, action, actorId, now),
     );
   } catch (error) {
-    if (error instanceof PointAccountError) return { ok: false, reason: error.message };
+    if (error instanceof PointAccountError || error instanceof AgreementConflictError) {
+      return { ok: false, reason: error.message };
+    }
     throw error;
   }
 }
@@ -102,7 +112,7 @@ export async function settleOverdueAgreements(userId: string, now: Date): Promis
           lte(agreement.expiresAt, now),
           and(
             isNotNull(agreement.helperConfirmedAt),
-            lte(agreement.helperConfirmedAt, new Date(now.getTime() - DAY_MS)),
+            lte(agreement.helperConfirmedAt, new Date(now.getTime() - AUTO_RELEASE_AFTER_MS)),
           ),
         ),
       ),

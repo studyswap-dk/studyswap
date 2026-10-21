@@ -6,6 +6,11 @@ export const SYSTEM_ACTOR = "system";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// F13, F15: once the helper has marked the help as done, the receiver has this long to
+// confirm or dispute. After that the points are released automatically. lib/agreements.ts
+// uses the same constant to find agreements that are due, so the two cannot drift apart.
+export const AUTO_RELEASE_AFTER_MS = DAY_MS;
+
 // F14: the help must be given within this many days of the agreement being made.
 export const AGREEMENT_DURATION_DAYS = 7;
 
@@ -133,7 +138,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       }
       // F13, F15: after 24 hours the points are released, also when no one has
       // read the agreement since, so a late dispute must not get in first.
-      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + DAY_MS) {
+      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
         return { ok: false, reason: "The 24 hour window for disputes has passed" };
       }
       return {
@@ -187,7 +192,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return { ok: false, reason: "Agreement is not in accepted status" };
       if (agreement.helperConfirmedAt === null)
         return { ok: false, reason: "Help has not been marked as done" };
-      if (now.getTime() < agreement.helperConfirmedAt.getTime() + DAY_MS) {
+      if (now.getTime() < agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
         return { ok: false, reason: "The 24 hour window has not passed" };
       }
       return { ok: true, newStatus: "completed", transactions: releaseTransactions(agreement) };
