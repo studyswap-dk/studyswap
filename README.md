@@ -146,6 +146,7 @@ Første gang, efter `pnpm install` og `gh auth login`:
 ## Dokumentation
 
 - [Login og autentificering](docs/login-and-authentication.md)
+- [Samtaler](docs/chat.md)
 - [Next.js](https://nextjs.org/docs)
 - [Vercel](https://vercel.com/docs)
 - [Neon](https://neon.com/docs)

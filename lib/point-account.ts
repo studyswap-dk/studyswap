@@ -94,7 +94,7 @@ export async function reservePoints(
     .where(eq(pointAccount.id, account.id));
 }
 
-// F11–F14, F16: settle the points when an agreement moves from its current status to
+// F11-F14, F16: settle the points when an agreement moves from its current status to
 // newStatus with the transactions decide() returned. Must run in the transaction that
 // changes the agreement's status. A release writes the two "release" transactions,
 // raises the helper's balance and lowers the receiver's balance and reserved points.
