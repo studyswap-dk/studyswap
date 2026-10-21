@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DESCRIPTION_MAX_LENGTH,
   DESCRIPTION_MIN_LENGTH,
+  isPostShown,
   TITLE_MAX_LENGTH,
   TITLE_MIN_LENGTH,
   validateDescription,
@@ -147,5 +148,15 @@ describe("validatePost", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.message).toBe(validateTitle("abc"));
+  });
+});
+
+describe("isPostShown", () => {
+  it.each(["open", "closed"] as const)("F22: a %s post is shown", (status) => {
+    expect(isPostShown(status)).toBe(true);
+  });
+
+  it("F22: a post a moderator has removed is not shown", () => {
+    expect(isPostShown("removed")).toBe(false);
   });
 });

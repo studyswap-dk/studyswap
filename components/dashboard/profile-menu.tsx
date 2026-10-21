@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useTransition } from "react";
 
 import { signOut } from "@/app/actions/auth";
@@ -10,14 +11,19 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { CurrentUser } from "@/lib/current-user";
+import { findProgramme, programmeLabel } from "@/domain/programmes";
+import type { CurrentUserProfile } from "@/lib/current-user";
 
-export function ProfileMenu({ user }: { user: CurrentUser | null }) {
+export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
   const [isSigningOut, startTransition] = useTransition();
   const name = user?.name ?? "Student account";
+  // profile.programme stores a key; the label is looked up here.
+  const found = findProgramme(user?.programme ?? null);
+  const programme = found ? programmeLabel(found) : "Not added";
   const initials =
     name
       .split(/\s+/)
@@ -36,15 +42,24 @@ export function ProfileMenu({ user }: { user: CurrentUser | null }) {
           {user?.image ? <AvatarImage src={user.image} alt="" /> : null}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <span className="hidden max-w-36 truncate text-sm font-medium sm:block">{name}</span>
+        <span className="hidden max-w-36 flex-col sm:flex">
+          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="truncate text-xs text-muted-foreground">Programme: {programme}</span>
+        </span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <div className="px-2.5 py-2">
+          <p className="truncate text-sm font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">Programme</p>
+          <p className="truncate text-sm">{programme}</p>
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
+          <DropdownMenuLinkItem closeOnClick render={<Link href="/profile" />}>
             <UserRound data-icon="inline-start" />
             Profile settings
-          </DropdownMenuItem>
+          </DropdownMenuLinkItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

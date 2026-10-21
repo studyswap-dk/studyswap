@@ -6,6 +6,19 @@ export const SYSTEM_ACTOR = "system";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// F13, F15: once the helper has marked the help as done, the receiver has this long to
+// confirm or dispute. After that the points are released automatically. lib/agreements.ts
+// uses the same constant to find agreements that are due, so the two cannot drift apart.
+export const AUTO_RELEASE_AFTER_MS = DAY_MS;
+
+// F14: the help must be given within this many days of the agreement being made.
+export const AGREEMENT_DURATION_DAYS = 7;
+
+// F14: the deadline of an agreement made at createdAt.
+export function agreementExpiresAt(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + AGREEMENT_DURATION_DAYS * DAY_MS);
+}
+
 export type Action =
   | { kind: "confirm" } // F12, receiver confirms help was given
   | { kind: "markDone" } // F13, helper reports help was given
@@ -59,6 +72,11 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (actorId !== agreement.receiverId) {
         return { ok: false, reason: "Only the receiver can confirm" };
       }
+      // F14: when the deadline passes without the help being marked as done, the
+      // agreement has expired, also when no one has read it since.
+      if (agreement.helperConfirmedAt === null && now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot confirm after the agreement has expired" };
+      }
       return {
         ok: true,
         newStatus: "completed",
@@ -79,6 +97,9 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       if (agreement.helperConfirmedAt !== null) {
         return { ok: false, reason: "Help has already been marked as done" };
       }
+      if (now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot mark as done after the agreement has expired" };
+      }
       return {
         ok: true,
         newStatus: "accepted",
@@ -95,6 +116,9 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       }
       if (agreement.helperConfirmedAt !== null || agreement.receiverConfirmedAt !== null) {
         return { ok: false, reason: "Cannot cancel after confirmation" };
+      }
+      if (now.getTime() >= agreement.expiresAt.getTime()) {
+        return { ok: false, reason: "Cannot cancel after the agreement has expired" };
       }
       return {
         ok: true,
@@ -114,7 +138,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       }
       // F13, F15: after 24 hours the points are released, also when no one has
       // read the agreement since, so a late dispute must not get in first.
-      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + DAY_MS) {
+      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
         return { ok: false, reason: "The 24 hour window for disputes has passed" };
       }
       return {
@@ -168,7 +192,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return { ok: false, reason: "Agreement is not in accepted status" };
       if (agreement.helperConfirmedAt === null)
         return { ok: false, reason: "Help has not been marked as done" };
-      if (now.getTime() < agreement.helperConfirmedAt.getTime() + DAY_MS) {
+      if (now.getTime() < agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
         return { ok: false, reason: "The 24 hour window has not passed" };
       }
       return { ok: true, newStatus: "completed", transactions: releaseTransactions(agreement) };
@@ -176,4 +200,11 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     default:
       return { ok: false, reason: "Action not implemented" };
   }
+}
+
+// F13, F14: the system action that is due on an agreement when it is read, if any.
+// There are no background jobs, so the caller applies it in the same transaction.
+export function dueSystemAction(agreement: Agreement, now: Date): Action | null {
+  const actions: Action[] = [{ kind: "autoRelease" }, { kind: "expire" }];
+  return actions.find((action) => decide(agreement, action, SYSTEM_ACTOR, now).ok) ?? null;
 }

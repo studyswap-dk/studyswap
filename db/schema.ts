@@ -175,16 +175,41 @@ export const agreement = pgTable(
   ],
 );
 
-// F10: the two parties of an agreement write to each other to agree on time,
-// place and what is to happen. Only the helper and the receiver may send or read
-// messages; that check needs the agreement and is done where the message is saved.
+// F10: one conversation per post per student who writes to its author. It begins
+// with the first question on the post and continues through the proposal and the
+// agreement, so a proposal or an agreement finds its conversation from the post
+// and the proposer instead of storing a reference of its own.
+export const conversation = pgTable(
+  "conversation",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    postId: uuid()
+      .notNull()
+      .references(() => post.id),
+    // The student who writes to the author. Never the author; checked in domain/.
+    participantId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // F10: one conversation per post per student. Also covers the author's list
+    // of conversations on a post.
+    unique("conversation_postId_participantId_key").on(table.postId, table.participantId),
+    // F10: a student's own conversations.
+    index("conversation_participantId_idx").on(table.participantId),
+  ],
+);
+
+// F10: a message in a conversation. Only the author of the post and the participant
+// may read or send; that check needs the post and is done where the message is saved.
 export const message = pgTable(
   "message",
   {
     id: uuid().primaryKey().defaultRandom(),
-    agreementId: uuid()
+    conversationId: uuid()
       .notNull()
-      .references(() => agreement.id),
+      .references(() => conversation.id),
     senderId: uuid()
       .notNull()
       .references(() => userInNeonAuth.id),
@@ -193,8 +218,8 @@ export const message = pgTable(
   },
   (table) => [
     check("message_body_not_blank", sql`btrim(${table.body}) <> ''`),
-    // The conversation is read per agreement, oldest first.
-    index("message_agreementId_createdAt_idx").on(table.agreementId, table.createdAt),
+    // The conversation is read oldest first.
+    index("message_conversationId_createdAt_idx").on(table.conversationId, table.createdAt),
   ],
 );
 
