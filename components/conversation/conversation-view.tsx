@@ -174,7 +174,12 @@ export function ConversationView({
                 defaultValue={state.body}
                 aria-label={`Message to ${other.name}`}
                 placeholder="Write a message..."
-                rows={2}
+                // One line to begin with, growing with the text up to five lines, after
+                // which it scrolls. The shadcn Textarea is at least 8rem high, which takes
+                // too much of the conversation on a phone. Browsers without field-sizing
+                // keep one line and scroll.
+                rows={1}
+                className="field-sizing-content max-h-32 min-h-0"
                 maxLength={MAX_MESSAGE_LENGTH}
                 required
                 onKeyDown={(event) => {
@@ -187,7 +192,7 @@ export function ConversationView({
                   }
                 }}
               />
-              <InputGroupAddon align="block-end" className="justify-end">
+              <InputGroupAddon align="inline-end" className="self-end">
                 <InputGroupButton type="submit" variant="default" disabled={isPending}>
                   <SendHorizontal data-icon="inline-start" />
                   Send
