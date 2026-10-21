@@ -69,7 +69,7 @@ Kør derefter `gh auth login`, vælg GitHub.com, og log ind via browseren.
 
 ## Lint og formatering
 
-Oxlint bruger native regler for Next.js, React, JSX-tilgængelighed, TypeScript og Vitest. TypeScript-lint er ikke type-aware; `pnpm run typecheck` kontrollerer fortsat typer separat. Oxlint-reglerne svarer tæt til det tidligere ESLint-setup, men dækker ikke alle regler og detaljer identisk. `react/react-in-jsx-scope` er slået fra, fordi Next.js bruger Reacts automatiske JSX-runtime. Oxfmt formaterer TypeScript, TSX, JavaScript, JSON og CSS og sorterer Tailwind CSS 4-klasser ud fra `app/globals.css`.
+Oxlint bruger native regler for Next.js, React, JSX-tilgængelighed, TypeScript og Vitest. TypeScript-lint er ikke type-aware; `pnpm run typecheck` kontrollerer fortsat typer separat. Oxlint-reglerne svarer tæt til det tidligere ESLint-setup, men dækker ikke alle regler og detaljer identisk. `react/react-in-jsx-scope` er slået fra, fordi Next.js bruger Reacts automatiske JSX-runtime. Oxfmt formaterer TypeScript, TSX, JavaScript, JSON og CSS og sorterer Tailwind CSS 4-klasser ud fra `app/globals.css`. I `components/ui/` er tre `jsx-a11y`-regler slået fra, så shadcns komponenter kan ligge, som de kommer; begrundelsen står i `.oxlintrc.json`.
 
 ## Lokal database
 

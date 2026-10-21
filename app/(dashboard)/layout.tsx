@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { needsProfileSetup } from "@/domain/profile";
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { getCurrentUser } from "@/lib/current-user";
 import { ensurePointAccount } from "@/lib/point-account";
@@ -12,6 +14,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // which the data functions and Server Actions call; a layout cannot protect a page.
   const user = await getCurrentUser();
   await preparePoints(user.id);
+  // F1: a student who has not set up their profile is sent to /welcome first. This is
+  // guidance, not access control: a student without a programme sees nothing they may
+  // not see. A new student always arrives with a full page load, so the layout runs.
+  if (needsProfileSetup(user.programme)) {
+    redirect("/welcome");
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

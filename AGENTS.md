@@ -56,7 +56,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 |---|---|---|
 | opslag | `post` | Never `listing` |
 | tag | `tag`, `postTag` | |
-| profil, uddannelse | `profile`, `programme` | |
+| profil, uddannelse | `profile`, `programme` | `profile.programme` stores a key from `domain/programmes.ts`, never the name. Show it with `programmeLabel()` |
 | forespørgsel | `proposal` | |
 | aftale | `agreement` | |
 | samtale | `conversation` | One per post per student who writes to its author. It continues through the proposal and the agreement |
