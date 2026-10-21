@@ -8,7 +8,7 @@ StudySwap uses Neon Auth, which is managed Better Auth, through `@neondatabase/a
 2. The `loginAction` server action checks the address again on the server and asks Neon Auth to send a code
 3. The student enters the code, and the same server action signs them in with Neon Auth. If the student is new, Neon Auth calls our `user.before_create` webhook first, which rejects any address that is not a student address
 4. Every Server Action and every data function in `lib/` gets the student from `requireStudent()`, which reads the session on the server and sends anyone without a student session to `/login`
-5. At first login the dashboard layout sends the student to `/welcome`, where they enter their name and choose their programme before they can use the rest of the app. The name is saved in Neon Auth with `updateUser`, and the programme in our `profile` table. The same form is on `/profile`. This is guidance, not access control (F1)
+5. At first login the dashboard layout sends the student to `/welcome`, where they enter their name and choose their programme before they can use the rest of the app. The name is saved in Neon Auth with `updateUser`, and the programme's key from `domain/programmes.ts` in our `profile` table, so its name can be corrected or translated without changing what is stored. The same form is on `/profile`. This is guidance, not access control (F1)
 
 All of this runs on the server. The app talks to Neon Auth directly at `NEON_AUTH_BASE_URL` and has no browser client, so it has no `/api/auth` route of its own.
 

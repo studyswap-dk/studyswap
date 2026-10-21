@@ -15,11 +15,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { CurrentUserProfile } from "@/lib/current-user";
 
 export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
   const [isSigningOut, startTransition] = useTransition();
   const name = user?.name ?? "Student account";
+  // profile.programme stores a key; the label is looked up here.
+  const found = findProgramme(user?.programme ?? null);
+  const programme = found ? programmeLabel(found) : "Not added";
   const initials =
     name
       .split(/\s+/)
@@ -40,9 +44,7 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
         </Avatar>
         <span className="hidden max-w-36 flex-col sm:flex">
           <span className="truncate text-sm font-medium">{name}</span>
-          <span className="truncate text-xs text-muted-foreground">
-            Programme: {user?.programme ?? "Not added"}
-          </span>
+          <span className="truncate text-xs text-muted-foreground">Programme: {programme}</span>
         </span>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -50,7 +52,7 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
         <div className="px-2.5 py-2">
           <p className="truncate text-sm font-medium">{name}</p>
           <p className="text-xs text-muted-foreground">Programme</p>
-          <p className="truncate text-sm">{user?.programme ?? "Not added"}</p>
+          <p className="truncate text-sm">{programme}</p>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>

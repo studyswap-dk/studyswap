@@ -16,8 +16,45 @@ import {
   ComboboxLabel,
   ComboboxList,
 } from "@/components/ui/combobox";
-import { NAME_MAX_LENGTH, NAME_MIN_LENGTH } from "@/domain/profile";
-import { matchesProgrammeSearch, OTHER_PROGRAMME, PROGRAMME_GROUPS } from "@/domain/programmes";
+import {
+  NAME_MAX_LENGTH,
+  NAME_MIN_LENGTH,
+  type NameError,
+  type ProgrammeError,
+} from "@/domain/profile";
+import {
+  findProgramme,
+  matchesProgrammeSearch,
+  OTHER_PROGRAMME_KEY,
+  type Programme,
+  type ProgrammeLevel,
+  programmeLabel,
+  PROGRAMMES,
+} from "@/domain/programmes";
+
+// The texts for the error codes from domain/profile.ts. They live here, with the other
+// texts in the user interface, so they can be translated in one place later.
+const NAME_ERRORS: Record<NameError, string> = {
+  required: "Enter your name.",
+  tooShort: `Use at least ${NAME_MIN_LENGTH} characters.`,
+  tooLong: `Use at most ${NAME_MAX_LENGTH} characters.`,
+};
+const PROGRAMME_ERRORS: Record<ProgrammeError, string> = {
+  notOnList: "Choose your programme from the list.",
+};
+
+// The programmes in three groups, so the list reads like AU's own. They are built from
+// the same list that the server validates against.
+const GROUP_LABELS: Record<ProgrammeLevel, string> = {
+  bachelor: "Bachelor's programmes",
+  master: "Master's programmes",
+  other: "Not on the list",
+};
+const programmeGroups = (["bachelor", "master", "other"] as const).map((level) => ({
+  label: GROUP_LABELS[level],
+  items: PROGRAMMES.filter((item) => item.level === level),
+}));
+const otherLabel = programmeLabel(findProgramme(OTHER_PROGRAMME_KEY)!);
 
 // F1: the same form is used at first login on /welcome, where saving goes on to
 // /posts, and on /profile, where the student stays on the page.
@@ -28,6 +65,7 @@ export function ProfileForm({
   submitLabel,
 }: {
   name: string;
+  // The key of the programme, or null before the profile is set up.
   programme: string | null;
   afterSave: "/posts" | null;
   submitLabel: string;
@@ -58,7 +96,7 @@ export function ProfileForm({
             required
           />
           {state.errors.name ? (
-            <FieldError>{state.errors.name}</FieldError>
+            <FieldError>{NAME_ERRORS[state.errors.name]}</FieldError>
           ) : (
             <FieldDescription>Other students see this name on your posts.</FieldDescription>
           )}
@@ -67,9 +105,12 @@ export function ProfileForm({
         <Field data-invalid={state.errors.programme ? true : undefined}>
           <FieldLabel htmlFor="profile-programme">Programme</FieldLabel>
           <Combobox
-            items={PROGRAMME_GROUPS}
+            items={programmeGroups}
             name="programme"
-            defaultValue={programme}
+            defaultValue={findProgramme(programme)}
+            itemToStringLabel={programmeLabel}
+            itemToStringValue={(item: Programme) => item.key}
+            isItemEqualToValue={(item: Programme, value: Programme) => item.key === value.key}
             filter={matchesProgrammeSearch}
             required
           >
@@ -81,13 +122,13 @@ export function ProfileForm({
             />
             <ComboboxContent>
               <ComboboxList>
-                {(group: (typeof PROGRAMME_GROUPS)[number]) => (
+                {(group: (typeof programmeGroups)[number]) => (
                   <ComboboxGroup key={group.label} items={group.items}>
                     <ComboboxLabel>{group.label}</ComboboxLabel>
                     <ComboboxCollection>
-                      {(item: string) => (
-                        <ComboboxItem key={item} value={item}>
-                          {item}
+                      {(item: Programme) => (
+                        <ComboboxItem key={item.key} value={item}>
+                          {programmeLabel(item)}
                         </ComboboxItem>
                       )}
                     </ComboboxCollection>
@@ -97,11 +138,10 @@ export function ProfileForm({
             </ComboboxContent>
           </Combobox>
           {state.errors.programme ? (
-            <FieldError>{state.errors.programme}</FieldError>
+            <FieldError>{PROGRAMME_ERRORS[state.errors.programme]}</FieldError>
           ) : (
             <FieldDescription>
-              Your programme at Aarhus University. Choose {OTHER_PROGRAMME} if it is not on the
-              list.
+              Your programme at Aarhus University. Choose {otherLabel} if it is not on the list.
             </FieldDescription>
           )}
         </Field>
