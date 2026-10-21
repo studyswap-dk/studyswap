@@ -9,10 +9,10 @@ import type { CurrentUserProfile } from "@/lib/current-user";
 
 const navigation = [
   { href: "/posts", label: "Posts", icon: BookOpen },
+  { href: "/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/proposals", label: "Proposals", icon: Inbox },
   { href: "/agreements", label: "Agreements", icon: Handshake },
   { href: "/points", label: "Points", icon: Coins },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
 ];
 
 export function DashboardNav({ user }: { user: CurrentUserProfile | null }) {

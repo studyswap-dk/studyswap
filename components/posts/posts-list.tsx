@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-import { findProgramme, programmeLabel } from "@/domain/programmes";
+import { AuthorLine } from "@/components/posts/author-line";
+import { PostTypeBadge } from "@/components/posts/post-type-badge";
+import { formatDate } from "@/lib/dates";
 import { getPosts, POSTS_PER_PAGE } from "@/lib/posts";
 
 export async function PostsList({ query, page }: { query: string; page: number }) {
@@ -54,30 +56,42 @@ export async function PostsList({ query, page }: { query: string; page: number }
       <ul className="grid gap-4 md:grid-cols-2">
         {items.map((post) => (
           <li key={post.id}>
-            <Card className="h-full gap-5 transition-shadow hover:shadow-md">
+            {/* The title is the link, and it covers the whole card, so the card is one
+                link for screen readers and can be clicked anywhere. */}
+            <Card className="relative h-full gap-5 transition-shadow focus-within:ring-3 focus-within:ring-ring/40 hover:shadow-md">
               <CardHeader className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Badge variant={post.type === "seeking" ? "secondary" : "outline"}>
-                    {post.type === "seeking" ? "Seeking help" : "Offering help"}
-                  </Badge>
+                  <PostTypeBadge type={post.type} />
                   <time
                     dateTime={post.createdAt.toISOString()}
                     className="text-xs text-muted-foreground"
                   >
-                    {new Intl.DateTimeFormat("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }).format(post.createdAt)}
+                    {formatDate(post.createdAt)}
                   </time>
                 </div>
-                <CardTitle className="text-xl leading-snug">{post.title}</CardTitle>
+                <CardTitle className="text-xl leading-snug">
+                  <Link
+                    href={`/posts/${post.id}`}
+                    className="outline-none after:absolute after:inset-0 after:content-['']"
+                  >
+                    {post.title}
+                  </Link>
+                </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-5">
                 <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                   {trimDescription(post.description)}
                 </p>
-                <AuthorLine name={post.authorName} programme={post.authorProgramme} />
+                <div className="mt-auto flex items-end justify-between gap-3 border-t pt-4">
+                  <AuthorLine name={post.authorName} programme={post.authorProgramme} />
+                  {post.conversationCount !== null ? (
+                    <Badge variant="secondary" className="shrink-0">
+                      {post.conversationCount === 1
+                        ? "1 conversation"
+                        : `${post.conversationCount} conversations`}
+                    </Badge>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           </li>
@@ -86,33 +100,6 @@ export async function PostsList({ query, page }: { query: string; page: number }
 
       {pages > 1 && <Pagination query={query} page={currentPage} pages={pages} />}
     </section>
-  );
-}
-
-// F1: the author's name and programme, so other students can see who they would be
-// writing to. A user who has not set up a profile may have no name yet.
-function AuthorLine({ name, programme }: { name: string; programme: string | null }) {
-  const shownName = name.trim() || "A student";
-  const found = findProgramme(programme);
-
-  return (
-    <div className="mt-auto flex items-center gap-2 border-t pt-4 text-sm">
-      <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
-      >
-        {shownName.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate">
-          <span className="text-muted-foreground">By </span>
-          <span className="font-medium">{shownName}</span>
-        </span>
-        {found ? (
-          <span className="truncate text-xs text-muted-foreground">{programmeLabel(found)}</span>
-        ) : null}
-      </span>
-    </div>
   );
 }
 
