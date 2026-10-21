@@ -192,10 +192,18 @@ export function ConversationView({
                   }
                 }}
               />
-              <InputGroupAddon align="inline-end" className="self-end">
-                <InputGroupButton type="submit" variant="default" disabled={isPending}>
-                  <SendHorizontal data-icon="inline-start" />
-                  Send
+              {/* A round send button the size of one line of text, at the bottom right,
+                  as in other chats. The label is for screen readers. */}
+              <InputGroupAddon align="inline-end" className="self-end py-1">
+                <InputGroupButton
+                  type="submit"
+                  variant="default"
+                  size="icon-sm"
+                  className="rounded-full"
+                  aria-label="Send"
+                  disabled={isPending}
+                >
+                  <SendHorizontal />
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
