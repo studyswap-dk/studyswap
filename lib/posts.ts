@@ -1,7 +1,7 @@
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 
 import { db } from "@/db";
-import { post, userInNeonAuth } from "@/db/schema";
+import { post, profile, userInNeonAuth } from "@/db/schema";
 import { requireStudent } from "@/lib/current-user";
 
 export const POSTS_PER_PAGE = 8;
@@ -13,6 +13,9 @@ export type Post = {
   description: string;
   createdAt: Date;
   authorName: string;
+  // The key of the author's programme, or null if the author has not set up a profile
+  // yet. Show it with programmeLabel().
+  authorProgramme: string | null;
 };
 
 export async function getPosts({ query, page }: { query: string; page: number }) {
@@ -42,9 +45,14 @@ export async function getPosts({ query, page }: { query: string; page: number })
         description: post.description,
         createdAt: post.createdAt,
         authorName: userInNeonAuth.name,
+        authorProgramme: profile.programme,
       })
       .from(post)
       .innerJoin(userInNeonAuth, eq(post.authorId, userInNeonAuth.id))
+      // A left join, so a post is still shown when its author has no profile, for
+      // example a post from before profiles existed, or one made by calling the
+      // Server Action directly.
+      .leftJoin(profile, eq(profile.userId, post.authorId))
       .where(where)
       .orderBy(desc(post.createdAt))
       .limit(POSTS_PER_PAGE)

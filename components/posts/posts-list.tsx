@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
+import { findProgramme, programmeLabel } from "@/domain/programmes";
 import { getPosts, POSTS_PER_PAGE } from "@/lib/posts";
 
 export async function PostsList({ query, page }: { query: string; page: number }) {
@@ -76,16 +77,7 @@ export async function PostsList({ query, page }: { query: string; page: number }
                 <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                   {trimDescription(post.description)}
                 </p>
-                <div className="mt-auto flex items-center gap-2 border-t pt-4 text-sm">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
-                  >
-                    {post.authorName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="text-muted-foreground">By</span>
-                  <span className="font-medium">{post.authorName}</span>
-                </div>
+                <AuthorLine name={post.authorName} programme={post.authorProgramme} />
               </CardContent>
             </Card>
           </li>
@@ -94,6 +86,33 @@ export async function PostsList({ query, page }: { query: string; page: number }
 
       {pages > 1 && <Pagination query={query} page={currentPage} pages={pages} />}
     </section>
+  );
+}
+
+// F1: the author's name and programme, so other students can see who they would be
+// writing to. A user who has not set up a profile may have no name yet.
+function AuthorLine({ name, programme }: { name: string; programme: string | null }) {
+  const shownName = name.trim() || "A student";
+  const found = findProgramme(programme);
+
+  return (
+    <div className="mt-auto flex items-center gap-2 border-t pt-4 text-sm">
+      <span
+        aria-hidden="true"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
+      >
+        {shownName.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate">
+          <span className="text-muted-foreground">By </span>
+          <span className="font-medium">{shownName}</span>
+        </span>
+        {found ? (
+          <span className="truncate text-xs text-muted-foreground">{programmeLabel(found)}</span>
+        ) : null}
+      </span>
+    </div>
   );
 }
 

@@ -98,7 +98,9 @@ export function ProfileForm({
           {state.errors.name ? (
             <FieldError>{NAME_ERRORS[state.errors.name]}</FieldError>
           ) : (
-            <FieldDescription>Other students see this name on your posts.</FieldDescription>
+            <FieldDescription>
+              Other students see your name and programme on your posts.
+            </FieldDescription>
           )}
         </Field>
 
