@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   AGREEMENT_DURATION_DAYS,
+  AUTO_RELEASE_AFTER_MS,
   agreementExpiresAt,
   decide,
   dueSystemAction,
@@ -425,6 +426,12 @@ describe("dueSystemAction", () => {
       expect(dueSystemAction({ ...marked, status }, new Date("2027-01-01T00:00:00Z"))).toBeNull();
     },
   );
+});
+
+describe("AUTO_RELEASE_AFTER_MS", () => {
+  it("F13, F15: the receiver has 24 hours to confirm or dispute", () => {
+    expect(AUTO_RELEASE_AFTER_MS).toBe(24 * 60 * 60 * 1000);
+  });
 });
 
 describe("agreementExpiresAt", () => {
