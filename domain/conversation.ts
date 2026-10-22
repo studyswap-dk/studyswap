@@ -85,3 +85,12 @@ export function canOpenConversation(
   if (!isConversationParty(post, { participantId }, userId)) return false;
   return conversationExists || userId === participantId;
 }
+
+// F10: only the author of a post sees all the conversations on it, and how many there
+// are. Anyone else sees only their own, see canOpenConversation.
+export function canSeeConversationsOnPost(
+  post: Pick<ConversationPost, "authorId">,
+  userId: string,
+): boolean {
+  return userId === post.authorId;
+}

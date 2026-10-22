@@ -5,6 +5,7 @@ import { ConversationUpdates } from "@/components/conversation/conversation-upda
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { getMyConversation } from "@/lib/conversations";
+import { canSeeConversationsOnPost } from "@/domain/conversation";
 import { requireStudent } from "@/lib/current-user";
 import { isUuid } from "@/lib/ids";
 import { getPost } from "@/lib/posts";
@@ -19,7 +20,7 @@ export default async function PostPage({ params }: PageProps<"/posts/[postId]">)
   const [user, found] = await Promise.all([requireStudent(), getPost(postId)]);
   if (!found) notFound();
 
-  if (found.authorId === user.id) {
+  if (canSeeConversationsOnPost(found, user.id)) {
     return (
       <Empty className="hidden rounded-xl border lg:flex">
         <EmptyTitle>Choose a conversation</EmptyTitle>

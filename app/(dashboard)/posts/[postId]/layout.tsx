@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConversationsOnMyPost } from "@/lib/conversations";
+import { canSeeConversationsOnPost } from "@/domain/conversation";
 import { requireStudent } from "@/lib/current-user";
 import { formatDate } from "@/lib/dates";
 import { isUuid } from "@/lib/ids";
@@ -28,7 +29,9 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
 
   const [user, found] = await Promise.all([requireStudent(), getPost(postId)]);
   if (!found) notFound();
-  const conversations = found.authorId === user.id ? await getConversationsOnMyPost(postId) : null;
+  const conversations = canSeeConversationsOnPost(found, user.id)
+    ? await getConversationsOnMyPost(postId)
+    : null;
 
   // The page is exactly as high as the screen below the navigation (4rem) and the main
   // area's padding (2rem or 2.5rem at the top and bottom), so the conversation fills

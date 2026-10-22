@@ -2,27 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 
-import { db } from "@/db";
-import { post } from "@/db/schema";
-import { type NewPost, validatePost } from "@/domain/post";
+import { validatePost } from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
+import { savePost } from "@/lib/posts";
 
-export async function createPost(values: NewPost) {
+// F3, F4, F5: create a post by the signed-in student. A Server Action is a public
+// endpoint, so the input is validated again here with the same rules as the form, and
+// the author is taken from the session.
+export async function createPost(values: unknown) {
   const user = await requireStudent();
-  // F3, F4, F5: a Server Action is a public endpoint, so the rules are checked again here.
   const validation = validatePost(values);
   if (!validation.ok) {
     return { ok: false, message: validation.message };
   }
-  const { type, title, description } = validation.post;
 
   try {
-    await db.insert(post).values({ authorId: user.id, type, title, description });
-  } catch {
-    return {
-      ok: false,
-      message: "The post could not be saved. Check the database connection and migration.",
-    };
+    await savePost(user.id, validation.post);
+  } catch (error) {
+    console.error("Could not save the post:", error);
+    return { ok: false, message: "Your post could not be saved. Please try again." };
   }
 
   revalidatePath("/posts");

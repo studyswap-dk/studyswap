@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canOpenConversation,
+  canSeeConversationsOnPost,
   type ConversationPost,
   decideSendMessage,
   decideStartConversation,
@@ -143,5 +144,15 @@ describe("conversations on closed and removed posts", () => {
 
   it("F22: the author cannot open the conversation when the post has been removed", () => {
     expect(canOpenConversation(post("removed"), "participant", true, "author")).toBe(false);
+  });
+});
+
+describe("canSeeConversationsOnPost", () => {
+  it("F10: the author sees the conversations on their post", () => {
+    expect(canSeeConversationsOnPost(post(), "author")).toBe(true);
+  });
+
+  it.each(["participant", "someone-else"])("F10: %s does not see them", (userId) => {
+    expect(canSeeConversationsOnPost(post(), userId)).toBe(false);
   });
 });

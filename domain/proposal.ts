@@ -1,13 +1,14 @@
 // F8 (send, withdraw) and F9 (accept, decline).
 import { decideReservation } from "./point-account";
+import type { PostStatus, PostType } from "./post";
 
 export const POINTS_PER_AGREEMENT = 1;
 
 export type Post = {
   id: string;
   authorId: string;
-  type: "offering" | "seeking"; // offering: the author helps. seeking: the author needs help
-  status: "open" | "closed" | "removed";
+  type: PostType; // offering: the author helps. seeking: the author needs help
+  status: PostStatus;
 };
 
 export type ProposalStatus = "pending" | "accepted" | "declined" | "withdrawn";
