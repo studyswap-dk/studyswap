@@ -85,12 +85,24 @@ export function validatePost(value: unknown): PostValidation {
 
 // The values of postStatus in db/schema.ts, written out because domain/ does not import
 // the database. A new status in the schema makes typecheck fail where lib/ passes a
-// post's status to isPostShown, so the two cannot drift apart unnoticed.
-export type PostStatus = "open" | "closed" | "removed";
+// post's status to the rules below, so the two cannot drift apart unnoticed.
+export const POST_STATUSES = ["open", "closed", "removed"] as const;
+export type PostStatus = (typeof POST_STATUSES)[number];
 
 // F22: a post a moderator has removed is no longer shown to anyone, and nor are the
-// conversations on it. Open and closed posts are shown; a closed post only leaves the
-// list of posts that can get new proposals.
+// conversations on it. Open and closed posts are shown. The statuses are a list, so
+// lib/ can filter on the same rule in SQL, where a limit must only count what is shown.
+export const SHOWN_POST_STATUSES = ["open", "closed"] as const satisfies readonly PostStatus[];
+
 export function isPostShown(status: PostStatus): boolean {
-  return status !== "removed";
+  return (SHOWN_POST_STATUSES as readonly PostStatus[]).includes(status);
+}
+
+// F8, F10: only open posts are listed in /posts, because only they can get new
+// proposals and new conversations. A closed post is still shown on its own page and
+// in the conversations about it, see isPostShown.
+export const LISTED_POST_STATUSES = ["open"] as const satisfies readonly PostStatus[];
+
+export function isPostListed(status: PostStatus): boolean {
+  return (LISTED_POST_STATUSES as readonly PostStatus[]).includes(status);
 }

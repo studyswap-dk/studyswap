@@ -9,12 +9,19 @@ import { cn } from "@/lib/utils";
 import { AuthorLine } from "@/components/posts/author-line";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
 import { formatDate } from "@/lib/dates";
-import { getPosts, POSTS_PER_PAGE } from "@/lib/posts";
+import { pageWindow } from "@/lib/pagination";
+import { getPosts } from "@/lib/posts";
 
 export async function PostsList({ query, page }: { query: string; page: number }) {
-  const { items, total, pages, page: currentPage, unavailable } = await getPosts({ query, page });
-  const firstItem = total === 0 ? 0 : (currentPage - 1) * POSTS_PER_PAGE + 1;
-  const lastItem = Math.min(currentPage * POSTS_PER_PAGE, total);
+  const {
+    items,
+    total,
+    pages,
+    page: currentPage,
+    firstItem,
+    lastItem,
+    unavailable,
+  } = await getPosts({ query, page });
 
   if (unavailable) {
     return (
@@ -23,7 +30,7 @@ export async function PostsList({ query, page }: { query: string; page: number }
           <CardTitle>Posts are unavailable</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Connect the database and apply its migrations to browse posts.
+          The posts could not be loaded right now. Please try again in a moment.
         </CardContent>
       </Card>
     );
@@ -104,12 +111,7 @@ export async function PostsList({ query, page }: { query: string; page: number }
 }
 
 function Pagination({ query, page, pages }: { query: string; page: number; pages: number }) {
-  const firstPage = Math.max(1, page - 2);
-  const lastPage = Math.min(pages, page + 2);
-  const pageRange = Array.from(
-    { length: lastPage - firstPage + 1 },
-    (_, index) => firstPage + index,
-  );
+  const pageRange = pageWindow(page, pages);
 
   return (
     <nav aria-label="Posts pages" className="flex items-center justify-center gap-2 pt-3">

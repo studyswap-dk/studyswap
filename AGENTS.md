@@ -142,9 +142,11 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 **Security**
 - Server Actions and route handlers are public endpoints. Validate all input again on the server, and take the user's identity from the session, never from the request
 - Call `requireStudent()` from `lib/current-user.ts` first in every Server Action and in every function in `lib/` that reads data for the signed-in student, and take the user from it. The dashboard layout and `proxy.ts` do not protect data: the layout does not run again on navigation, and the proxy does not check the student email
+- A function in `lib/` either acts for the signed-in student and calls `requireStudent()` itself, like `getMyConversation` and `saveMyProfile`, or takes the user's id as a parameter, like `savePost`, `saveMessage` and `acceptProposal`, so the rules and transactions can be tested with any user. Pass such a function only an id that came from `requireStudent()` in the same request, in a Server Action, a page or a layout, never one from the request's input. Functions that are not for one student say so in a comment: `lookupCurrentUser` is only for the login page, and `checkAllPointAccounts` only for tests and manual checks
 - Never put secrets in the repository. `.env.local` is ignored by Git, and the repository is public. Preview deployments are public too
 
 **Database**
+- Database queries belong in `lib/`. Server Actions and pages call functions there and never import `db` themselves
 - Change the schema only in `db/schema.ts`, then run `pnpm run db:generate --name <name>`. Never edit files in `drizzle/` or `db/neon-auth*.ts` by hand, and never format them
 - The `neon_auth` schema belongs to Neon. Read it and reference `neon_auth.user`, but never create, change or migrate anything in it
 - Work against your own Neon branch, never against `production`
