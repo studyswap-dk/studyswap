@@ -1,6 +1,6 @@
-// Dividing a list into pages, for the list of posts. Pure functions, so the edge cases
-// are tested without a database: a page number that is missing, not a number, below 1
-// or beyond the last page.
+// Dividing a list into pages, for the list of posts and the point history. Pure
+// functions, so the edge cases are tested without a database: a page number that is
+// missing, not a number, below 1 or beyond the last page.
 
 export type PageSlice = {
   // How many pages there are. Always at least 1, so an empty list has one empty page.

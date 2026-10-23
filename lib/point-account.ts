@@ -1,7 +1,15 @@
-import { asc, eq, inArray, or, sql } from "drizzle-orm";
+import { asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
-import { agreement, pointAccount, pointTransaction } from "@/db/schema";
+import {
+  agreement,
+  pointAccount,
+  pointTransaction,
+  post,
+  proposal,
+  userInNeonAuth,
+} from "@/db/schema";
 import type { Agreement, AgreementStatus, NewPointTransaction } from "@/domain/agreement";
 import {
   accountChanges,
@@ -11,6 +19,7 @@ import {
   type PointTransaction,
   type StoredAccount,
 } from "@/domain/point-account";
+import { slicePage } from "@/lib/pagination";
 
 // The rules in domain/ speak about users. This file is the only place a user is
 // mapped to a pointAccount (AGENTS.md).
@@ -63,6 +72,149 @@ export async function ensurePointAccount(userId: string): Promise<void> {
       .set({ balance: sql`${pointAccount.balance} + ${inserted.amount}` })
       .where(eq(pointAccount.id, account.id));
   });
+}
+
+export const POINT_HISTORY_PER_PAGE = 20;
+
+export type PointHistoryEntry =
+  | { id: string; type: "initial"; amount: number; createdAt: Date }
+  | {
+      id: string;
+      type: "release";
+      amount: number;
+      createdAt: Date;
+      agreement: {
+        id: string;
+        status: (typeof agreement.status.enumValues)[number];
+        points: number;
+        createdAt: Date;
+        completedAt: Date | null;
+        helperName: string;
+        receiverName: string;
+        post: {
+          id: string;
+          title: string;
+          type: (typeof post.type.enumValues)[number];
+          status: (typeof post.status.enumValues)[number];
+        };
+      };
+    };
+
+const helperUser = alias(userInNeonAuth, "helperUser");
+const receiverUser = alias(userInNeonAuth, "receiverUser");
+
+// F2: read one student's stored account and every kind of point movement. An initial
+// transaction has no agreement; a release joins through its agreement and proposal
+// to the post. The read-only snapshot keeps the summary and page of history together.
+// The caller passes a userId from requireStudent() in this request, after ensuring the
+// account exists and settling that student's overdue agreements.
+export async function getPointAccountHistory(userId: string, requestedPage: number) {
+  return db.transaction(
+    async (tx) => {
+      const [account] = await tx
+        .select({
+          id: pointAccount.id,
+          balance: pointAccount.balance,
+          reserved: pointAccount.reserved,
+        })
+        .from(pointAccount)
+        .where(eq(pointAccount.userId, userId))
+        .limit(1);
+      if (!account) throw new Error("The student has no point account");
+
+      const [totals] = await tx
+        .select({
+          total: count(),
+          earned: sql<number>`coalesce(sum(case when ${pointTransaction.type} = 'release' and ${pointTransaction.amount} > 0 then ${pointTransaction.amount} else 0 end), 0)::int`,
+          spent: sql<number>`coalesce(sum(case when ${pointTransaction.type} = 'release' and ${pointTransaction.amount} < 0 then -${pointTransaction.amount} else 0 end), 0)::int`,
+        })
+        .from(pointTransaction)
+        .where(eq(pointTransaction.accountId, account.id));
+      const slice = slicePage(totals.total, requestedPage, POINT_HISTORY_PER_PAGE);
+
+      const rows = await tx
+        .select({
+          id: pointTransaction.id,
+          type: pointTransaction.type,
+          amount: pointTransaction.amount,
+          createdAt: pointTransaction.createdAt,
+          agreementId: agreement.id,
+          agreementStatus: agreement.status,
+          agreementPoints: agreement.points,
+          agreementCreatedAt: agreement.createdAt,
+          agreementCompletedAt: agreement.completedAt,
+          helperName: helperUser.name,
+          receiverName: receiverUser.name,
+          postId: post.id,
+          postTitle: post.title,
+          postType: post.type,
+          postStatus: post.status,
+        })
+        .from(pointTransaction)
+        .leftJoin(agreement, eq(pointTransaction.agreementId, agreement.id))
+        .leftJoin(proposal, eq(agreement.proposalId, proposal.id))
+        .leftJoin(post, eq(proposal.postId, post.id))
+        .leftJoin(helperUser, eq(agreement.helperId, helperUser.id))
+        .leftJoin(receiverUser, eq(agreement.receiverId, receiverUser.id))
+        .where(eq(pointTransaction.accountId, account.id))
+        .orderBy(desc(pointTransaction.createdAt), desc(pointTransaction.id))
+        .limit(POINT_HISTORY_PER_PAGE)
+        .offset(slice.offset);
+
+      const items: PointHistoryEntry[] = rows.map((row) => {
+        if (row.type === "initial") {
+          return { id: row.id, type: row.type, amount: row.amount, createdAt: row.createdAt };
+        }
+        if (
+          !row.agreementId ||
+          !row.agreementStatus ||
+          row.agreementPoints === null ||
+          !row.agreementCreatedAt ||
+          row.helperName === null ||
+          row.receiverName === null ||
+          !row.postId ||
+          row.postTitle === null ||
+          !row.postType ||
+          !row.postStatus
+        ) {
+          throw new Error("A point release is missing its agreement details");
+        }
+        return {
+          id: row.id,
+          type: row.type,
+          amount: row.amount,
+          createdAt: row.createdAt,
+          agreement: {
+            id: row.agreementId,
+            status: row.agreementStatus,
+            points: row.agreementPoints,
+            createdAt: row.agreementCreatedAt,
+            completedAt: row.agreementCompletedAt,
+            helperName: row.helperName.trim() || "A student",
+            receiverName: row.receiverName.trim() || "A student",
+            post: {
+              id: row.postId,
+              title: row.postTitle,
+              type: row.postType,
+              status: row.postStatus,
+            },
+          },
+        };
+      });
+
+      return {
+        balance: account.balance,
+        reserved: account.reserved,
+        available: account.balance - account.reserved,
+        earned: totals.earned,
+        spent: totals.spent,
+        items,
+        total: totals.total,
+        ...slice,
+      };
+    },
+    { isolationLevel: "repeatable read", accessMode: "read only" },
+  );
 }
 
 // F9: reserve the receiver's points when a proposal is accepted. Must run in the
