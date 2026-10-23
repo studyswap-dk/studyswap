@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isPostShown } from "@/domain/post";
 import { formatDate, formatTime } from "@/lib/dates";
 import type { PointHistoryEntry } from "@/lib/point-account";
 
@@ -40,7 +41,8 @@ export function PointHistoryCard({ entry }: { entry: PointHistoryEntry }) {
   }
 
   const { agreement } = entry;
-  const postRemoved = agreement.post.status === "removed";
+  // F22: the same rule as everywhere else decides whether the post may be shown.
+  const postRemoved = !isPostShown(agreement.post.status);
 
   return (
     <Card>
