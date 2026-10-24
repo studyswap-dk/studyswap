@@ -10,6 +10,7 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { requireStudent } from "@/lib/current-user";
 import { pageWindow, parsePage } from "@/lib/pagination";
+import { pointUnit } from "@/lib/point-unit";
 import { ensurePointAccount, getPointAccountHistory } from "@/lib/point-account";
 
 type PointsPageProps = {
@@ -78,8 +79,9 @@ export default async function PointsPage({ searchParams }: PointsPageProps) {
                 Point history
               </h2>
               <p className="text-sm text-muted-foreground">
-                Earned {history.earned} and spent {history.spent} points through agreements. Your
-                starting points are shown separately.
+                Earned {history.earned} {pointUnit(history.earned)} and spent {history.spent}{" "}
+                {pointUnit(history.spent)} through agreements. Your starting points are shown
+                separately.
               </p>
             </div>
 
@@ -132,7 +134,8 @@ function PointSummaryCard({
       </CardHeader>
       <CardContent>
         <p className="text-3xl font-semibold tabular-nums">
-          {value} <span className="text-base font-normal text-muted-foreground">points</span>
+          {value}{" "}
+          <span className="text-base font-normal text-muted-foreground">{pointUnit(value)}</span>
         </p>
       </CardContent>
     </Card>

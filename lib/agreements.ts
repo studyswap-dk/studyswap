@@ -1,9 +1,11 @@
-import { and, eq, isNotNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lte, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
-import { agreement } from "@/db/schema";
+import { agreement, post, proposal, userInNeonAuth } from "@/db/schema";
 import {
   type Action,
+  type Agreement,
   AUTO_RELEASE_AFTER_MS,
   type Decision,
   decide,
@@ -127,4 +129,55 @@ export async function settleOverdueAgreements(userId: string, now: Date): Promis
     if (decision.ok) settled++;
   }
   return settled;
+}
+
+const helperUser = alias(userInNeonAuth, "helperUser");
+const receiverUser = alias(userInNeonAuth, "receiverUser");
+
+export type AgreementListItem = Agreement & {
+  createdAt: Date;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  helperName: string;
+  receiverName: string;
+  post: {
+    id: string;
+    title: string;
+    status: (typeof post.status.enumValues)[number];
+  };
+  // The participant of the conversation the agreement came from, for the link to it.
+  proposerId: string;
+};
+
+// F12, F13: the agreements where the student is a party, newest first. The caller passes
+// a userId from requireStudent() in this request, after settling that student's overdue
+// agreements, so the statuses shown are the ones decide() would see now.
+export async function getAgreementList(userId: string): Promise<AgreementListItem[]> {
+  const rows = await db
+    .select({
+      ...agreementColumns,
+      createdAt: agreement.createdAt,
+      completedAt: agreement.completedAt,
+      cancelledAt: agreement.cancelledAt,
+      helperName: helperUser.name,
+      receiverName: receiverUser.name,
+      postId: post.id,
+      postTitle: post.title,
+      postStatus: post.status,
+      proposerId: proposal.proposerId,
+    })
+    .from(agreement)
+    .innerJoin(proposal, eq(agreement.proposalId, proposal.id))
+    .innerJoin(post, eq(proposal.postId, post.id))
+    .innerJoin(helperUser, eq(agreement.helperId, helperUser.id))
+    .innerJoin(receiverUser, eq(agreement.receiverId, receiverUser.id))
+    .where(or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)))
+    .orderBy(desc(agreement.createdAt), desc(agreement.id));
+
+  return rows.map(({ postId, postTitle, postStatus, helperName, receiverName, ...row }) => ({
+    ...row,
+    helperName: helperName.trim() || "A student",
+    receiverName: receiverName.trim() || "A student",
+    post: { id: postId, title: postTitle, status: postStatus },
+  }));
 }
