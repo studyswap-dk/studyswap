@@ -29,6 +29,9 @@ export function AgreementActions({
   actions: AgreementActionKind[];
 }) {
   const [isPending, startTransition] = useTransition();
+  // Which button was pressed, so only that one says it is working. All of them are
+  // disabled until the answer comes, so two actions cannot be sent at once.
+  const [pressed, setPressed] = useState<AgreementActionKind | null>(null);
   const [result, setResult] = useState<AgreementActionResult | null>(null);
 
   if (actions.length === 0 && result === null) return null;
@@ -44,12 +47,13 @@ export function AgreementActions({
               size="sm"
               disabled={isPending}
               onClick={() => {
+                setPressed(kind);
                 startTransition(async () => {
                   setResult(await button.run(agreementId));
                 });
               }}
             >
-              {isPending ? button.pending : button.label}
+              {isPending && pressed === kind ? button.pending : button.label}
             </Button>
           );
         })}
