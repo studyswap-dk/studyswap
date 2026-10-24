@@ -79,8 +79,9 @@ export default async function PointsPage({ searchParams }: PointsPageProps) {
                 Point history
               </h2>
               <p className="text-sm text-muted-foreground">
-                Earned {history.earned} and spent {history.spent} points through agreements. Your
-                starting points are shown separately.
+                Earned {history.earned} {pointUnit(history.earned)} and spent {history.spent}{" "}
+                {pointUnit(history.spent)} through agreements. Your starting points are shown
+                separately.
               </p>
             </div>
 

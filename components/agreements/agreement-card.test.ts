@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { AgreementCard } from "./agreement-card";
+import type { PartyAction } from "@/domain/agreement";
 import type { AgreementListItem } from "@/lib/agreements";
 
 // The buttons call Server Actions, which reach the database. Rendering only needs them
@@ -26,13 +27,14 @@ const agreement: AgreementListItem = {
   receiverConfirmedAt: null,
   createdAt: new Date("2026-10-24T12:00:00Z"),
   completedAt: null,
+  cancelledAt: null,
   helperName: "Helper Student",
   receiverName: "Receiver Student",
   post: { id: "44444444-4444-4444-8444-444444444444", title: "Math tutoring", status: "open" },
   proposerId: HELPER,
 };
 
-function render(entry: AgreementListItem, userId: string, actions: ("confirm" | "markDone")[]) {
+function render(entry: AgreementListItem, userId: string, actions: PartyAction[]) {
   return renderToStaticMarkup(createElement(AgreementCard, { agreement: entry, userId, actions }));
 }
 
@@ -48,7 +50,7 @@ describe("AgreementCard", () => {
     );
   });
 
-  it("F13: once the help is marked as given, the card says when the points are released", () => {
+  it("F13: once the help is marked as given, the helper reads that the receiver must confirm", () => {
     const html = render(
       { ...agreement, helperConfirmedAt: new Date("2026-10-25T12:00:00Z") },
       HELPER,
@@ -56,9 +58,29 @@ describe("AgreementCard", () => {
     );
 
     expect(html).toContain("You help Receiver Student");
-    expect(html).toContain("Help marked as given");
+    expect(html).toContain("You marked the help as given");
+    expect(html).toContain("when Receiver Student confirms");
     expect(html).toContain("automatically on 26 Oct 2026");
-    expect(html).not.toContain("<button");
+  });
+
+  it("F12, F13: once the help is marked as given, the receiver reads that they must confirm", () => {
+    const html = render(
+      { ...agreement, helperConfirmedAt: new Date("2026-10-25T12:00:00Z") },
+      RECEIVER,
+      ["confirm"],
+    );
+
+    expect(html).toContain("Helper Student marked the help as given");
+    expect(html).toContain("when you confirm");
+    expect(html).not.toContain("the receiver confirms");
+    expect(html).toContain("Confirm help received");
+  });
+
+  it("F14: an expired agreement says when it expired and that the points were returned", () => {
+    const html = render({ ...agreement, status: "expired" }, RECEIVER, []);
+
+    expect(html).toContain("Expired on 31 Oct 2026");
+    expect(html).toContain("The reserved points were returned");
   });
 
   it("F12: a completed agreement says when it was completed, and one point is singular", () => {

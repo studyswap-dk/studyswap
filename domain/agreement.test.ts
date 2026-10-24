@@ -3,6 +3,8 @@ import {
   AGREEMENT_DURATION_DAYS,
   AUTO_RELEASE_AFTER_MS,
   agreementExpiresAt,
+  autoReleaseAt,
+  availableActions,
   decide,
   dueSystemAction,
   SYSTEM_ACTOR,
@@ -447,5 +449,47 @@ describe("agreementExpiresAt", () => {
     agreementExpiresAt(createdAt);
 
     expect(createdAt).toEqual(new Date("2026-10-20T10:00:00.000Z"));
+  });
+});
+
+describe("autoReleaseAt", () => {
+  it("F13: the points are released 24 hours after the help was marked as done", () => {
+    expect(autoReleaseAt(markedAt)).toEqual(new Date(markedAt.getTime() + dayMs));
+  });
+
+  it("F13: autoRelease is refused one millisecond before autoReleaseAt and allowed at it", () => {
+    const at = autoReleaseAt(markedAt);
+    expect(decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, oneMsBefore(at)).ok).toBe(false);
+    expect(decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, at).ok).toBe(true);
+  });
+});
+
+describe("availableActions", () => {
+  it("F13: the helper can mark the help as given, and nothing else", () => {
+    expect(availableActions(base, "helper", now)).toEqual(["markDone"]);
+  });
+
+  it("F12: the receiver can confirm, and nothing else", () => {
+    expect(availableActions(base, "receiver", now)).toEqual(["confirm"]);
+  });
+
+  it("F13: once the help is marked as given, the helper has nothing left to do", () => {
+    expect(availableActions(marked, "helper", now)).toEqual([]);
+    expect(availableActions(marked, "receiver", now)).toEqual(["confirm"]);
+  });
+
+  it("F14: after the deadline, neither party is offered anything", () => {
+    expect(availableActions(base, "helper", base.expiresAt)).toEqual([]);
+    expect(availableActions(base, "receiver", base.expiresAt)).toEqual([]);
+  });
+
+  it("F12: a completed agreement offers nothing", () => {
+    const completed: Agreement = { ...marked, status: "completed" };
+    expect(availableActions(completed, "helper", now)).toEqual([]);
+    expect(availableActions(completed, "receiver", now)).toEqual([]);
+  });
+
+  it("F12, F13: a student who is not a party is offered nothing", () => {
+    expect(availableActions(base, "someone-else", now)).toEqual([]);
   });
 });

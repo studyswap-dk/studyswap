@@ -1,10 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
-import {
-  type AgreementActionKind,
-  AgreementActions,
-} from "@/components/agreements/agreement-actions";
+import { AgreementActions } from "@/components/agreements/agreement-actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -15,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AUTO_RELEASE_AFTER_MS } from "@/domain/agreement";
+import { autoReleaseAt, type PartyAction } from "@/domain/agreement";
 import { isPostShown } from "@/domain/post";
 import { formatDate, formatTime } from "@/lib/dates";
 import { pointUnit } from "@/lib/point-unit";
@@ -33,17 +30,32 @@ function at(date: Date) {
   return `${formatDate(date)} at ${formatTime(date)}`;
 }
 
-// What happens next, or when it ended, from the agreement's status and timestamps.
-function nextStep(agreement: AgreementListItem): string {
-  if (agreement.status === "completed" && agreement.completedAt) {
-    return `Completed on ${at(agreement.completedAt)}.`;
+// What happens next, or how it ended, from the agreement's status and timestamps, told
+// from the side of the student who reads it.
+function nextStep(agreement: AgreementListItem, isHelper: boolean): string {
+  switch (agreement.status) {
+    case "accepted": {
+      if (agreement.helperConfirmedAt === null) {
+        return `The help must be given before ${at(agreement.expiresAt)}.`;
+      }
+      const release = at(autoReleaseAt(agreement.helperConfirmedAt));
+      return isHelper
+        ? `You marked the help as given. The points are released when ${agreement.receiverName} confirms, or automatically on ${release}.`
+        : `${agreement.helperName} marked the help as given. The points are released when you confirm, or automatically on ${release}.`;
+    }
+    case "completed":
+      return agreement.completedAt ? `Completed on ${at(agreement.completedAt)}.` : "Completed.";
+    case "expired":
+      return `Expired on ${at(agreement.expiresAt)} without the help being marked as given. The reserved points were returned.`;
+    case "cancelled":
+      return agreement.cancelledAt
+        ? `Cancelled on ${at(agreement.cancelledAt)}. The reserved points were returned.`
+        : "Cancelled. The reserved points were returned.";
+    case "disputed":
+      return isHelper
+        ? `${agreement.receiverName} has disputed that the help was given. A moderator decides who gets the points.`
+        : "You have disputed that the help was given. A moderator decides who gets the points.";
   }
-  if (agreement.status !== "accepted") return "";
-  if (agreement.helperConfirmedAt === null) {
-    return `The help must be given before ${at(agreement.expiresAt)}.`;
-  }
-  const release = new Date(agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS);
-  return `Help marked as given. The points are released when the receiver confirms, or automatically on ${at(release)}.`;
 }
 
 export function AgreementCard({
@@ -53,11 +65,11 @@ export function AgreementCard({
 }: {
   agreement: AgreementListItem;
   userId: string;
-  actions: AgreementActionKind[];
+  actions: PartyAction[];
 }) {
   const isHelper = agreement.helperId === userId;
   const postShown = isPostShown(agreement.post.status);
-  const step = nextStep(agreement);
+  const step = nextStep(agreement, isHelper);
 
   return (
     <Card>
@@ -81,12 +93,10 @@ export function AgreementCard({
           </span>
         </p>
       </CardHeader>
-      {step || actions.length > 0 ? (
-        <CardContent className="flex flex-col gap-4">
-          {step ? <p className="text-sm text-muted-foreground">{step}</p> : null}
-          <AgreementActions agreementId={agreement.id} actions={actions} />
-        </CardContent>
-      ) : null}
+      <CardContent className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground">{step}</p>
+        <AgreementActions agreementId={agreement.id} actions={actions} />
+      </CardContent>
       {postShown ? (
         <CardFooter>
           <Link

@@ -8,30 +8,30 @@ import {
   markAgreementDone,
 } from "@/app/actions/agreements";
 import { Button } from "@/components/ui/button";
-
-export type AgreementActionKind = "confirm" | "markDone";
+import type { PartyAction } from "@/domain/agreement";
 
 const BUTTONS: Record<
-  AgreementActionKind,
+  PartyAction,
   { label: string; pending: string; run: (id: string) => Promise<AgreementActionResult> }
 > = {
   markDone: { label: "Mark help as given", pending: "Saving...", run: markAgreementDone },
   confirm: { label: "Confirm help received", pending: "Confirming...", run: confirmAgreement },
 };
 
-// The page decides which actions the student may take, with the same decide() the server
-// uses. The server checks again, so a button that is out of date only gives a message.
+// The page decides which actions the student may take, with availableActions() from
+// domain/agreement.ts, which asks the same decide() the server uses. The server checks
+// again, so a button that is out of date only gives a message.
 export function AgreementActions({
   agreementId,
   actions,
 }: {
   agreementId: string;
-  actions: AgreementActionKind[];
+  actions: PartyAction[];
 }) {
   const [isPending, startTransition] = useTransition();
   // Which button was pressed, so only that one says it is working. All of them are
   // disabled until the answer comes, so two actions cannot be sent at once.
-  const [pressed, setPressed] = useState<AgreementActionKind | null>(null);
+  const [pressed, setPressed] = useState<PartyAction | null>(null);
   const [result, setResult] = useState<AgreementActionResult | null>(null);
 
   if (actions.length === 0 && result === null) return null;
@@ -58,14 +58,18 @@ export function AgreementActions({
           );
         })}
       </div>
-      {result ? (
-        <p
-          role={result.ok ? "status" : "alert"}
-          className={result.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}
-        >
-          {result.message}
-        </p>
-      ) : null}
+      {/* Always in the page, so a screen reader announces the message when it appears.
+          <output> is a status region of its own. */}
+      <output
+        aria-live="polite"
+        className={
+          result?.ok === false
+            ? "block text-sm text-destructive"
+            : "block text-sm text-muted-foreground"
+        }
+      >
+        {result?.message}
+      </output>
     </div>
   );
 }

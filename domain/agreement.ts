@@ -11,6 +11,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // uses the same constant to find agreements that are due, so the two cannot drift apart.
 export const AUTO_RELEASE_AFTER_MS = DAY_MS;
 
+// F13: when the points are released automatically, counted from when the helper marked
+// the help as done. Until then the receiver can confirm or dispute (F15).
+export function autoReleaseAt(helperConfirmedAt: Date): Date {
+  return new Date(helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS);
+}
+
 // F14: the help must be given within this many days of the agreement being made.
 export const AGREEMENT_DURATION_DAYS = 7;
 
@@ -138,7 +144,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
       }
       // F13, F15: after 24 hours the points are released, also when no one has
       // read the agreement since, so a late dispute must not get in first.
-      if (now.getTime() >= agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
+      if (now.getTime() >= autoReleaseAt(agreement.helperConfirmedAt).getTime()) {
         return { ok: false, reason: "The 24 hour window for disputes has passed" };
       }
       return {
@@ -192,7 +198,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
         return { ok: false, reason: "Agreement is not in accepted status" };
       if (agreement.helperConfirmedAt === null)
         return { ok: false, reason: "Help has not been marked as done" };
-      if (now.getTime() < agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS) {
+      if (now.getTime() < autoReleaseAt(agreement.helperConfirmedAt).getTime()) {
         return { ok: false, reason: "The 24 hour window has not passed" };
       }
       return { ok: true, newStatus: "completed", transactions: releaseTransactions(agreement) };
@@ -200,6 +206,17 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     default:
       return { ok: false, reason: "Action not implemented" };
   }
+}
+
+// F12, F13: the actions a party can take on the agreements page. Cancel (F11) and
+// dispute (F15) are added here when they get their buttons.
+export const PARTY_ACTIONS = ["markDone", "confirm"] as const;
+export type PartyAction = (typeof PARTY_ACTIONS)[number];
+
+// F12, F13: which of PARTY_ACTIONS this user may take now, judged by decide(), so the
+// page shows the same choice the server will make.
+export function availableActions(agreement: Agreement, userId: string, now: Date): PartyAction[] {
+  return PARTY_ACTIONS.filter((kind) => decide(agreement, { kind }, userId, now).ok);
 }
 
 // F13, F14: the system action that is due on an agreement when it is read, if any.

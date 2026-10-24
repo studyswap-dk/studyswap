@@ -137,6 +137,7 @@ const receiverUser = alias(userInNeonAuth, "receiverUser");
 export type AgreementListItem = Agreement & {
   createdAt: Date;
   completedAt: Date | null;
+  cancelledAt: Date | null;
   helperName: string;
   receiverName: string;
   post: {
@@ -157,6 +158,7 @@ export async function getAgreementList(userId: string): Promise<AgreementListIte
       ...agreementColumns,
       createdAt: agreement.createdAt,
       completedAt: agreement.completedAt,
+      cancelledAt: agreement.cancelledAt,
       helperName: helperUser.name,
       receiverName: receiverUser.name,
       postId: post.id,

@@ -1,17 +1,14 @@
 import { Handshake } from "lucide-react";
 import { connection } from "next/server";
 
-import type { AgreementActionKind } from "@/components/agreements/agreement-actions";
 import { AgreementCard } from "@/components/agreements/agreement-card";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
-import { decide } from "@/domain/agreement";
+import { availableActions } from "@/domain/agreement";
 import { getAgreementList, settleOverdueAgreements } from "@/lib/agreements";
 import { requireStudent } from "@/lib/current-user";
 import { ensurePointAccount } from "@/lib/point-account";
-
-const ACTIONS: AgreementActionKind[] = ["markDone", "confirm"];
 
 // F12, F13: the student's agreements, with the actions decide() allows right now.
 export default async function AgreementsPage() {
@@ -61,7 +58,7 @@ export default async function AgreementsPage() {
               <AgreementCard
                 agreement={agreement}
                 userId={user.id}
-                actions={ACTIONS.filter((kind) => decide(agreement, { kind }, user.id, now).ok)}
+                actions={availableActions(agreement, user.id, now)}
               />
             </li>
           ))}

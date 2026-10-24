@@ -27,11 +27,12 @@ async function act(
     console.error(`The agreement action ${action.kind} failed:`, error);
     return { ok: false, message: "The agreement could not be updated. Please try again." };
   }
-  if (!decision.ok) return { ok: false, message: decision.reason };
 
+  // Also after a refusal: the agreement may have expired or been changed in another tab
+  // since the page was drawn, and the student should see how it stands now.
   revalidatePath("/agreements");
   revalidatePath("/points");
-  return { ok: true, message: done };
+  return decision.ok ? { ok: true, message: done } : { ok: false, message: decision.reason };
 }
 
 // F12: the receiver confirms that the help was given, and the points are released.
