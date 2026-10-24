@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Agreement } from "./agreement";
+import { decide, SYSTEM_ACTOR, type Action, type Agreement } from "./agreement";
 import {
+  accountChanges,
   availablePoints,
   balance,
+  checkAccount,
+  decideReservation,
+  holdsReservation,
   INITIAL_POINTS,
   initialTransaction,
   type PointTransaction,
@@ -133,5 +137,141 @@ describe("summarize", () => {
       earned: 0,
       spent: 0,
     });
+  });
+});
+
+describe("holdsReservation", () => {
+  it.each(["accepted", "disputed"] as const)("F9: status %s holds the reservation", (status) => {
+    expect(holdsReservation(status)).toBe(true);
+  });
+
+  it.each(["completed", "cancelled", "expired"] as const)(
+    "F11, F12, F14: status %s does not hold the reservation",
+    (status) => {
+      expect(holdsReservation(status)).toBe(false);
+    },
+  );
+});
+
+describe("decideReservation", () => {
+  it("F9: boundary: exactly enough available points can be reserved", () => {
+    expect(decideReservation(1, 1)).toEqual({ ok: true });
+    expect(decideReservation(3, 3)).toEqual({ ok: true });
+  });
+
+  it("F9: boundary: one point too few is refused", () => {
+    expect(decideReservation(0, 1).ok).toBe(false);
+    expect(decideReservation(2, 3).ok).toBe(false);
+  });
+
+  it("F9: more available points than needed is enough", () => {
+    expect(decideReservation(5, 1)).toEqual({ ok: true });
+  });
+
+  it("F9: a negative available amount is refused", () => {
+    expect(decideReservation(-1, 1).ok).toBe(false);
+  });
+
+  it.each([0, -1, 1.5, Number.NaN])("F9: %s points cannot be reserved", (points) => {
+    expect(decideReservation(5, points).ok).toBe(false);
+  });
+});
+
+function changesAfter(a: Agreement, action: Action, actorId: string, at: Date) {
+  const decision = decide(a, action, actorId, at);
+  if (!decision.ok) throw new Error(decision.reason);
+  return accountChanges(a, decision.newStatus, decision.transactions);
+}
+
+describe("accountChanges", () => {
+  const now = new Date("2026-10-02T12:00:00Z");
+
+  it("F12: a confirmed agreement moves the points and lifts the reservation", () => {
+    expect(changesAfter(agreement({ points: 2 }), { kind: "confirm" }, "receiver", now)).toEqual([
+      { userId: "helper", balance: 2, reserved: 0 },
+      { userId: "receiver", balance: -2, reserved: -2 },
+    ]);
+  });
+
+  it("F13: marking the help as done changes no account", () => {
+    expect(changesAfter(agreement({}), { kind: "markDone" }, "helper", now)).toEqual([]);
+  });
+
+  it("F13: an automatic release moves the points and lifts the reservation", () => {
+    const a = agreement({ helperConfirmedAt: new Date("2026-10-01T12:00:00Z") });
+    expect(changesAfter(a, { kind: "autoRelease" }, SYSTEM_ACTOR, now)).toEqual([
+      { userId: "helper", balance: 1, reserved: 0 },
+      { userId: "receiver", balance: -1, reserved: -1 },
+    ]);
+  });
+
+  it("F11: a cancelled agreement only lifts the receiver's reservation", () => {
+    expect(changesAfter(agreement({}), { kind: "cancel" }, "helper", now)).toEqual([
+      { userId: "receiver", balance: 0, reserved: -1 },
+    ]);
+  });
+
+  it("F14: an expired agreement only lifts the receiver's reservation", () => {
+    const a = agreement({});
+    expect(changesAfter(a, { kind: "expire" }, SYSTEM_ACTOR, a.expiresAt)).toEqual([
+      { userId: "receiver", balance: 0, reserved: -1 },
+    ]);
+  });
+
+  it("F15: a dispute keeps the reservation", () => {
+    const a = agreement({ helperConfirmedAt: new Date("2026-10-02T10:00:00Z") });
+    expect(changesAfter(a, { kind: "dispute", reason: "No help" }, "receiver", now)).toEqual([]);
+  });
+
+  it("F16: an upheld dispute only lifts the receiver's reservation", () => {
+    const a = agreement({ status: "disputed" });
+    expect(
+      changesAfter(a, { kind: "resolveDispute", outcome: "upheld" }, "moderator", now),
+    ).toEqual([{ userId: "receiver", balance: 0, reserved: -1 }]);
+  });
+
+  it("F16: a rejected dispute moves the points and lifts the reservation", () => {
+    const a = agreement({ status: "disputed" });
+    expect(
+      changesAfter(a, { kind: "resolveDispute", outcome: "rejected" }, "moderator", now),
+    ).toEqual([
+      { userId: "helper", balance: 1, reserved: 0 },
+      { userId: "receiver", balance: -1, reserved: -1 },
+    ]);
+  });
+
+  it("NF2: a release changes the receiver's balance and reserved by the same amount", () => {
+    // Balance and reserved fall together, so balance >= reserved still holds afterwards.
+    const receiver = changesAfter(agreement({}), { kind: "confirm" }, "receiver", now).find(
+      (c) => c.userId === "receiver",
+    );
+    expect(receiver?.balance).toBe(receiver?.reserved);
+  });
+});
+
+describe("checkAccount", () => {
+  const transactions = [transaction("receiver", 5, "initial")];
+  const agreements = [agreement({ id: "a1" }), agreement({ id: "a2", status: "completed" })];
+
+  it("NF2: stored numbers that match the transactions and agreements pass", () => {
+    expect(checkAccount({ balance: 5, reserved: 1 }, transactions, agreements, "receiver")).toEqual(
+      { ok: true },
+    );
+  });
+
+  it("NF2: a stored balance that is one point off is reported", () => {
+    expect(checkAccount({ balance: 6, reserved: 1 }, transactions, agreements, "receiver")).toEqual(
+      {
+        ok: false,
+        stored: { balance: 6, reserved: 1 },
+        expected: { balance: 5, reserved: 1 },
+      },
+    );
+  });
+
+  it("NF2: a reservation that was not lifted is reported", () => {
+    expect(checkAccount({ balance: 5, reserved: 2 }, transactions, agreements, "receiver").ok).toBe(
+      false,
+    );
   });
 });

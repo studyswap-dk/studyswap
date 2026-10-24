@@ -172,6 +172,9 @@ importers:
       '@neondatabase/auth':
         specifier: 0.5.0-beta
         version: 0.5.0-beta(4f064a432e0ed398a30e8460aa33fd51)
+      '@shadcn/react':
+        specifier: ^0.3.1
+        version: 0.3.1(@types/react@19.3.0)(react@19.2.8)
       '@vercel/functions':
         specifier: ^3.9.9
         version: 3.9.9
@@ -202,9 +205,6 @@ importers:
       react-hook-form:
         specifier: ^7.88.0
         version: 7.88.0(react@19.2.8)
-      shadcn:
-        specifier: ^4.21.0
-        version: 4.21.0(supports-color@7.2.0)(typescript@5.9.3)
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -239,6 +239,9 @@ importers:
       oxlint:
         specifier: 1.85.0
         version: 1.85.0
+      shadcn:
+        specifier: ^4.21.0
+        version: 4.21.0(supports-color@7.2.0)(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.3.3
@@ -2474,6 +2477,17 @@ packages:
 
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
+
+  '@shadcn/react@0.3.1':
+    resolution: {integrity: sha512-2gOR0HDMtWeRsCZfNDaU0YDFdgH3zsDQ6lz67Fv/y/qjY9y+R8kJqAn6q56phqv7/zHi0wqURjntrNO9zL7vnQ==}
+    peerDependencies:
+      '@types/react': '>=19'
+      react: '>=19'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
 
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
@@ -6733,6 +6747,11 @@ snapshots:
     dependencies:
       domhandler: 5.0.3
       selderee: 0.11.0
+
+  '@shadcn/react@0.3.1(@types/react@19.3.0)(react@19.2.8)':
+    optionalDependencies:
+      '@types/react': 19.3.0
+      react: 19.2.8
 
   '@simplewebauthn/browser@13.3.0': {}
 

@@ -6,12 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-import { getPosts, POSTS_PER_PAGE } from "@/lib/posts";
+import { AuthorLine } from "@/components/posts/author-line";
+import { PostTypeBadge } from "@/components/posts/post-type-badge";
+import { formatDate } from "@/lib/dates";
+import { pageWindow } from "@/lib/pagination";
+import { getPosts } from "@/lib/posts";
 
 export async function PostsList({ query, page }: { query: string; page: number }) {
-  const { items, total, pages, page: currentPage, unavailable } = await getPosts({ query, page });
-  const firstItem = total === 0 ? 0 : (currentPage - 1) * POSTS_PER_PAGE + 1;
-  const lastItem = Math.min(currentPage * POSTS_PER_PAGE, total);
+  const {
+    items,
+    total,
+    pages,
+    page: currentPage,
+    firstItem,
+    lastItem,
+    unavailable,
+  } = await getPosts({ query, page });
 
   if (unavailable) {
     return (
@@ -20,7 +30,7 @@ export async function PostsList({ query, page }: { query: string; page: number }
           <CardTitle>Posts are unavailable</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Connect the database and apply its migrations to browse posts.
+          The posts could not be loaded right now. Please try again in a moment.
         </CardContent>
       </Card>
     );
@@ -53,38 +63,41 @@ export async function PostsList({ query, page }: { query: string; page: number }
       <ul className="grid gap-4 md:grid-cols-2">
         {items.map((post) => (
           <li key={post.id}>
-            <Card className="h-full gap-5 transition-shadow hover:shadow-md">
+            {/* The title is the link, and it covers the whole card, so the card is one
+                link for screen readers and can be clicked anywhere. */}
+            <Card className="relative h-full gap-5 transition-shadow focus-within:ring-3 focus-within:ring-ring/40 hover:shadow-md">
               <CardHeader className="gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Badge variant={post.type === "seeking" ? "secondary" : "outline"}>
-                    {post.type === "seeking" ? "Seeking help" : "Offering help"}
-                  </Badge>
+                  <PostTypeBadge type={post.type} />
                   <time
                     dateTime={post.createdAt.toISOString()}
                     className="text-xs text-muted-foreground"
                   >
-                    {new Intl.DateTimeFormat("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }).format(post.createdAt)}
+                    {formatDate(post.createdAt)}
                   </time>
                 </div>
-                <CardTitle className="text-xl leading-snug">{post.title}</CardTitle>
+                <CardTitle className="text-xl leading-snug">
+                  <Link
+                    href={`/posts/${post.id}`}
+                    className="outline-none after:absolute after:inset-0 after:content-['']"
+                  >
+                    {post.title}
+                  </Link>
+                </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-5">
                 <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                   {trimDescription(post.description)}
                 </p>
-                <div className="mt-auto flex items-center gap-2 border-t pt-4 text-sm">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
-                  >
-                    {post.authorName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="text-muted-foreground">By</span>
-                  <span className="font-medium">{post.authorName}</span>
+                <div className="mt-auto flex items-end justify-between gap-3 border-t pt-4">
+                  <AuthorLine name={post.authorName} programme={post.authorProgramme} />
+                  {post.conversationCount !== null ? (
+                    <Badge variant="secondary" className="shrink-0">
+                      {post.conversationCount === 1
+                        ? "1 conversation"
+                        : `${post.conversationCount} conversations`}
+                    </Badge>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
@@ -98,12 +111,7 @@ export async function PostsList({ query, page }: { query: string; page: number }
 }
 
 function Pagination({ query, page, pages }: { query: string; page: number; pages: number }) {
-  const firstPage = Math.max(1, page - 2);
-  const lastPage = Math.min(pages, page + 2);
-  const pageRange = Array.from(
-    { length: lastPage - firstPage + 1 },
-    (_, index) => firstPage + index,
-  );
+  const pageRange = pageWindow(page, pages);
 
   return (
     <nav aria-label="Posts pages" className="flex items-center justify-center gap-2 pt-3">

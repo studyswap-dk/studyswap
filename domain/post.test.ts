@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DESCRIPTION_MAX_LENGTH,
   DESCRIPTION_MIN_LENGTH,
+  isPostListed,
+  isPostShown,
+  POST_STATUSES,
   TITLE_MAX_LENGTH,
   TITLE_MIN_LENGTH,
   validateDescription,
@@ -147,5 +150,34 @@ describe("validatePost", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.message).toBe(validateTitle("abc"));
+  });
+});
+
+describe("isPostShown", () => {
+  it.each(["open", "closed"] as const)("F22: a %s post is shown", (status) => {
+    expect(isPostShown(status)).toBe(true);
+  });
+
+  it("F22: a post a moderator has removed is not shown", () => {
+    expect(isPostShown("removed")).toBe(false);
+  });
+});
+
+describe("isPostListed", () => {
+  it("F8: an open post is listed", () => {
+    expect(isPostListed("open")).toBe(true);
+  });
+
+  it("F8: a closed post is not listed, because it can get no new proposals", () => {
+    expect(isPostListed("closed")).toBe(false);
+  });
+
+  it("F22: a removed post is not listed", () => {
+    expect(isPostListed("removed")).toBe(false);
+  });
+
+  it("F8, F22: every listed post is also shown", () => {
+    const listedButHidden = POST_STATUSES.filter((s) => isPostListed(s) && !isPostShown(s));
+    expect(listedButHidden).toEqual([]);
   });
 });

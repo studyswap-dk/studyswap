@@ -1,186 +1,179 @@
-import { eq, or, sql } from "drizzle-orm";
-import { db } from "@/db";
-import {
-  agreement,
-  proposal,
-  post,
-  pointAccount,
-  pointTransaction,
-  userInNeonAuth,
-} from "@/db/schema";
-import { decide, type Agreement } from "@/domain/agreement";
+import { and, desc, eq, isNotNull, lte, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
-export type AgreementListItem = {
-  id: string;
-  helperId: string;
-  receiverId: string;
-  points: number;
-  status: "accepted" | "completed" | "cancelled" | "expired" | "disputed";
-  expiresAt: Date;
-  helperConfirmedAt: Date | null;
-  receiverConfirmedAt: Date | null;
-  postTitle: string;
-  helperName: string | null;
-  receiverName: string | null;
+import { db } from "@/db";
+import { agreement, post, proposal, userInNeonAuth } from "@/db/schema";
+import {
+  type Action,
+  type Agreement,
+  AUTO_RELEASE_AFTER_MS,
+  type Decision,
+  decide,
+  dueSystemAction,
+  SYSTEM_ACTOR,
+} from "@/domain/agreement";
+import { PointAccountError, settlePoints, type Transaction } from "@/lib/point-account";
+
+// Another request changed the agreement between the read and the update. The message
+// can be shown to the user.
+export class AgreementConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgreementConflictError";
+  }
+}
+
+const agreementColumns = {
+  id: agreement.id,
+  helperId: agreement.helperId,
+  receiverId: agreement.receiverId,
+  status: agreement.status,
+  points: agreement.points,
+  expiresAt: agreement.expiresAt,
+  helperConfirmedAt: agreement.helperConfirmedAt,
+  receiverConfirmedAt: agreement.receiverConfirmedAt,
 };
 
+// NF3: run an action on an agreement inside tx: lock the row, let decide() judge it,
+// save the new status and settle the points, all in the same transaction. The update
+// only matches while the status is the one decide() saw, so the check and the change
+// are one step (design.tex, "Nøgler og begrænsninger").
+//
+// The caller owns what lies outside the agreement: for "dispute" it saves the dispute
+// with decision.disputeReason, and for "resolveDispute" it checks that the actor is a
+// moderator and updates the dispute, both in the same tx.
+export async function applyAgreementAction(
+  tx: Transaction,
+  agreementId: string,
+  action: Action,
+  actorId: string,
+  now: Date,
+): Promise<Decision> {
+  const [current] = await tx
+    .select(agreementColumns)
+    .from(agreement)
+    .where(eq(agreement.id, agreementId))
+    .for("update");
+  if (!current) return { ok: false, reason: "Agreement not found" };
+
+  const decision = decide(current, action, actorId, now);
+  if (!decision.ok) return decision;
+
+  const updated = await tx
+    .update(agreement)
+    .set({
+      status: decision.newStatus,
+      ...decision.timestamps,
+      ...(decision.newStatus === "completed" && { completedAt: now }),
+      ...(decision.newStatus === "cancelled" && { cancelledAt: now }),
+      ...(action.kind === "cancel" && { cancelledById: actorId }),
+    })
+    .where(and(eq(agreement.id, agreementId), eq(agreement.status, current.status)))
+    .returning({ id: agreement.id });
+  if (updated.length === 0) {
+    throw new AgreementConflictError("The agreement was changed at the same time. Try again");
+  }
+
+  await settlePoints(tx, current, decision.newStatus, decision.transactions);
+  return decision;
+}
+
+// The same as applyAgreementAction in a transaction of its own, for a Server Action.
+// A refusal from the database comes back as a reason instead of an exception.
+export async function runAgreementAction(
+  agreementId: string,
+  action: Action,
+  actorId: string,
+  now: Date,
+): Promise<Decision> {
+  try {
+    return await db.transaction((tx) =>
+      applyAgreementAction(tx, agreementId, action, actorId, now),
+    );
+  } catch (error) {
+    if (error instanceof PointAccountError || error instanceof AgreementConflictError) {
+      return { ok: false, reason: error.message };
+    }
+    throw error;
+  }
+}
+
+// F13, F14: there are no background jobs, so an agreement that is overdue is
+// completed or expired when one of its parties is read. Each agreement is settled in
+// a transaction of its own, so the account locks of one never wait on another.
+// Returns how many agreements were settled.
+export async function settleOverdueAgreements(userId: string, now: Date): Promise<number> {
+  const candidates = await db
+    .select(agreementColumns)
+    .from(agreement)
+    .where(
+      and(
+        or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)),
+        eq(agreement.status, "accepted"),
+        or(
+          lte(agreement.expiresAt, now),
+          and(
+            isNotNull(agreement.helperConfirmedAt),
+            lte(agreement.helperConfirmedAt, new Date(now.getTime() - AUTO_RELEASE_AFTER_MS)),
+          ),
+        ),
+      ),
+    );
+
+  let settled = 0;
+  for (const candidate of candidates) {
+    const action = dueSystemAction(candidate, now);
+    if (!action) continue;
+    // Read again under lock: another request may have settled it since.
+    const decision = await runAgreementAction(candidate.id, action, SYSTEM_ACTOR, now);
+    if (decision.ok) settled++;
+  }
+  return settled;
+}
+
+const helperUser = alias(userInNeonAuth, "helperUser");
+const receiverUser = alias(userInNeonAuth, "receiverUser");
+
+export type AgreementListItem = Agreement & {
+  createdAt: Date;
+  helperName: string;
+  receiverName: string;
+  post: {
+    id: string;
+    title: string;
+    status: (typeof post.status.enumValues)[number];
+  };
+  // The participant of the conversation the agreement came from, for the link to it.
+  proposerId: string;
+};
+
+// F12, F13: the agreements where the student is a party, newest first. The caller passes
+// a userId from requireStudent() in this request, after settling that student's overdue
+// agreements, so the statuses shown are the ones decide() would see now.
 export async function getMyAgreements(userId: string): Promise<AgreementListItem[]> {
   const rows = await db
     .select({
-      id: agreement.id,
-      helperId: agreement.helperId,
-      receiverId: agreement.receiverId,
-      points: agreement.points,
-      status: agreement.status,
-      expiresAt: agreement.expiresAt,
-      helperConfirmedAt: agreement.helperConfirmedAt,
-      receiverConfirmedAt: agreement.receiverConfirmedAt,
+      ...agreementColumns,
+      createdAt: agreement.createdAt,
+      helperName: helperUser.name,
+      receiverName: receiverUser.name,
+      postId: post.id,
       postTitle: post.title,
-      helperName: userInNeonAuth.name,
+      postStatus: post.status,
+      proposerId: proposal.proposerId,
     })
     .from(agreement)
     .innerJoin(proposal, eq(agreement.proposalId, proposal.id))
     .innerJoin(post, eq(proposal.postId, post.id))
-    .leftJoin(userInNeonAuth, eq(agreement.helperId, userInNeonAuth.id))
-    .where(or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)));
+    .innerJoin(helperUser, eq(agreement.helperId, helperUser.id))
+    .innerJoin(receiverUser, eq(agreement.receiverId, receiverUser.id))
+    .where(or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)))
+    .orderBy(desc(agreement.createdAt), desc(agreement.id));
 
-  // Hent receiver navne separat eller map dem
-  const receiverIds = Array.from(new Set(rows.map((r) => r.receiverId)));
-  const receivers = receiverIds.length
-    ? await db
-        .select({ id: userInNeonAuth.id, name: userInNeonAuth.name })
-        .from(userInNeonAuth)
-        .where(
-          sql`${userInNeonAuth.id} IN (${sql.join(
-            receiverIds.map((id) => sql`${id}::uuid`),
-            sql`, `,
-          )})`,
-        )
-    : [];
-
-  const receiverMap = new Map(receivers.map((r) => [r.id, r.name]));
-
-  return rows.map((r) => ({
-    ...r,
-    receiverName: receiverMap.get(r.receiverId) ?? null,
+  return rows.map(({ postId, postTitle, postStatus, helperName, receiverName, ...row }) => ({
+    ...row,
+    helperName: helperName.trim() || "A student",
+    receiverName: receiverName.trim() || "A student",
+    post: { id: postId, title: postTitle, status: postStatus },
   }));
-}
-
-export async function markAgreementDoneDb(agreementId: string, actorId: string) {
-  const now = new Date();
-
-  await db.transaction(async (tx) => {
-    const [found] = await tx
-      .select()
-      .from(agreement)
-      .where(eq(agreement.id, agreementId));
-
-    if (!found) {
-      throw new Error("Agreement not found");
-    }
-
-    const domainModel: Agreement = {
-      id: found.id,
-      helperId: found.helperId,
-      receiverId: found.receiverId,
-      status: found.status,
-      points: found.points,
-      expiresAt: found.expiresAt,
-      helperConfirmedAt: found.helperConfirmedAt,
-      receiverConfirmedAt: found.receiverConfirmedAt,
-    };
-
-    const decision = decide(domainModel, { kind: "markDone" }, actorId, now);
-    if (!decision.ok) {
-      throw new Error(decision.reason);
-    }
-
-    await tx
-      .update(agreement)
-      .set({
-        helperConfirmedAt: decision.timestamps?.helperConfirmedAt ?? now,
-      })
-      .where(eq(agreement.id, agreementId));
-  });
-}
-
-export async function confirmAgreementDb(agreementId: string, actorId: string) {
-  const now = new Date();
-
-  await db.transaction(async (tx) => {
-    const [found] = await tx
-      .select()
-      .from(agreement)
-      .where(eq(agreement.id, agreementId));
-
-    if (!found) {
-      throw new Error("Agreement not found");
-    }
-
-    const domainModel: Agreement = {
-      id: found.id,
-      helperId: found.helperId,
-      receiverId: found.receiverId,
-      status: found.status,
-      points: found.points,
-      expiresAt: found.expiresAt,
-      helperConfirmedAt: found.helperConfirmedAt,
-      receiverConfirmedAt: found.receiverConfirmedAt,
-    };
-
-    const decision = decide(domainModel, { kind: "confirm" }, actorId, now);
-    if (!decision.ok) {
-      throw new Error(decision.reason);
-    }
-
-    // 1. Opdater aftalen
-    await tx
-      .update(agreement)
-      .set({
-        status: decision.newStatus,
-        receiverConfirmedAt: decision.timestamps?.receiverConfirmedAt ?? now,
-        completedAt: now,
-      })
-      .where(eq(agreement.id, agreementId));
-
-    // 2. Opret pointTransaction rækker og opdater pointAccount
-    for (const trx of decision.transactions) {
-      // Find point-konto for brugeren
-      const [acc] = await tx
-        .select()
-        .from(pointAccount)
-        .where(eq(pointAccount.userId, trx.userId));
-
-      if (!acc) {
-        throw new Error(`Point account missing for user: ${trx.userId}`);
-      }
-
-      await tx.insert(pointTransaction).values({
-        accountId: acc.id,
-        agreementId: found.id,
-        amount: trx.amount,
-        type: trx.type,
-      });
-
-      // Opdater balance og reserved
-      if (trx.amount < 0) {
-        // Receiver: balance falder, reserved frigives
-        await tx
-          .update(pointAccount)
-          .set({
-            balance: sql`${pointAccount.balance} + ${trx.amount}`,
-            reserved: sql`${pointAccount.reserved} + ${trx.amount}`,
-          })
-          .where(eq(pointAccount.id, acc.id));
-      } else {
-        // Helper: balance stiger
-        await tx
-          .update(pointAccount)
-          .set({
-            balance: sql`${pointAccount.balance} + ${trx.amount}`,
-          })
-          .where(eq(pointAccount.id, acc.id));
-      }
-    }
-  });
 }

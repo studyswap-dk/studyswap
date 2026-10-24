@@ -1,58 +1,71 @@
-import { redirect } from "next/navigation";
-import { lookupCurrentUser } from "@/lib/current-user";
-import { getMyAgreements } from "@/lib/agreements";
-import { AgreementActions } from "./agreement-actions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Handshake } from "lucide-react";
+import { connection } from "next/server";
 
+import type { AgreementActionKind } from "@/components/agreements/agreement-actions";
+import { AgreementCard } from "@/components/agreements/agreement-card";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
+import { decide } from "@/domain/agreement";
+import { getMyAgreements, settleOverdueAgreements } from "@/lib/agreements";
+import { requireStudent } from "@/lib/current-user";
+import { ensurePointAccount } from "@/lib/point-account";
+
+const ACTIONS: AgreementActionKind[] = ["markDone", "confirm"];
+
+// F12, F13: the student's agreements, with the actions decide() allows right now.
 export default async function AgreementsPage() {
-  const currentUser = await lookupCurrentUser();
-  if (!currentUser.user) {
-    redirect("/");
+  await connection();
+  const user = await requireStudent();
+  const now = new Date();
+
+  let agreements: Awaited<ReturnType<typeof getMyAgreements>> | null = null;
+  try {
+    // A layout does not rerun on navigation. Settle overdue agreements here too, so an
+    // agreement that has just expired or been released is not shown with its buttons.
+    await ensurePointAccount(user.id);
+    await settleOverdueAgreements(user.id, now);
+    agreements = await getMyAgreements(user.id);
+  } catch (error) {
+    console.error("Could not load the agreements:", error);
   }
 
-  const agreements = await getMyAgreements(currentUser.user.id);
-
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Agreements</h1>
-
-      {agreements.length === 0 ? (
-        <p className="text-muted-foreground">No agreements found.</p>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Agreements"
+        title="Agreements"
+        description="Follow your agreements from the moment a proposal is accepted until the help is given."
+      />
+      {agreements === null ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Agreements are unavailable</CardTitle>
+            <CardDescription>
+              Your agreements could not be loaded. Please try again.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : agreements.length === 0 ? (
+        <Empty>
+          <Handshake aria-hidden="true" className="size-8 text-muted-foreground" />
+          <EmptyTitle>No agreements yet</EmptyTitle>
+          <EmptyDescription>
+            When a proposal is accepted, the agreement and the reserved points show up here.
+          </EmptyDescription>
+        </Empty>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {agreements.map((agreement) => {
-            const isHelper = agreement.helperId === currentUser.user?.id;
-            const role = isHelper ? "helper" : "receiver";
-
-            return (
-              <Card key={agreement.id} className="flex flex-col justify-between">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base font-medium">
-                    {isHelper
-                      ? `Helping ${agreement.receiverName ?? "student"}`
-                      : `Getting help from ${agreement.helperName ?? "student"}`}
-                  </CardTitle>
-                  <Badge variant="outline">{agreement.status}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Post: {agreement.postTitle}</p>
-                    <p>Points: {agreement.points}</p>
-                  </div>
-                  <div className="pt-2">
-                    <AgreementActions
-                      agreementId={agreement.id}
-                      role={role}
-                      status={agreement.status}
-                      helperConfirmedAt={agreement.helperConfirmedAt}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <ul className="flex flex-col gap-4">
+          {agreements.map((agreement) => (
+            <li key={agreement.id}>
+              <AgreementCard
+                agreement={agreement}
+                userId={user.id}
+                actions={ACTIONS.filter((kind) => decide(agreement, { kind }, user.id, now).ok)}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

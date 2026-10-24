@@ -1,12 +1,14 @@
 // F8 (send, withdraw) and F9 (accept, decline).
+import { decideReservation } from "./point-account";
+import type { PostStatus, PostType } from "./post";
 
 export const POINTS_PER_AGREEMENT = 1;
 
 export type Post = {
   id: string;
   authorId: string;
-  type: "offering" | "seeking"; // offering: the author helps. seeking: the author needs help
-  status: "open" | "closed" | "removed";
+  type: PostType; // offering: the author helps. seeking: the author needs help
+  status: PostStatus;
 };
 
 export type ProposalStatus = "pending" | "accepted" | "declined" | "withdrawn";
@@ -35,6 +37,16 @@ export type ProposalDecision =
       declineOtherProposals?: boolean;
     }
   | { ok: false; reason: string };
+
+// F9: who helps and who receives when a proposal on the post is accepted.
+export function partiesOf(
+  post: Pick<Post, "authorId" | "type">,
+  proposerId: string,
+): { helperId: string; receiverId: string } {
+  return post.type === "offering"
+    ? { helperId: post.authorId, receiverId: proposerId }
+    : { helperId: proposerId, receiverId: post.authorId };
+}
 
 // F8: may this user send a proposal on the post?
 export function decideSend(
@@ -77,14 +89,10 @@ export function decideProposal(
       if (actorId !== post.authorId) return { ok: false, reason: "Only the author can accept" };
       if (post.status !== "open") return { ok: false, reason: "Post is not open" };
 
-      const [helperId, receiverId] =
-        post.type === "offering"
-          ? [post.authorId, proposal.proposerId]
-          : [proposal.proposerId, post.authorId];
+      const { helperId, receiverId } = partiesOf(post, proposal.proposerId);
 
-      if ((ctx.available[receiverId] ?? 0) < POINTS_PER_AGREEMENT) {
-        return { ok: false, reason: "Receiver has insufficient available points" };
-      }
+      const reservation = decideReservation(ctx.available[receiverId] ?? 0, POINTS_PER_AGREEMENT);
+      if (!reservation.ok) return reservation;
       const closes = post.type === "seeking"; // only a post seeking help is closed
       return {
         ok: true,
