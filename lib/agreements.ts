@@ -136,6 +136,7 @@ const receiverUser = alias(userInNeonAuth, "receiverUser");
 
 export type AgreementListItem = Agreement & {
   createdAt: Date;
+  completedAt: Date | null;
   helperName: string;
   receiverName: string;
   post: {
@@ -150,11 +151,12 @@ export type AgreementListItem = Agreement & {
 // F12, F13: the agreements where the student is a party, newest first. The caller passes
 // a userId from requireStudent() in this request, after settling that student's overdue
 // agreements, so the statuses shown are the ones decide() would see now.
-export async function getMyAgreements(userId: string): Promise<AgreementListItem[]> {
+export async function getAgreementList(userId: string): Promise<AgreementListItem[]> {
   const rows = await db
     .select({
       ...agreementColumns,
       createdAt: agreement.createdAt,
+      completedAt: agreement.completedAt,
       helperName: helperUser.name,
       receiverName: receiverUser.name,
       postId: post.id,

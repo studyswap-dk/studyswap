@@ -18,6 +18,7 @@ import {
 import { AUTO_RELEASE_AFTER_MS } from "@/domain/agreement";
 import { isPostShown } from "@/domain/post";
 import { formatDate, formatTime } from "@/lib/dates";
+import { pointUnit } from "@/lib/point-unit";
 import type { AgreementListItem } from "@/lib/agreements";
 
 const STATUS_LABELS: Record<AgreementListItem["status"], string> = {
@@ -32,14 +33,17 @@ function at(date: Date) {
   return `${formatDate(date)} at ${formatTime(date)}`;
 }
 
-// What happens next, from the agreement's status and timestamps.
+// What happens next, or when it ended, from the agreement's status and timestamps.
 function nextStep(agreement: AgreementListItem): string {
+  if (agreement.status === "completed" && agreement.completedAt) {
+    return `Completed on ${at(agreement.completedAt)}.`;
+  }
   if (agreement.status !== "accepted") return "";
   if (agreement.helperConfirmedAt === null) {
     return `The help must be given before ${at(agreement.expiresAt)}.`;
   }
   const release = new Date(agreement.helperConfirmedAt.getTime() + AUTO_RELEASE_AFTER_MS);
-  return `Help marked as given. The points are released when the receiver confirms, or automatically ${at(release)}.`;
+  return `Help marked as given. The points are released when the receiver confirms, or automatically on ${at(release)}.`;
 }
 
 export function AgreementCard({
@@ -72,7 +76,9 @@ export function AgreementCard({
         </div>
         <p className="shrink-0 text-2xl font-semibold tabular-nums">
           {agreement.points}{" "}
-          <span className="text-sm font-normal text-muted-foreground">points</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {pointUnit(agreement.points)}
+          </span>
         </p>
       </CardHeader>
       {step || actions.length > 0 ? (

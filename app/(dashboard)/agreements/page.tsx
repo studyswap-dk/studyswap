@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { decide } from "@/domain/agreement";
-import { getMyAgreements, settleOverdueAgreements } from "@/lib/agreements";
+import { getAgreementList, settleOverdueAgreements } from "@/lib/agreements";
 import { requireStudent } from "@/lib/current-user";
 import { ensurePointAccount } from "@/lib/point-account";
 
@@ -19,13 +19,13 @@ export default async function AgreementsPage() {
   const user = await requireStudent();
   const now = new Date();
 
-  let agreements: Awaited<ReturnType<typeof getMyAgreements>> | null = null;
+  let agreements: Awaited<ReturnType<typeof getAgreementList>> | null = null;
   try {
     // A layout does not rerun on navigation. Settle overdue agreements here too, so an
     // agreement that has just expired or been released is not shown with its buttons.
     await ensurePointAccount(user.id);
     await settleOverdueAgreements(user.id, now);
-    agreements = await getMyAgreements(user.id);
+    agreements = await getAgreementList(user.id);
   } catch (error) {
     console.error("Could not load the agreements:", error);
   }

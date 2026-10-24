@@ -10,6 +10,7 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { requireStudent } from "@/lib/current-user";
 import { pageWindow, parsePage } from "@/lib/pagination";
+import { pointUnit } from "@/lib/point-unit";
 import { ensurePointAccount, getPointAccountHistory } from "@/lib/point-account";
 
 type PointsPageProps = {
@@ -132,7 +133,8 @@ function PointSummaryCard({
       </CardHeader>
       <CardContent>
         <p className="text-3xl font-semibold tabular-nums">
-          {value} <span className="text-base font-normal text-muted-foreground">points</span>
+          {value}{" "}
+          <span className="text-base font-normal text-muted-foreground">{pointUnit(value)}</span>
         </p>
       </CardContent>
     </Card>

@@ -25,6 +25,7 @@ const agreement: AgreementListItem = {
   helperConfirmedAt: null,
   receiverConfirmedAt: null,
   createdAt: new Date("2026-10-24T12:00:00Z"),
+  completedAt: null,
   helperName: "Helper Student",
   receiverName: "Receiver Student",
   post: { id: "44444444-4444-4444-8444-444444444444", title: "Math tutoring", status: "open" },
@@ -56,8 +57,26 @@ describe("AgreementCard", () => {
 
     expect(html).toContain("You help Receiver Student");
     expect(html).toContain("Help marked as given");
-    expect(html).toContain("26 Oct 2026");
+    expect(html).toContain("automatically on 26 Oct 2026");
     expect(html).not.toContain("<button");
+  });
+
+  it("F12: a completed agreement says when it was completed, and one point is singular", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "completed",
+        points: 1,
+        receiverConfirmedAt: new Date("2026-10-25T12:00:00Z"),
+        completedAt: new Date("2026-10-25T12:00:00Z"),
+      },
+      RECEIVER,
+      [],
+    );
+
+    expect(html).toContain("Completed on 25 Oct 2026");
+    expect(html).toContain(">point</span>");
+    expect(html).not.toContain(">points</span>");
   });
 
   it("F22: a removed post's title and the link to the conversation are hidden", () => {

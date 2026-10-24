@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { isPostShown } from "@/domain/post";
 import { formatDate, formatTime } from "@/lib/dates";
+import { pointUnit } from "@/lib/point-unit";
 import type { PointHistoryEntry } from "@/lib/point-account";
 
 export function PointHistoryCard({ entry }: { entry: PointHistoryEntry }) {
@@ -102,7 +103,8 @@ function PointAmount({ amount }: { amount: number }) {
   return (
     <p className="shrink-0 text-2xl font-semibold tabular-nums">
       {amount > 0 ? "+" : ""}
-      {amount} <span className="text-sm font-normal text-muted-foreground">points</span>
+      {amount}{" "}
+      <span className="text-sm font-normal text-muted-foreground">{pointUnit(amount)}</span>
     </p>
   );
 }
