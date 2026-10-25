@@ -1,10 +1,11 @@
 import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { agreement, pointAccount, post, proposal } from "@/db/schema";
+import { agreement, conversation, pointAccount, post, proposal } from "@/db/schema";
 import { agreementExpiresAt } from "@/domain/agreement";
-import { decideProposal, partiesOf } from "@/domain/proposal";
+import { decideProposal, decideSend, partiesOf } from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
+import { violates } from "@/lib/db-errors";
 import { PointAccountError, reservePoints } from "@/lib/point-account";
 
 export type AcceptResult = { ok: true; agreementId: string } | { ok: false; reason: string };
@@ -122,4 +123,82 @@ export async function acceptProposal(
     if (error instanceof PointAccountError) return { ok: false, reason: error.message };
     throw error;
   }
+}
+
+export type SendResult = { ok: true; proposalId: string } | { ok: false; reason: string };
+
+// F8, F10: a student sends a proposal on someone else's open post. In one transaction:
+// decideSend judges it, the conversation between the proposer and the author is created
+// if it does not exist yet, and the proposal is saved as pending. The caller passes a
+// proposerId from requireStudent() in this request.
+export async function sendProposal(
+  postId: string,
+  proposerId: string,
+  now: Date,
+): Promise<SendResult> {
+  try {
+    return await db.transaction(async (tx): Promise<SendResult> => {
+      // Share lock: an accept that closes the post at the same time takes an update
+      // lock on it, so one of them waits for the other and sees the post as it is after.
+      const [lockedPost] = await tx
+        .select({ id: post.id, authorId: post.authorId, type: post.type, status: post.status })
+        .from(post)
+        .where(eq(post.id, postId))
+        .for("share");
+      if (!lockedPost) return { ok: false, reason: "Post not found" };
+
+      const existing = await tx
+        .select({
+          id: proposal.id,
+          postId: proposal.postId,
+          proposerId: proposal.proposerId,
+          status: proposal.status,
+        })
+        .from(proposal)
+        .where(and(eq(proposal.postId, postId), eq(proposal.proposerId, proposerId)));
+      // The proposer's earlier proposals on the post, so decideSend can turn away a second
+      // unanswered one.
+      const decision = decideSend(lockedPost, proposerId, existing);
+      if (!decision.ok) return decision;
+
+      // F10: the proposal continues in the conversation with the author, so it is created
+      // here if the proposer has not written yet. Then the author can open it from the
+      // proposal and the agreement too.
+      await tx
+        .insert(conversation)
+        .values({ postId, participantId: proposerId, createdAt: now })
+        .onConflictDoNothing({ target: [conversation.postId, conversation.participantId] });
+
+      const [created] = await tx
+        .insert(proposal)
+        .values({ postId, proposerId, status: "pending", createdAt: now })
+        .returning({ id: proposal.id });
+      return { ok: true, proposalId: created.id };
+    });
+  } catch (error) {
+    // Two sends at the same time can both pass decideSend. The unique index on pending
+    // proposals refuses the second, which gets the same reason as from the rule.
+    if (violates(error, "proposal_postId_proposerId_pending_key")) {
+      return { ok: false, reason: "You already have an unanswered proposal on this post" };
+    }
+    throw error;
+  }
+}
+
+// F8: has the student a proposal on the post that the author has not answered yet?
+// The post page uses it to show "Proposal sent" instead of the button. The caller passes
+// a proposerId from requireStudent() in this request.
+export async function hasPendingProposal(postId: string, proposerId: string): Promise<boolean> {
+  const [found] = await db
+    .select({ id: proposal.id })
+    .from(proposal)
+    .where(
+      and(
+        eq(proposal.postId, postId),
+        eq(proposal.proposerId, proposerId),
+        eq(proposal.status, "pending"),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
 }
