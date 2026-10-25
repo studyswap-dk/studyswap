@@ -19,6 +19,7 @@ import {
   type PointTransaction,
   type StoredAccount,
 } from "@/domain/point-account";
+import { violates } from "@/lib/db-errors";
 import { slicePage } from "@/lib/pagination";
 
 // The rules in domain/ speak about users. This file is the only place a user is
@@ -370,14 +371,4 @@ export async function checkAllPointAccounts(): Promise<AccountCheck[]> {
   const accounts = await db.select({ userId: pointAccount.userId }).from(pointAccount);
   const checks = await Promise.all(accounts.map((a) => checkPointAccount(a.userId)));
   return checks.filter((c): c is AccountCheck => c !== null);
-}
-
-// node-postgres reports a violated unique index as code 23505 with its name.
-// Drizzle wraps the error, so the original is in cause.
-export function violates(error: unknown, constraint: string): boolean {
-  for (let e: unknown = error; e instanceof Error; e = e.cause) {
-    const pgError = e as Error & { code?: string; constraint?: string };
-    if (pgError.code === "23505" && pgError.constraint === constraint) return true;
-  }
-  return false;
 }

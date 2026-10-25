@@ -5,7 +5,8 @@ import { agreement, conversation, pointAccount, post, proposal } from "@/db/sche
 import { agreementExpiresAt } from "@/domain/agreement";
 import { decideProposal, decideSend, partiesOf } from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
-import { PointAccountError, reservePoints, violates } from "@/lib/point-account";
+import { violates } from "@/lib/db-errors";
+import { PointAccountError, reservePoints } from "@/lib/point-account";
 
 export type AcceptResult = { ok: true; agreementId: string } | { ok: false; reason: string };
 
@@ -125,10 +126,11 @@ export async function acceptProposal(
 }
 
 export type SendResult = { ok: true; proposalId: string } | { ok: false; reason: string };
-// F8, F10: a student sends a proposal on someone else's open post. In one transaction:
-// decideSend judges it, the proposal is saved as pending, and the conversation between
-// the proposer and the author is created if it does not exist yet
 
+// F8, F10: a student sends a proposal on someone else's open post. In one transaction:
+// decideSend judges it, the conversation between the proposer and the author is created
+// if it does not exist yet, and the proposal is saved as pending. The caller passes a
+// proposerId from requireStudent() in this request.
 export async function sendProposal(
   postId: string,
   proposerId: string,
@@ -154,17 +156,19 @@ export async function sendProposal(
         })
         .from(proposal)
         .where(and(eq(proposal.postId, postId), eq(proposal.proposerId, proposerId)));
-      // 3. Ask decideSend. Return the refusal if it says no.
+      // The proposer's earlier proposals on the post, so decideSend can turn away a second
+      // unanswered one.
       const decision = decideSend(lockedPost, proposerId, existing);
       if (!decision.ok) return decision;
 
-      // 4. Insert the conversation with onConflictDoNothing on postId + participantId.
+      // F10: the proposal continues in the conversation with the author, so it is created
+      // here if the proposer has not written yet. Then the author can open it from the
+      // proposal and the agreement too.
       await tx
         .insert(conversation)
         .values({ postId, participantId: proposerId, createdAt: now })
         .onConflictDoNothing({ target: [conversation.postId, conversation.participantId] });
 
-      // 5. Insert the proposal and return its id.
       const [created] = await tx
         .insert(proposal)
         .values({ postId, proposerId, status: "pending", createdAt: now })
@@ -172,7 +176,8 @@ export async function sendProposal(
       return { ok: true, proposalId: created.id };
     });
   } catch (error) {
-    // 6. If the unique index on pending proposals refused it, return a friendly reason.
+    // Two sends at the same time can both pass decideSend. The unique index on pending
+    // proposals refuses the second, which gets the same reason as from the rule.
     if (violates(error, "proposal_postId_proposerId_pending_key")) {
       return { ok: false, reason: "You already have an unanswered proposal on this post" };
     }
@@ -181,7 +186,8 @@ export async function sendProposal(
 }
 
 // F8: has the student a proposal on the post that the author has not answered yet?
-// The post page uses it to show "Proposal sent" instead of the button.
+// The post page uses it to show "Proposal sent" instead of the button. The caller passes
+// a proposerId from requireStudent() in this request.
 export async function hasPendingProposal(postId: string, proposerId: string): Promise<boolean> {
   const [found] = await db
     .select({ id: proposal.id })

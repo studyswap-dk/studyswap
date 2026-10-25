@@ -8,19 +8,19 @@ import { ConversationUpdates } from "@/components/conversation/conversation-upda
 import { AuthorLine } from "@/components/posts/author-line";
 import { PostDescription } from "@/components/posts/post-description";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
+import { SendProposalButton } from "@/components/proposals/send-proposal-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConversationsOnMyPost } from "@/lib/conversations";
 import { canSeeConversationsOnPost } from "@/domain/conversation";
+import { decideSend } from "@/domain/proposal";
 import { requireStudent } from "@/lib/current-user";
 import { formatDate } from "@/lib/dates";
 import { isUuid } from "@/lib/ids";
 import { getPost } from "@/lib/posts";
-import { cn } from "@/lib/utils";
-import { SendProposalButton } from "@/components/proposals/send-proposal-button";
-import { decideSend } from "@/domain/proposal";
 import { hasPendingProposal } from "@/lib/proposals";
+import { cn } from "@/lib/utils";
 
 // F10: a post and its conversations. The author sees the conversations on the post in a
 // list beside the one that is open. Anyone else sees only their own conversation with
