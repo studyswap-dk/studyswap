@@ -18,6 +18,9 @@ import { formatDate } from "@/lib/dates";
 import { isUuid } from "@/lib/ids";
 import { getPost } from "@/lib/posts";
 import { cn } from "@/lib/utils";
+import { SendProposalButton } from "@/components/proposals/send-proposal-button";
+import { decideSend } from "@/domain/proposal";
+import { hasPendingProposal } from "@/lib/proposals";
 
 // F10: a post and its conversations. The author sees the conversations on the post in a
 // list beside the one that is open. Anyone else sees only their own conversation with
@@ -32,6 +35,11 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
   const conversations = canSeeConversationsOnPost(found, user.id)
     ? await getConversationsOnMyPost(postId)
     : null;
+
+  // F8: the same rule the Server Action uses. Asked without earlier proposals, it says
+  // whether this student may send one at all: not on their own post, only on an open one.
+  const canPropose = decideSend(found, user.id, []).ok;
+  const alreadySent = canPropose ? await hasPendingProposal(postId, user.id) : false;
 
   // The page is exactly as high as the screen below the navigation (4rem) and the main
   // area's padding (2rem or 2.5rem at the top and bottom), so the conversation fills
@@ -73,7 +81,10 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
           <PostDescription text={found.description} />
         </CardHeader>
         <CardContent className="px-4 sm:px-5">
-          <AuthorLine name={found.authorName} programme={found.authorProgramme} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <AuthorLine name={found.authorName} programme={found.authorProgramme} />
+            {canPropose ? <SendProposalButton postId={postId} alreadySent={alreadySent} /> : null}
+          </div>
         </CardContent>
       </Card>
 

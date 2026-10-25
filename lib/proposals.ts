@@ -179,3 +179,20 @@ export async function sendProposal(
     throw error;
   }
 }
+
+// F8: has the student a proposal on the post that the author has not answered yet?
+// The post page uses it to show "Proposal sent" instead of the button.
+export async function hasPendingProposal(postId: string, proposerId: string): Promise<boolean> {
+  const [found] = await db
+    .select({ id: proposal.id })
+    .from(proposal)
+    .where(
+      and(
+        eq(proposal.postId, postId),
+        eq(proposal.proposerId, proposerId),
+        eq(proposal.status, "pending"),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
+}

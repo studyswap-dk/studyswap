@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { requireStudent } from "@/lib/current-user";
-import { acceptProposal as acceptProposalInDb } from "@/lib/proposals";
+import {
+  acceptProposal as acceptProposalInDb,
+  sendProposal as sendProposalInDb,
+} from "@/lib/proposals";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,4 +31,29 @@ export async function acceptProposal(proposalId: unknown) {
   revalidatePath("/proposals");
   revalidatePath("/agreements");
   return { ok: true, message: "Proposal accepted.", agreementId: result.agreementId };
+}
+
+// F8: a student sends a proposal on someone else's post. A Server Action is a public
+// endpoint, so the id is checked here and the proposer is taken from the session.
+export async function sendProposal(postId: unknown) {
+  const user = await requireStudent();
+  if (typeof postId !== "string" || !UUID.test(postId)) {
+    return { ok: false, message: "Unknown post." };
+  }
+
+  let result;
+  try {
+    result = await sendProposalInDb(postId, user.id, new Date());
+  } catch (error) {
+    console.error("Sending a proposal failed:", error);
+    return { ok: false, message: "The proposal could not be sent. Please try again." };
+  }
+  if (!result.ok) return { ok: false, message: result.reason };
+
+  // The proposal shows on /proposals, and the conversation it may have started shows on
+  // the post and under /conversations.
+  revalidatePath("/proposals");
+  revalidatePath("/conversations");
+  revalidatePath(`/posts/${postId}`, "layout");
+  return { ok: true, message: "Proposal sent." };
 }
