@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/item";
 import type { ConversationLastMessage } from "@/lib/conversations";
 import { formatMessageTime } from "@/lib/dates";
+import { initials } from "@/lib/initials";
 
 // F10: one conversation in a list: the other student, a line about what the
-// conversation is about, and the last message. Used both in the author's list on a post
-// and in the list of all the signed-in student's conversations, so the two look the same.
+// conversation is about, and the last message. Every list of conversations uses it, so
+// they look the same.
 export function ConversationItem({
   href,
   name,
@@ -45,7 +46,7 @@ export function ConversationItem({
     >
       <ItemMedia>
         <Avatar className="size-9">
-          <AvatarFallback>{name.slice(0, 1).toUpperCase() || "S"}</AvatarFallback>
+          <AvatarFallback>{initials(name)}</AvatarFallback>
         </Avatar>
       </ItemMedia>
       <ItemContent className="min-w-0">

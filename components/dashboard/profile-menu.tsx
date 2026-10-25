@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { CurrentUserProfile } from "@/lib/current-user";
+import { initials } from "@/lib/initials";
 
 export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
   const [isSigningOut, startTransition] = useTransition();
@@ -24,13 +25,6 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
   // profile.programme stores a key; the label is looked up here.
   const found = findProgramme(user?.programme ?? null);
   const programme = found ? programmeLabel(found) : "Not added";
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "S";
 
   return (
     <DropdownMenu>
@@ -40,7 +34,7 @@ export function ProfileMenu({ user }: { user: CurrentUserProfile | null }) {
       >
         <Avatar className="size-9">
           {user?.image ? <AvatarImage src={user.image} alt="" /> : null}
-          <AvatarFallback>{initials}</AvatarFallback>
+          <AvatarFallback>{initials(user?.name ?? "")}</AvatarFallback>
         </Avatar>
         <span className="hidden max-w-36 flex-col sm:flex">
           <span className="truncate text-sm font-medium">{name}</span>

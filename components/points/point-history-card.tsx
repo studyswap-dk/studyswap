@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AgreementStatusBadge } from "@/components/agreements/agreement-status-badge";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { isPostShown } from "@/domain/post";
-import { formatDate, formatTime } from "@/lib/dates";
+import { formatDateTime } from "@/lib/dates";
 import { pointUnit } from "@/lib/point-unit";
 import type { PointHistoryEntry } from "@/lib/point-account";
 
@@ -68,9 +69,7 @@ export function PointHistoryCard({ entry }: { entry: PointHistoryEntry }) {
             <PostTypeBadge type={agreement.post.type} />
           </Detail>
           <Detail label="Status">
-            <Badge variant="secondary">
-              {agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1)}
-            </Badge>
+            <AgreementStatusBadge status={agreement.status} />
           </Detail>
           <Detail label="Agreed points">{agreement.points}</Detail>
           <Detail label="Helper">{agreement.helperName}</Detail>
@@ -119,5 +118,5 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function DateTime({ date }: { date: Date }) {
-  return <time dateTime={date.toISOString()}>{`${formatDate(date)} at ${formatTime(date)}`}</time>;
+  return <time dateTime={date.toISOString()}>{formatDateTime(date)}</time>;
 }
