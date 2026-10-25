@@ -374,7 +374,7 @@ export async function checkAllPointAccounts(): Promise<AccountCheck[]> {
 
 // node-postgres reports a violated unique index as code 23505 with its name.
 // Drizzle wraps the error, so the original is in cause.
-function violates(error: unknown, constraint: string): boolean {
+export function violates(error: unknown, constraint: string): boolean {
   for (let e: unknown = error; e instanceof Error; e = e.cause) {
     const pgError = e as Error & { code?: string; constraint?: string };
     if (pgError.code === "23505" && pgError.constraint === constraint) return true;

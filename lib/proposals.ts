@@ -1,11 +1,11 @@
 import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { agreement, pointAccount, post, proposal } from "@/db/schema";
+import { agreement, conversation, pointAccount, post, proposal } from "@/db/schema";
 import { agreementExpiresAt } from "@/domain/agreement";
-import { decideProposal, partiesOf } from "@/domain/proposal";
+import { decideProposal, decideSend, partiesOf } from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
-import { PointAccountError, reservePoints } from "@/lib/point-account";
+import { PointAccountError, reservePoints, violates } from "@/lib/point-account";
 
 export type AcceptResult = { ok: true; agreementId: string } | { ok: false; reason: string };
 
@@ -120,6 +120,62 @@ export async function acceptProposal(
     });
   } catch (error) {
     if (error instanceof PointAccountError) return { ok: false, reason: error.message };
+    throw error;
+  }
+}
+
+export type SendResult = { ok: true; proposalId: string } | { ok: false; reason: string };
+// F8, F10: a student sends a proposal on someone else's open post. In one transaction:
+// decideSend judges it, the proposal is saved as pending, and the conversation between
+// the proposer and the author is created if it does not exist yet
+
+export async function sendProposal(
+  postId: string,
+  proposerId: string,
+  now: Date,
+): Promise<SendResult> {
+  try {
+    return await db.transaction(async (tx): Promise<SendResult> => {
+      // Share lock: an accept that closes the post at the same time takes an update
+      // lock on it, so one of them waits for the other and sees the post as it is after.
+      const [lockedPost] = await tx
+        .select({ id: post.id, authorId: post.authorId, type: post.type, status: post.status })
+        .from(post)
+        .where(eq(post.id, postId))
+        .for("share");
+      if (!lockedPost) return { ok: false, reason: "Post not found" };
+
+      const existing = await tx
+        .select({
+          id: proposal.id,
+          postId: proposal.postId,
+          proposerId: proposal.proposerId,
+          status: proposal.status,
+        })
+        .from(proposal)
+        .where(and(eq(proposal.postId, postId), eq(proposal.proposerId, proposerId)));
+      // 3. Ask decideSend. Return the refusal if it says no.
+      const decision = decideSend(lockedPost, proposerId, existing);
+      if (!decision.ok) return decision;
+
+      // 4. Insert the conversation with onConflictDoNothing on postId + participantId.
+      await tx
+        .insert(conversation)
+        .values({ postId, participantId: proposerId, createdAt: now })
+        .onConflictDoNothing({ target: [conversation.postId, conversation.participantId] });
+
+      // 5. Insert the proposal and return its id.
+      const [created] = await tx
+        .insert(proposal)
+        .values({ postId, proposerId, status: "pending", createdAt: now })
+        .returning({ id: proposal.id });
+      return { ok: true, proposalId: created.id };
+    });
+  } catch (error) {
+    // 6. If the unique index on pending proposals refused it, return a friendly reason.
+    if (violates(error, "proposal_postId_proposerId_pending_key")) {
+      return { ok: false, reason: "You already have an unanswered proposal on this post" };
+    }
     throw error;
   }
 }
