@@ -2,7 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { AgreementActions } from "@/components/agreements/agreement-actions";
-import { Badge } from "@/components/ui/badge";
+import { AgreementStatusBadge } from "@/components/agreements/agreement-status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -14,21 +14,9 @@ import {
 } from "@/components/ui/card";
 import { autoReleaseAt, type PartyAction } from "@/domain/agreement";
 import { isPostShown } from "@/domain/post";
-import { formatDate, formatTime } from "@/lib/dates";
+import { formatDateTime } from "@/lib/dates";
 import { pointUnit } from "@/lib/point-unit";
 import type { AgreementListItem } from "@/lib/agreements";
-
-const STATUS_LABELS: Record<AgreementListItem["status"], string> = {
-  accepted: "Accepted",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  expired: "Expired",
-  disputed: "Disputed",
-};
-
-function at(date: Date) {
-  return `${formatDate(date)} at ${formatTime(date)}`;
-}
 
 // What happens next, or how it ended, from the agreement's status and timestamps, told
 // from the side of the student who reads it.
@@ -36,20 +24,22 @@ function nextStep(agreement: AgreementListItem, isHelper: boolean): string {
   switch (agreement.status) {
     case "accepted": {
       if (agreement.helperConfirmedAt === null) {
-        return `The help must be given before ${at(agreement.expiresAt)}.`;
+        return `The help must be given before ${formatDateTime(agreement.expiresAt)}.`;
       }
-      const release = at(autoReleaseAt(agreement.helperConfirmedAt));
+      const release = formatDateTime(autoReleaseAt(agreement.helperConfirmedAt));
       return isHelper
         ? `You marked the help as given. The points are released when ${agreement.receiverName} confirms, or automatically on ${release}.`
         : `${agreement.helperName} marked the help as given. The points are released when you confirm, or automatically on ${release}.`;
     }
     case "completed":
-      return agreement.completedAt ? `Completed on ${at(agreement.completedAt)}.` : "Completed.";
+      return agreement.completedAt
+        ? `Completed on ${formatDateTime(agreement.completedAt)}.`
+        : "Completed.";
     case "expired":
-      return `Expired on ${at(agreement.expiresAt)} without the help being marked as given. The reserved points were returned.`;
+      return `Expired on ${formatDateTime(agreement.expiresAt)} without the help being marked as given. The reserved points were returned.`;
     case "cancelled":
       return agreement.cancelledAt
-        ? `Cancelled on ${at(agreement.cancelledAt)}. The reserved points were returned.`
+        ? `Cancelled on ${formatDateTime(agreement.cancelledAt)}. The reserved points were returned.`
         : "Cancelled. The reserved points were returned.";
     case "disputed":
       return isHelper
@@ -75,15 +65,13 @@ export function AgreementCard({
     <Card>
       <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
-          <Badge variant="secondary" className="w-fit">
-            {STATUS_LABELS[agreement.status]}
-          </Badge>
+          <AgreementStatusBadge status={agreement.status} className="w-fit" />
           <CardTitle className="text-lg leading-snug">
             {postShown ? agreement.post.title : "Post removed"}
           </CardTitle>
           <CardDescription>
             {isHelper ? `You help ${agreement.receiverName}` : `${agreement.helperName} helps you`}
-            {` · Agreed on ${at(agreement.createdAt)}`}
+            {` · Agreed on ${formatDateTime(agreement.createdAt)}`}
           </CardDescription>
         </div>
         <p className="shrink-0 text-2xl font-semibold tabular-nums">

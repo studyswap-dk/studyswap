@@ -186,8 +186,8 @@ export async function sendProposal(
 }
 
 // F8: has the student a proposal on the post that the author has not answered yet?
-// The post page uses it to show "Proposal sent" instead of the button. The caller passes
-// a proposerId from requireStudent() in this request.
+// So a page can show "Proposal sent" instead of the button. The caller passes a
+// proposerId from requireStudent() in this request.
 export async function hasPendingProposal(postId: string, proposerId: string): Promise<boolean> {
   const [found] = await db
     .select({ id: proposal.id })

@@ -27,6 +27,7 @@ import { MAX_MESSAGE_LENGTH } from "@/domain/message";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { ConversationMessage, MyConversation } from "@/lib/conversations";
 import { formatMessageTime } from "@/lib/dates";
+import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 
 type ShownMessage = ConversationMessage & { pending?: boolean };
@@ -96,7 +97,7 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
     >
       <header className="flex items-center gap-3 border-b px-4 py-3">
         <Avatar className="size-9">
-          <AvatarFallback>{initial(other.name)}</AvatarFallback>
+          <AvatarFallback>{initials(other.name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <p className="truncate font-medium">{other.name}</p>
@@ -137,7 +138,7 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
                       {mine ? null : (
                         <MessageAvatar className={firstInRun ? undefined : "invisible"}>
                           <Avatar className="size-8">
-                            <AvatarFallback>{initial(other.name)}</AvatarFallback>
+                            <AvatarFallback>{initials(other.name)}</AvatarFallback>
                           </Avatar>
                         </MessageAvatar>
                       )}
@@ -229,8 +230,4 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
       </footer>
     </section>
   );
-}
-
-function initial(name: string) {
-  return name.slice(0, 1).toUpperCase() || "S";
 }
