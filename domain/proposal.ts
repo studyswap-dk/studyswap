@@ -7,7 +7,7 @@ export const POINTS_PER_AGREEMENT = 1;
 export type Post = {
   id: string;
   authorId: string;
-  type: PostType; // offering meaning the author helps. seeking meaning the author needs help
+  type: PostType; // offering: the author helps. seeking: the author needs help
   status: PostStatus;
 };
 

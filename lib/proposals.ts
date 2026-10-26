@@ -203,20 +203,39 @@ export async function hasPendingProposal(postId: string, proposerId: string): Pr
   return found !== undefined;
 }
 
-export type AnswerResult = { ok: true } | { ok: false; reason: string };
+export type ProposalResult = { ok: true } | { ok: false; reason: string };
 
-// F8 (withdraw) and F9 (decline): the proposer withdraws, or the author declines, a
-// pending proposal. Neither creates an agreement or moves points, so only the proposal
-// is locked while decideProposal judges it. The update only matches while the proposal
-// is pending, so an accept at the same time cannot be overwritten. The caller passes an
-// actorId from requireStudent() in this request.
-export async function answerProposal(
+// F8: the proposer withdraws a proposal the author has not answered yet. The caller
+// passes a proposerId from requireStudent() in this request.
+export async function withdrawProposal(
+  proposalId: string,
+  proposerId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "withdraw", proposerId, now);
+}
+
+// F9: the author declines a proposal on their post. The caller passes an authorId from
+// requireStudent() in this request.
+export async function declineProposal(
+  proposalId: string,
+  authorId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "decline", authorId, now);
+}
+
+// Withdraw and decline end a pending proposal without creating an agreement or moving
+// points, so only the proposal is locked while decideProposal judges it. An accept of
+// the same proposal at the same time locks it too, so one of them waits, and the one
+// that comes last is told that the proposal has already been answered.
+async function endPendingProposal(
   proposalId: string,
   kind: "withdraw" | "decline",
   actorId: string,
   now: Date,
-): Promise<AnswerResult> {
-  return db.transaction(async (tx): Promise<AnswerResult> => {
+): Promise<ProposalResult> {
+  return db.transaction(async (tx): Promise<ProposalResult> => {
     const [current] = await tx
       .select({
         id: proposal.id,
@@ -244,6 +263,8 @@ export async function answerProposal(
     });
     if (!decision.ok) return decision;
 
+    // Only while the proposal is still pending, as decideProposal saw it, so the check
+    // and the change are one step, as for agreements.
     const updated = await tx
       .update(proposal)
       .set({ status: decision.newStatus, decidedAt: now })

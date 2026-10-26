@@ -40,7 +40,7 @@ A conversation that the signed-in student is not part of gives "not found", so t
 
 On a closed post, a student who has not written yet sees that a conversation cannot be started. A conversation that has started goes on.
 
-To link to a conversation from a proposal or an agreement, link to `/posts/[postId]/conversations/[proposerId]`. The link works for both parties. The agreements page links each agreement to its conversation; the proposals page does not have these links yet.
+To link to a conversation from a proposal or an agreement, link to `/posts/[postId]/conversations/[proposerId]`. The link works for both parties. The agreements page and the proposals page link each agreement and each proposal to its conversation.
 
 ## Files
 
