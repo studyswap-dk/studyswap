@@ -6,6 +6,7 @@ import { requireStudent } from "@/lib/current-user";
 import { isUuid } from "@/lib/ids";
 import {
   acceptProposal as acceptProposalInDb,
+  answerProposal,
   sendProposal as sendProposalInDb,
 } from "@/lib/proposals";
 
@@ -58,4 +59,42 @@ export async function sendProposal(postId: unknown) {
   revalidatePath("/posts");
   revalidatePath("/(dashboard)/posts/[postId]", "layout");
   return { ok: true, message: "Proposal sent." };
+}
+
+export type ProposalActionResult = { ok: boolean; message: string };
+
+// F8 (withdraw) and F9 (decline). A Server Action is a public endpoint, so the id is
+// checked here and the student is taken from the session. decideProposal judges whether
+// this student may do this, under a lock on the proposal.
+async function answer(
+  proposalId: unknown,
+  kind: "withdraw" | "decline",
+  done: string,
+): Promise<ProposalActionResult> {
+  const user = await requireStudent();
+  if (!isUuid(proposalId)) return { ok: false, message: "Unknown proposal." };
+
+  let result;
+  try {
+    result = await answerProposal(proposalId, kind, user.id, new Date());
+  } catch (error) {
+    console.error(`The proposal action ${kind} failed:`, error);
+    return { ok: false, message: "The proposal could not be updated. Please try again." };
+  }
+
+  // Also after a refusal: the proposal may have been answered in another tab since the
+  // page was drawn. A withdrawn proposal lets the student send a new one on the post.
+  revalidatePath("/proposals");
+  revalidatePath("/posts");
+  return result.ok ? { ok: true, message: done } : { ok: false, message: result.reason };
+}
+
+// F8: the proposer withdraws a proposal the author has not answered yet.
+export async function withdrawProposal(proposalId: unknown) {
+  return answer(proposalId, "withdraw", "Proposal withdrawn.");
+}
+
+// F9: the author declines a proposal on their post.
+export async function declineProposal(proposalId: unknown) {
+  return answer(proposalId, "decline", "Proposal declined.");
 }

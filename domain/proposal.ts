@@ -7,7 +7,7 @@ export const POINTS_PER_AGREEMENT = 1;
 export type Post = {
   id: string;
   authorId: string;
-  type: PostType; // offering: the author helps. seeking: the author needs help
+  type: PostType; // offering meaning the author helps. seeking meaning the author needs help
   status: PostStatus;
 };
 
@@ -103,4 +103,22 @@ export function decideProposal(
       };
     }
   }
+}
+
+// F8, F9: the actions a student can take on the proposals page.
+export const PROPOSAL_ACTIONS = ["withdraw", "accept", "decline"] as const;
+export type ProposalActionKind = (typeof PROPOSAL_ACTIONS)[number];
+
+// F8, F9: which of PROPOSAL_ACTIONS this user may take now, judged by decideProposal(),
+// so the page shows the same choice the server will make. The page does not read the
+// receiver's points, so accept is offered as if they had enough. The server checks the
+// points under a lock and answers with a message if they do not.
+export function availableProposalActions(
+  proposal: Proposal,
+  post: Post,
+  userId: string,
+): ProposalActionKind[] {
+  const { receiverId } = partiesOf(post, proposal.proposerId);
+  const ctx: ProposalContext = { post, available: { [receiverId]: POINTS_PER_AGREEMENT } };
+  return PROPOSAL_ACTIONS.filter((kind) => decideProposal(proposal, { kind }, userId, ctx).ok);
 }
