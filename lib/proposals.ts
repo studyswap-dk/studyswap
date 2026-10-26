@@ -1,9 +1,9 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
-import { agreement, conversation, pointAccount, post, proposal } from "@/db/schema";
+import { agreement, conversation, pointAccount, post, proposal, userInNeonAuth } from "@/db/schema";
 import { agreementExpiresAt } from "@/domain/agreement";
-import { decideProposal, decideSend, partiesOf } from "@/domain/proposal";
+import { decideProposal, decideSend, partiesOf, type Post, type Proposal } from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { violates } from "@/lib/db-errors";
 import { PointAccountError, reservePoints } from "@/lib/point-account";
@@ -201,4 +201,134 @@ export async function hasPendingProposal(postId: string, proposerId: string): Pr
     )
     .limit(1);
   return found !== undefined;
+}
+
+export type ProposalResult = { ok: true } | { ok: false; reason: string };
+
+// F8: the proposer withdraws a proposal the author has not answered yet. The caller
+// passes a proposerId from requireStudent() in this request.
+export async function withdrawProposal(
+  proposalId: string,
+  proposerId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "withdraw", proposerId, now);
+}
+
+// F9: the author declines a proposal on their post. The caller passes an authorId from
+// requireStudent() in this request.
+export async function declineProposal(
+  proposalId: string,
+  authorId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "decline", authorId, now);
+}
+
+// Withdraw and decline end a pending proposal without creating an agreement or moving
+// points, so only the proposal is locked while decideProposal judges it. An accept of
+// the same proposal at the same time locks it too, so one of them waits, and the one
+// that comes last is told that the proposal has already been answered.
+async function endPendingProposal(
+  proposalId: string,
+  kind: "withdraw" | "decline",
+  actorId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return db.transaction(async (tx): Promise<ProposalResult> => {
+    const [current] = await tx
+      .select({
+        id: proposal.id,
+        postId: proposal.postId,
+        proposerId: proposal.proposerId,
+        status: proposal.status,
+        authorId: post.authorId,
+        type: post.type,
+        postStatus: post.status,
+      })
+      .from(proposal)
+      .innerJoin(post, eq(proposal.postId, post.id))
+      .where(eq(proposal.id, proposalId))
+      .for("update", { of: proposal });
+    if (!current) return { ok: false, reason: "Proposal not found" };
+
+    const decision = decideProposal(current, { kind }, actorId, {
+      post: {
+        id: current.postId,
+        authorId: current.authorId,
+        type: current.type,
+        status: current.postStatus,
+      },
+      available: {},
+    });
+    if (!decision.ok) return decision;
+
+    // Only while the proposal is still pending, as decideProposal saw it, so the check
+    // and the change are one step, as for agreements.
+    const updated = await tx
+      .update(proposal)
+      .set({ status: decision.newStatus, decidedAt: now })
+      .where(and(eq(proposal.id, proposalId), eq(proposal.status, "pending")))
+      .returning({ id: proposal.id });
+    if (updated.length === 0) {
+      return { ok: false, reason: "Proposal has already been answered or withdrawn" };
+    }
+    return { ok: true };
+  });
+}
+
+export type ProposalListItem = Proposal & {
+  createdAt: Date;
+  decidedAt: Date | null;
+  post: Post & { title: string };
+  // The other student: the author on a proposal the student sent, the proposer on one
+  // the student received.
+  otherName: string;
+};
+
+// F8, F9: the proposals that match where, newest first, with the post and the name of
+// the student on the other side, whose id is in otherId.
+async function getProposalList(
+  where: SQL,
+  otherId: typeof post.authorId | typeof proposal.proposerId,
+): Promise<ProposalListItem[]> {
+  const rows = await db
+    .select({
+      id: proposal.id,
+      postId: proposal.postId,
+      proposerId: proposal.proposerId,
+      status: proposal.status,
+      createdAt: proposal.createdAt,
+      decidedAt: proposal.decidedAt,
+      authorId: post.authorId,
+      postType: post.type,
+      postStatus: post.status,
+      postTitle: post.title,
+      otherName: userInNeonAuth.name,
+    })
+    .from(proposal)
+    .innerJoin(post, eq(proposal.postId, post.id))
+    .innerJoin(userInNeonAuth, eq(userInNeonAuth.id, otherId))
+    .where(where)
+    .orderBy(desc(proposal.createdAt), desc(proposal.id));
+
+  return rows.map(
+    ({ authorId, postType, postStatus, postTitle, otherName, ...row }): ProposalListItem => ({
+      ...row,
+      post: { id: row.postId, authorId, type: postType, status: postStatus, title: postTitle },
+      otherName: otherName.trim() || "A student",
+    }),
+  );
+}
+
+// F8: the proposals the student has sent. The caller passes a userId from
+// requireStudent() in this request.
+export async function getSentProposals(userId: string): Promise<ProposalListItem[]> {
+  return getProposalList(eq(proposal.proposerId, userId), post.authorId);
+}
+
+// F9: the proposals other students have sent on the student's posts. The caller passes a
+// userId from requireStudent() in this request.
+export async function getReceivedProposals(userId: string): Promise<ProposalListItem[]> {
+  return getProposalList(eq(post.authorId, userId), proposal.proposerId);
 }
