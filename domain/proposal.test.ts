@@ -210,6 +210,21 @@ describe("availableProposalActions", () => {
     expect(availableProposalActions(pending, closed, "author")).toEqual(["decline"]);
   });
 
+  it.each(["closed", "removed"] as const)(
+    "F8: the proposer can still withdraw a pending proposal on a post with status %s",
+    (status) => {
+      expect(availableProposalActions(pending, { ...seekingPost, status }, "proposer")).toEqual([
+        "withdraw",
+      ]);
+    },
+  );
+
+  it("F9, F22: on a removed post the author can still decline, but not accept", () => {
+    const removed: Post = { ...seekingPost, status: "removed" };
+
+    expect(availableProposalActions(pending, removed, "author")).toEqual(["decline"]);
+  });
+
   it("F9: accept is offered on a post offering help, where the proposer is the receiver", () => {
     expect(availableProposalActions(pending, offeringPost, "author")).toEqual([
       "accept",

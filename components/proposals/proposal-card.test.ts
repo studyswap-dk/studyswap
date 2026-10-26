@@ -33,6 +33,12 @@ function render(entry: ProposalListItem, sent: boolean, actions: ProposalActionK
   return renderToStaticMarkup(createElement(ProposalCard, { proposal: entry, sent, actions }));
 }
 
+// The text of each button, so a word in the status line, such as "Accepted", is not taken
+// for the button.
+function buttons(html: string): string[] {
+  return [...html.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((match) => match[1]);
+}
+
 describe("ProposalCard", () => {
   it("F8: a pending proposal the student sent shows who it is to and the button to withdraw", () => {
     const html = render(proposal, true, ["withdraw"]);
@@ -40,8 +46,7 @@ describe("ProposalCard", () => {
     expect(html).toContain("Math tutoring");
     expect(html).toContain("To Other Student");
     expect(html).toContain("Waiting for Other Student to answer");
-    expect(html).toContain("Withdraw");
-    expect(html).not.toContain("Accept");
+    expect(buttons(html)).toEqual(["Withdraw"]);
     expect(html).toContain(`href="/posts/${POST}/conversations/${PROPOSER}"`);
   });
 
@@ -50,9 +55,7 @@ describe("ProposalCard", () => {
 
     expect(html).toContain("From Other Student");
     expect(html).toContain("Other Student is waiting for your answer");
-    expect(html).toContain("Accept");
-    expect(html).toContain("Decline");
-    expect(html).not.toContain("Withdraw");
+    expect(buttons(html)).toEqual(["Accept", "Decline"]);
   });
 
   it("F9: a declined proposal says when it was declined and has no buttons", () => {
@@ -63,7 +66,7 @@ describe("ProposalCard", () => {
     );
 
     expect(html).toContain("Declined on 25 Oct 2026");
-    expect(html).not.toContain("<button");
+    expect(buttons(html)).toEqual([]);
   });
 
   it("F22: a removed post's title and the link to the conversation are hidden", () => {

@@ -58,13 +58,13 @@ export async function withdrawProposal(proposalId: unknown) {
 }
 
 // F9: the author accepts a proposal on their post. The agreement is created and the
-// receiver's points are reserved, so the agreements and the points change too.
+// receiver's points are reserved, so the agreements and the points change too. They can
+// change after a refusal as well, because the receiver's overdue agreements are settled
+// before the points are checked.
 export async function acceptProposal(proposalId: unknown) {
   const result = await act(proposalId, acceptProposalInDb, "accept", "Proposal accepted.");
-  if (result.ok) {
-    revalidatePath("/agreements");
-    revalidatePath("/points");
-  }
+  revalidatePath("/agreements");
+  revalidatePath("/points");
   return result;
 }
 
