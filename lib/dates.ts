@@ -35,6 +35,12 @@ export function formatTime(date: Date): string {
   return timeFormat.format(date);
 }
 
+// "21 Oct 2026 at 14:02", for a moment that is shown on its own and not in a list of
+// messages, where formatMessageTime() is shorter.
+export function formatDateTime(date: Date): string {
+  return `${formatDate(date)} at ${formatTime(date)}`;
+}
+
 // The calendar day in Copenhagen, "2026-10-21", for comparing two moments.
 function dayKey(date: Date): string {
   return dayKeyFormat.format(date);

@@ -1,9 +1,11 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
+import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 
 // F1: the author's name and programme, so other students can see who they would be
-// writing to. A user who has not set up a profile may have no name yet.
+// writing to. A student must set up a profile before they can post, but a post made
+// outside the app can have an author with no name, so there is a fallback.
 export function AuthorLine({
   name,
   programme,
@@ -19,7 +21,7 @@ export function AuthorLine({
   return (
     <div className={cn("flex items-center gap-2 text-sm", className)}>
       <Avatar className="size-8">
-        <AvatarFallback>{shownName.slice(0, 1).toUpperCase()}</AvatarFallback>
+        <AvatarFallback>{initials(name)}</AvatarFallback>
       </Avatar>
       <span className="flex min-w-0 flex-col">
         <span className="truncate">

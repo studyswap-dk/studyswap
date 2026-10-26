@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDate, formatMessageTime, formatTime } from "./dates";
+import { formatDate, formatDateTime, formatMessageTime, formatTime } from "./dates";
 
 describe("dates in Danish time", () => {
   it("F10: shows the time in Copenhagen, not in UTC", () => {
@@ -16,6 +16,12 @@ describe("dates in Danish time", () => {
   it("F10: uses the date in Copenhagen around midnight", () => {
     // 22:30 UTC on 21 October is 00:30 on 22 October in Copenhagen.
     expect(formatDate(new Date("2026-10-21T22:30:00Z"))).toBe("22 Oct 2026");
+  });
+
+  it("F2, F12: shows the date and the time together, both in Copenhagen", () => {
+    // 22:30 UTC on 21 October is 00:30 on 22 October in Copenhagen, so the date and the
+    // time must both move.
+    expect(formatDateTime(new Date("2026-10-21T22:30:00Z"))).toBe("22 Oct 2026 at 00:30");
   });
 });
 

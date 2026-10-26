@@ -1,11 +1,13 @@
-import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import { cache } from "react";
 
 import { db } from "@/db";
 import { conversation, post, postStatus, profile, userInNeonAuth } from "@/db/schema";
-import { isPostShown } from "@/domain/post";
+import { canSeeConversationsOnPost } from "@/domain/conversation";
+import { isPostShown, LISTED_POST_STATUSES, type NewPost } from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
+import { slicePage } from "@/lib/pagination";
 
 export const POSTS_PER_PAGE = 8;
 
@@ -40,14 +42,15 @@ export async function getPosts({ query, page }: { query: string; page: number })
         ilike(post.description, `%${escapeLike(searchTerm)}%`),
       )
     : undefined;
-  const where = searchCondition
-    ? and(eq(post.status, "open"), searchCondition)
-    : eq(post.status, "open");
+  // F8, F10: only the posts that can get new proposals are listed, as isPostListed in
+  // domain/post.ts says. The rule is used as a list of statuses here, so the count and
+  // the pages only include what is listed.
+  const listed = inArray(post.status, [...LISTED_POST_STATUSES]);
+  const where = searchCondition ? and(listed, searchCondition) : listed;
 
   try {
     const [{ total }] = await db.select({ total: count() }).from(post).where(where);
-    const pages = Math.max(1, Math.ceil(total / POSTS_PER_PAGE));
-    const currentPage = Math.min(page, pages);
+    const slice = slicePage(total, page, POSTS_PER_PAGE);
     const items = await db
       .select({
         id: post.id,
@@ -69,21 +72,34 @@ export async function getPosts({ query, page }: { query: string; page: number })
       .where(where)
       .orderBy(desc(post.createdAt))
       .limit(POSTS_PER_PAGE)
-      .offset((currentPage - 1) * POSTS_PER_PAGE);
+      .offset(slice.offset);
 
     return {
       items: items.map(({ authorId, conversationCount, ...item }) => ({
         ...item,
-        conversationCount: authorId === user.id ? conversationCount : null,
+        conversationCount: canSeeConversationsOnPost({ authorId }, user.id)
+          ? conversationCount
+          : null,
       })) as Post[],
       total,
-      pages,
-      page: currentPage,
+      ...slice,
       unavailable: false,
     };
-  } catch {
-    return { items: [] as Post[], total: 0, pages: 1, page: 1, unavailable: true };
+  } catch (error) {
+    console.error("Could not read the posts:", error);
+    return {
+      items: [] as Post[],
+      total: 0,
+      ...slicePage(0, 1, POSTS_PER_PAGE),
+      unavailable: true,
+    };
   }
+}
+
+// F3, F4: save a new post by authorId. The caller has validated it with validatePost
+// and takes authorId from requireStudent(), never from the request.
+export async function savePost(authorId: string, newPost: NewPost): Promise<void> {
+  await db.insert(post).values({ authorId, ...newPost });
 }
 
 // F10: one post, for its own page. Removed posts are not shown. Returns null when the

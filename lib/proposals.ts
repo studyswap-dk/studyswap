@@ -1,10 +1,11 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
-import { agreement, pointAccount, post, proposal } from "@/db/schema";
+import { agreement, conversation, pointAccount, post, proposal, userInNeonAuth } from "@/db/schema";
 import { agreementExpiresAt } from "@/domain/agreement";
-import { decideProposal, partiesOf } from "@/domain/proposal";
+import { decideProposal, decideSend, partiesOf, type Post, type Proposal } from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
+import { violates } from "@/lib/db-errors";
 import { PointAccountError, reservePoints } from "@/lib/point-account";
 
 export type AcceptResult = { ok: true; agreementId: string } | { ok: false; reason: string };
@@ -122,4 +123,212 @@ export async function acceptProposal(
     if (error instanceof PointAccountError) return { ok: false, reason: error.message };
     throw error;
   }
+}
+
+export type SendResult = { ok: true; proposalId: string } | { ok: false; reason: string };
+
+// F8, F10: a student sends a proposal on someone else's open post. In one transaction:
+// decideSend judges it, the conversation between the proposer and the author is created
+// if it does not exist yet, and the proposal is saved as pending. The caller passes a
+// proposerId from requireStudent() in this request.
+export async function sendProposal(
+  postId: string,
+  proposerId: string,
+  now: Date,
+): Promise<SendResult> {
+  try {
+    return await db.transaction(async (tx): Promise<SendResult> => {
+      // Share lock: an accept that closes the post at the same time takes an update
+      // lock on it, so one of them waits for the other and sees the post as it is after.
+      const [lockedPost] = await tx
+        .select({ id: post.id, authorId: post.authorId, type: post.type, status: post.status })
+        .from(post)
+        .where(eq(post.id, postId))
+        .for("share");
+      if (!lockedPost) return { ok: false, reason: "Post not found" };
+
+      const existing = await tx
+        .select({
+          id: proposal.id,
+          postId: proposal.postId,
+          proposerId: proposal.proposerId,
+          status: proposal.status,
+        })
+        .from(proposal)
+        .where(and(eq(proposal.postId, postId), eq(proposal.proposerId, proposerId)));
+      // The proposer's earlier proposals on the post, so decideSend can turn away a second
+      // unanswered one.
+      const decision = decideSend(lockedPost, proposerId, existing);
+      if (!decision.ok) return decision;
+
+      // F10: the proposal continues in the conversation with the author, so it is created
+      // here if the proposer has not written yet. Then the author can open it from the
+      // proposal and the agreement too.
+      await tx
+        .insert(conversation)
+        .values({ postId, participantId: proposerId, createdAt: now })
+        .onConflictDoNothing({ target: [conversation.postId, conversation.participantId] });
+
+      const [created] = await tx
+        .insert(proposal)
+        .values({ postId, proposerId, status: "pending", createdAt: now })
+        .returning({ id: proposal.id });
+      return { ok: true, proposalId: created.id };
+    });
+  } catch (error) {
+    // Two sends at the same time can both pass decideSend. The unique index on pending
+    // proposals refuses the second, which gets the same reason as from the rule.
+    if (violates(error, "proposal_postId_proposerId_pending_key")) {
+      return { ok: false, reason: "You already have an unanswered proposal on this post" };
+    }
+    throw error;
+  }
+}
+
+// F8: has the student a proposal on the post that the author has not answered yet?
+// So a page can show "Proposal sent" instead of the button. The caller passes a
+// proposerId from requireStudent() in this request.
+export async function hasPendingProposal(postId: string, proposerId: string): Promise<boolean> {
+  const [found] = await db
+    .select({ id: proposal.id })
+    .from(proposal)
+    .where(
+      and(
+        eq(proposal.postId, postId),
+        eq(proposal.proposerId, proposerId),
+        eq(proposal.status, "pending"),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
+}
+
+export type ProposalResult = { ok: true } | { ok: false; reason: string };
+
+// F8: the proposer withdraws a proposal the author has not answered yet. The caller
+// passes a proposerId from requireStudent() in this request.
+export async function withdrawProposal(
+  proposalId: string,
+  proposerId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "withdraw", proposerId, now);
+}
+
+// F9: the author declines a proposal on their post. The caller passes an authorId from
+// requireStudent() in this request.
+export async function declineProposal(
+  proposalId: string,
+  authorId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return endPendingProposal(proposalId, "decline", authorId, now);
+}
+
+// Withdraw and decline end a pending proposal without creating an agreement or moving
+// points, so only the proposal is locked while decideProposal judges it. An accept of
+// the same proposal at the same time locks it too, so one of them waits, and the one
+// that comes last is told that the proposal has already been answered.
+async function endPendingProposal(
+  proposalId: string,
+  kind: "withdraw" | "decline",
+  actorId: string,
+  now: Date,
+): Promise<ProposalResult> {
+  return db.transaction(async (tx): Promise<ProposalResult> => {
+    const [current] = await tx
+      .select({
+        id: proposal.id,
+        postId: proposal.postId,
+        proposerId: proposal.proposerId,
+        status: proposal.status,
+        authorId: post.authorId,
+        type: post.type,
+        postStatus: post.status,
+      })
+      .from(proposal)
+      .innerJoin(post, eq(proposal.postId, post.id))
+      .where(eq(proposal.id, proposalId))
+      .for("update", { of: proposal });
+    if (!current) return { ok: false, reason: "Proposal not found" };
+
+    const decision = decideProposal(current, { kind }, actorId, {
+      post: {
+        id: current.postId,
+        authorId: current.authorId,
+        type: current.type,
+        status: current.postStatus,
+      },
+      available: {},
+    });
+    if (!decision.ok) return decision;
+
+    // Only while the proposal is still pending, as decideProposal saw it, so the check
+    // and the change are one step, as for agreements.
+    const updated = await tx
+      .update(proposal)
+      .set({ status: decision.newStatus, decidedAt: now })
+      .where(and(eq(proposal.id, proposalId), eq(proposal.status, "pending")))
+      .returning({ id: proposal.id });
+    if (updated.length === 0) {
+      return { ok: false, reason: "Proposal has already been answered or withdrawn" };
+    }
+    return { ok: true };
+  });
+}
+
+export type ProposalListItem = Proposal & {
+  createdAt: Date;
+  decidedAt: Date | null;
+  post: Post & { title: string };
+  // The other student: the author on a proposal the student sent, the proposer on one
+  // the student received.
+  otherName: string;
+};
+
+// F8, F9: the proposals that match where, newest first, with the post and the name of
+// the student on the other side, whose id is in otherId.
+async function getProposalList(
+  where: SQL,
+  otherId: typeof post.authorId | typeof proposal.proposerId,
+): Promise<ProposalListItem[]> {
+  const rows = await db
+    .select({
+      id: proposal.id,
+      postId: proposal.postId,
+      proposerId: proposal.proposerId,
+      status: proposal.status,
+      createdAt: proposal.createdAt,
+      decidedAt: proposal.decidedAt,
+      authorId: post.authorId,
+      postType: post.type,
+      postStatus: post.status,
+      postTitle: post.title,
+      otherName: userInNeonAuth.name,
+    })
+    .from(proposal)
+    .innerJoin(post, eq(proposal.postId, post.id))
+    .innerJoin(userInNeonAuth, eq(userInNeonAuth.id, otherId))
+    .where(where)
+    .orderBy(desc(proposal.createdAt), desc(proposal.id));
+
+  return rows.map(
+    ({ authorId, postType, postStatus, postTitle, otherName, ...row }): ProposalListItem => ({
+      ...row,
+      post: { id: row.postId, authorId, type: postType, status: postStatus, title: postTitle },
+      otherName: otherName.trim() || "A student",
+    }),
+  );
+}
+
+// F8: the proposals the student has sent. The caller passes a userId from
+// requireStudent() in this request.
+export async function getSentProposals(userId: string): Promise<ProposalListItem[]> {
+  return getProposalList(eq(proposal.proposerId, userId), post.authorId);
+}
+
+// F9: the proposals other students have sent on the student's posts. The caller passes a
+// userId from requireStudent() in this request.
+export async function getReceivedProposals(userId: string): Promise<ProposalListItem[]> {
+  return getProposalList(eq(post.authorId, userId), proposal.proposerId);
 }

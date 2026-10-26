@@ -1,12 +1,14 @@
-import { and, type AnyColumn, asc, desc, eq, ne, or, sql } from "drizzle-orm";
+import { and, type AnyColumn, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { conversation, message, post, profile, userInNeonAuth } from "@/db/schema";
 import {
   canOpenConversation,
+  canSeeConversationsOnPost,
   type ConversationPost,
   decideWriteMessage,
 } from "@/domain/conversation";
+import { SHOWN_POST_STATUSES } from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
 
 // F10: a conversation is the post plus the participant, the student who writes to its
@@ -176,7 +178,7 @@ export async function getConversationsOnMyPost(
 ): Promise<ConversationOnMyPost[] | null> {
   const user = await requireStudent();
   const found = await findPost(postId);
-  if (!found || found.authorId !== user.id) return null;
+  if (!found || !canSeeConversationsOnPost(found, user.id)) return null;
 
   const rows = await db
     .select({
@@ -205,8 +207,8 @@ export async function getConversationsOnMyPost(
 // or as the participant, newest message first. This is how a student finds a
 // conversation again when the post is closed and no longer shown in /posts.
 // Conversations on removed posts are left out, because canOpenConversation does not let
-// anyone open them. The filter is in SQL so the limit counts only conversations that
-// are shown, and it must say the same as isPostShown in domain/post.ts.
+// anyone open them. The filter uses SHOWN_POST_STATUSES from domain/post.ts, the same
+// list as isPostShown, and is in SQL so the limit only counts what is shown.
 export async function getMyConversations(): Promise<ConversationSummary[]> {
   const user = await requireStudent();
   // The other party: the participant when the student wrote the post, otherwise the
@@ -230,7 +232,7 @@ export async function getMyConversations(): Promise<ConversationSummary[]> {
     .leftJoin(profile, eq(profile.userId, userInNeonAuth.id))
     .where(
       and(
-        ne(post.status, "removed"),
+        inArray(post.status, [...SHOWN_POST_STATUSES]),
         or(eq(post.authorId, user.id), eq(conversation.participantId, user.id)),
       ),
     )

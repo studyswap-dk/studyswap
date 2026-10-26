@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  availableProposalActions,
   decideProposal,
   decideSend,
   partiesOf,
@@ -177,5 +178,57 @@ describe("partiesOf", () => {
       helperId: "author",
       receiverId: "proposer",
     });
+  });
+});
+
+describe("availableProposalActions", () => {
+  it("F8: the proposer can only withdraw a pending proposal", () => {
+    expect(availableProposalActions(pending, seekingPost, "proposer")).toEqual(["withdraw"]);
+  });
+
+  it("F9: the author can accept or decline a pending proposal", () => {
+    expect(availableProposalActions(pending, seekingPost, "author")).toEqual(["accept", "decline"]);
+  });
+
+  it("F8, F9: a student who is neither proposer nor author gets no actions", () => {
+    expect(availableProposalActions(pending, seekingPost, "someone-else")).toEqual([]);
+  });
+
+  it.each(["accepted", "declined", "withdrawn"] as const)(
+    "F8, F9: a proposal with status %s offers no actions",
+    (status) => {
+      const answered = { ...pending, status };
+
+      expect(availableProposalActions(answered, seekingPost, "proposer")).toEqual([]);
+      expect(availableProposalActions(answered, seekingPost, "author")).toEqual([]);
+    },
+  );
+
+  it("F9: on a closed post the author can still decline, but not accept", () => {
+    const closed: Post = { ...seekingPost, status: "closed" };
+
+    expect(availableProposalActions(pending, closed, "author")).toEqual(["decline"]);
+  });
+
+  it.each(["closed", "removed"] as const)(
+    "F8: the proposer can still withdraw a pending proposal on a post with status %s",
+    (status) => {
+      expect(availableProposalActions(pending, { ...seekingPost, status }, "proposer")).toEqual([
+        "withdraw",
+      ]);
+    },
+  );
+
+  it("F9, F22: on a removed post the author can still decline, but not accept", () => {
+    const removed: Post = { ...seekingPost, status: "removed" };
+
+    expect(availableProposalActions(pending, removed, "author")).toEqual(["decline"]);
+  });
+
+  it("F9: accept is offered on a post offering help, where the proposer is the receiver", () => {
+    expect(availableProposalActions(pending, offeringPost, "author")).toEqual([
+      "accept",
+      "decline",
+    ]);
   });
 });
