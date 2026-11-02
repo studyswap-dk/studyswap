@@ -1,19 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Coins, Handshake, Inbox, MessageCircle, Plus } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { DashboardNavigation } from "@/components/dashboard/dashboard-navigation";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
-import { cn } from "@/lib/utils";
 import type { CurrentUserProfile } from "@/lib/current-user";
-
-const navigation = [
-  { href: "/posts", label: "Posts", icon: BookOpen },
-  { href: "/conversations", label: "Conversations", icon: MessageCircle },
-  { href: "/proposals", label: "Proposals", icon: Inbox },
-  { href: "/agreements", label: "Agreements", icon: Handshake },
-  { href: "/points", label: "Points", icon: Coins },
-];
 
 export function DashboardNav({ user }: { user: CurrentUserProfile | null }) {
   return (
@@ -30,35 +20,7 @@ export function DashboardNav({ user }: { user: CurrentUserProfile | null }) {
           />
         </Link>
 
-        <nav aria-label="Dashboard" className="flex items-center gap-1 sm:gap-1.5">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "gap-1.5 px-2 sm:px-3",
-              )}
-            >
-              <Icon data-icon="inline-start" className="size-4" />
-              {/* The labels are hidden on small screens, where only the icons fit. */}
-              <span className="hidden md:inline">{label}</span>
-            </Link>
-          ))}
-
-          <Link
-            href="/posts/new"
-            aria-label="Create post"
-            className={cn(
-              buttonVariants({ variant: "default", size: "sm" }),
-              "gap-1.5 px-2.5 sm:px-3",
-            )}
-          >
-            <Plus data-icon="inline-start" className="size-4" />
-            <span className="hidden sm:inline">Create post</span>
-          </Link>
-        </nav>
+        <DashboardNavigation />
 
         <ProfileMenu user={user} />
       </div>
