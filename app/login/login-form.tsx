@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useActionState } from "react";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 import { loginAction } from "./actions";
 
@@ -70,16 +72,24 @@ export function LoginForm() {
               <label htmlFor="login-code" className="text-sm font-medium">
                 Code from email
               </label>
-              <Input
+              <InputOTP
                 id="login-code"
                 name="code"
-                type="text"
-                inputMode="numeric"
+                maxLength={6}
+                pattern={REGEXP_ONLY_DIGITS}
                 autoComplete="one-time-code"
-                maxLength={32}
                 required
-                className="h-11"
-              />
+                containerClassName="w-full justify-center"
+              >
+                <InputOTPGroup className="gap-2">
+                  <InputOTPSlot index={0} className="size-11 rounded-lg border text-base" />
+                  <InputOTPSlot index={1} className="size-11 rounded-lg border text-base" />
+                  <InputOTPSlot index={2} className="size-11 rounded-lg border text-base" />
+                  <InputOTPSlot index={3} className="size-11 rounded-lg border text-base" />
+                  <InputOTPSlot index={4} className="size-11 rounded-lg border text-base" />
+                  <InputOTPSlot index={5} className="size-11 rounded-lg border text-base" />
+                </InputOTPGroup>
+              </InputOTP>
               {state.error ? (
                 <p className="text-sm text-destructive" role="alert">
                   {state.error}

@@ -54,8 +54,8 @@ export async function loginAction(
 
   const codeValue = formData.get("code");
   const code = typeof codeValue === "string" ? codeValue.trim() : "";
-  if (!code || code.length > 32) {
-    return { step: "code", email, error: "Enter the code from your email." };
+  if (code.length !== 6 || !/^[0-9]+$/.test(code)) {
+    return { step: "code", email, error: "Enter the 6-digit code from your email." };
   }
 
   let authenticatedEmail: unknown;
