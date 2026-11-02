@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { BookOpen, Coins, Handshake, Inbox, Menu, MessageCircle, Plus } from "lucide-react";
 
@@ -65,10 +66,10 @@ function NavigationLink({
       aria-current={isActive ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "gap-1.5 px-3",
+        "gap-1.5 rounded-[min(var(--radius-md),12px)] px-3",
         mobile && "h-12 w-full justify-start gap-3 px-4 text-base",
         isActive &&
-          "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground dark:hover:bg-primary/90 dark:hover:text-primary-foreground",
+          "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground dark:hover:bg-primary/90 dark:hover:text-primary-foreground",
       )}
     >
       <Icon data-icon="inline-start" aria-hidden="true" />
@@ -92,13 +93,25 @@ export function DashboardNavigation() {
           render={<Link href="/posts/new" />}
           nativeButton={false}
           size="sm"
-          aria-label="Create post"
+          aria-label="Create Post"
           className="gap-1.5 px-2.5 sm:px-3"
         >
           <Plus data-icon="inline-start" aria-hidden="true" />
-          <span className="hidden sm:inline">Create post</span>
+          <span className="hidden sm:inline">Create Post</span>
         </Button>
       </nav>
+
+      <Button
+        render={<Link href="/posts/new" />}
+        nativeButton={false}
+        variant="default"
+        size="sm"
+        aria-label="Create Post"
+        className="gap-1.5 px-2.5 sm:px-3 md:hidden"
+      >
+        <Plus data-icon="inline-start" aria-hidden="true" />
+        <span className="hidden sm:inline">Create Post</span>
+      </Button>
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger
@@ -118,8 +131,22 @@ export function DashboardNavigation() {
           className="gap-0 border-r-0 p-0 data-[side=left]:w-screen data-[side=left]:sm:max-w-none"
         >
           <SheetHeader className="border-b p-5 pr-16">
-            <SheetTitle>Navigation</SheetTitle>
-            <SheetDescription>Choose a section of StudySwap.</SheetDescription>
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SheetDescription className="sr-only">Choose a section of StudySwap.</SheetDescription>
+            <Link
+              href="/posts"
+              aria-label="StudySwap home"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-fit"
+            >
+              <Image
+                src="/brand/studyswap-logo-curves.svg"
+                alt="StudySwap"
+                width={130}
+                height={34}
+                className="h-8 w-auto"
+              />
+            </Link>
           </SheetHeader>
           <nav
             aria-label="Mobile dashboard"
@@ -139,12 +166,12 @@ export function DashboardNavigation() {
               render={<Link href="/posts/new" />}
               nativeButton={false}
               size="lg"
-              aria-label="Create post"
+              aria-label="Create Post"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full justify-start gap-3"
+              className="w-full justify-start gap-3 rounded-[min(var(--radius-md),12px)]"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
-              Create post
+              Create Post
             </Button>
           </nav>
         </SheetContent>
