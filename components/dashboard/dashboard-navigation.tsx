@@ -83,7 +83,7 @@ export function DashboardNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-end md:justify-center">
+    <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 md:justify-center">
       <nav aria-label="Dashboard" className="hidden items-center gap-1 sm:gap-1.5 md:flex">
         {navigation.map((item) => (
           <NavigationLink key={item.href} {...item} pathname={pathname} />
