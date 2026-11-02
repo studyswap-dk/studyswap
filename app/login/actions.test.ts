@@ -34,4 +34,22 @@ describe("loginAction", () => {
       error: "Enter your AU student email in the format studentnumber@post.au.dk.",
     });
   });
+
+  it.each(["12345", "1234567", "12a456"])(
+    "F1: rejects a sign-in code that is not exactly six digits (%s)",
+    async (code) => {
+      const formData = new FormData();
+      formData.set("intent", "verify-code");
+      formData.set("email", "202412345@post.au.dk");
+      formData.set("code", code);
+
+      const result = await loginAction({ step: "code", email: "202412345@post.au.dk" }, formData);
+
+      expect(result).toEqual({
+        step: "code",
+        email: "202412345@post.au.dk",
+        error: "Enter the 6-digit code from your email.",
+      });
+    },
+  );
 });
