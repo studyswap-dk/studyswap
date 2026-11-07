@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 
-import { sendProposal } from "@/app/actions/proposals";
+import { type ProposalActionResult, sendProposal } from "@/app/actions/proposals";
+import { proposalResultText } from "@/components/proposals/proposal-result-text";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 
-type Result = { ok: boolean; message: string };
-
 // F8: the button on someone else's open post. The page decides whether to show it; the
-// Server Action checks the rule again, so a button that is out of date only gives a message.
+// Server Action checks the rule again, so a button that is out of date only gives a refusal.
 export function SendProposalButton({
   postId,
   alreadySent,
@@ -17,8 +17,12 @@ export function SendProposalButton({
   alreadySent: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<ProposalActionResult | null>(null);
+  const texts = useTexts().proposal;
   const sent = alreadySent || result?.ok === true;
+  // NF1: the server answers with a code. The proposer of a post offering help is the
+  // receiver, but sending reserves no points, so insufficientPoints does not come back here.
+  const message = result === null ? null : proposalResultText(texts, "send", result, true);
 
   return (
     <div className="flex flex-col items-start gap-2">
@@ -42,7 +46,7 @@ export function SendProposalButton({
             : "block text-sm text-muted-foreground"
         }
       >
-        {result?.message}
+        {message}
       </output>
     </div>
   );

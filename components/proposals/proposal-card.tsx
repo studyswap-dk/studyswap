@@ -45,6 +45,11 @@ export function ProposalCard({
   actions: ProposalActionKind[];
 }) {
   const postShown = isPostShown(proposal.post.status);
+  // F9: the receiver pays. The proposer receives on a post offering help, and the author
+  // on a post seeking help.
+  const readerIsReceiver = sent
+    ? proposal.post.type === "offering"
+    : proposal.post.type === "seeking";
 
   return (
     <Card>
@@ -60,7 +65,11 @@ export function ProposalCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{statusLine(proposal, sent)}</p>
-        <ProposalActions proposalId={proposal.id} actions={actions} />
+        <ProposalActions
+          proposalId={proposal.id}
+          actions={actions}
+          readerIsReceiver={readerIsReceiver}
+        />
       </CardContent>
       {postShown ? (
         <CardFooter>

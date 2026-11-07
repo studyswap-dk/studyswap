@@ -7,6 +7,7 @@ import {
   confirmAgreement,
   markAgreementDone,
 } from "@/app/actions/agreements";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import type { PartyAction } from "@/domain/agreement";
 
@@ -20,7 +21,7 @@ const BUTTONS: Record<
 
 // The page decides which actions the student may take, with availableActions() from
 // domain/agreement.ts, which asks the same decide() the server uses. The server checks
-// again, so a button that is out of date only gives a message.
+// again, so a button that is out of date only gives a refusal.
 export function AgreementActions({
   agreementId,
   actions,
@@ -32,9 +33,22 @@ export function AgreementActions({
   // Which button was pressed, so only that one says it is working. All of them are
   // disabled until the answer comes, so two actions cannot be sent at once.
   const [pressed, setPressed] = useState<PartyAction | null>(null);
-  const [result, setResult] = useState<AgreementActionResult | null>(null);
+  // The answer together with the action it answers, so the text matches that action.
+  const [answer, setAnswer] = useState<{ kind: PartyAction; result: AgreementActionResult } | null>(
+    null,
+  );
+  const texts = useTexts().agreement;
 
-  if (actions.length === 0 && result === null) return null;
+  if (actions.length === 0 && answer === null) return null;
+
+  // NF1: the server answers with a code, and the text is chosen here for the student
+  // who reads it.
+  const message =
+    answer === null
+      ? null
+      : answer.result.ok
+        ? texts.done[answer.kind]
+        : texts.refusal[answer.result.code];
 
   return (
     <div className="flex flex-col gap-2">
@@ -49,7 +63,7 @@ export function AgreementActions({
               onClick={() => {
                 setPressed(kind);
                 startTransition(async () => {
-                  setResult(await button.run(agreementId));
+                  setAnswer({ kind, result: await button.run(agreementId) });
                 });
               }}
             >
@@ -63,12 +77,12 @@ export function AgreementActions({
       <output
         aria-live="polite"
         className={
-          result?.ok === false
+          answer?.result.ok === false
             ? "block text-sm text-destructive"
             : "block text-sm text-muted-foreground"
         }
       >
-        {result?.message}
+        {message}
       </output>
     </div>
   );

@@ -13,7 +13,16 @@ export type ConversationParties = {
   participantId: string;
 };
 
-type ConversationDecision = { ok: true } | { ok: false; reason: string };
+// NF1: why writing in a conversation is refused. The user interface turns the code into
+// a text.
+export type ConversationRefusal =
+  | "ownPost"
+  | "postNotOpen"
+  | "notParty"
+  | "postRemoved"
+  | "notParticipant";
+
+type ConversationDecision = { ok: true } | { ok: false; code: ConversationRefusal };
 
 // F10: may this user start a conversation on the post? Only on an open post that is
 // not the user's own. A closed post keeps the conversations it already has.
@@ -21,10 +30,8 @@ export function decideStartConversation(
   post: ConversationPost,
   userId: string,
 ): ConversationDecision {
-  if (userId === post.authorId) {
-    return { ok: false, reason: "Cannot start a conversation on your own post" };
-  }
-  if (post.status !== "open") return { ok: false, reason: "Post is not open" };
+  if (userId === post.authorId) return { ok: false, code: "ownPost" };
+  if (post.status !== "open") return { ok: false, code: "postNotOpen" };
   return { ok: true };
 }
 
@@ -45,10 +52,8 @@ export function decideSendMessage(
   conversation: ConversationParties,
   userId: string,
 ): ConversationDecision {
-  if (!isConversationParty(post, conversation, userId)) {
-    return { ok: false, reason: "Only the author and the participant can write here" };
-  }
-  if (!isPostShown(post.status)) return { ok: false, reason: "Post has been removed" };
+  if (!isConversationParty(post, conversation, userId)) return { ok: false, code: "notParty" };
+  if (!isPostShown(post.status)) return { ok: false, code: "postRemoved" };
   return { ok: true };
 }
 
@@ -64,9 +69,8 @@ export function decideWriteMessage(
   userId: string,
 ): ConversationDecision {
   if (conversationExists) return decideSendMessage(post, { participantId }, userId);
-  if (userId !== participantId) {
-    return { ok: false, reason: "Only the student who writes first can start a conversation" };
-  }
+  // Only the student who writes first can start a conversation.
+  if (userId !== participantId) return { ok: false, code: "notParticipant" };
   return decideStartConversation(post, userId);
 }
 

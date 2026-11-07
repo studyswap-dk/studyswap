@@ -3,12 +3,29 @@ import { and, desc, eq, ne, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agreement, conversation, pointAccount, post, proposal, userInNeonAuth } from "@/db/schema";
 import { agreementExpiresAt } from "@/domain/agreement";
-import { decideProposal, decideSend, partiesOf, type Post, type Proposal } from "@/domain/proposal";
+import {
+  decideProposal,
+  decideSend,
+  partiesOf,
+  type Post,
+  type Proposal,
+  type ProposalRefusal,
+} from "@/domain/proposal";
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { violates } from "@/lib/db-errors";
-import { PointAccountError, reservePoints } from "@/lib/point-account";
+import { PointAccountError, type PointAccountRefusal, reservePoints } from "@/lib/point-account";
 
-export type AcceptResult = { ok: true; agreementId: string } | { ok: false; reason: string };
+// NF1: why an action on a proposal is refused: by the rules, by the points, or because
+// the proposal or the post does not exist. The user interface turns the code into a text.
+export type ProposalActionRefusal =
+  | ProposalRefusal
+  | PointAccountRefusal
+  | "notFound"
+  | "postNotFound";
+
+type Refused = { ok: false; code: ProposalActionRefusal };
+
+export type AcceptResult = { ok: true; agreementId: string } | Refused;
 
 // F9, F14, NF3: the author accepts a proposal. In one transaction: decideProposal
 // judges it, the proposal becomes accepted, the agreement is created with a deadline
@@ -28,10 +45,10 @@ export async function acceptProposal(
     .from(proposal)
     .innerJoin(post, eq(proposal.postId, post.id))
     .where(eq(proposal.id, proposalId));
-  if (!found) return { ok: false, reason: "Proposal not found" };
+  if (!found) return { ok: false, code: "notFound" };
   // Turn away anyone but the author before settling anything. decideProposal still
   // makes the decision below, under the lock.
-  if (found.authorId !== actorId) return { ok: false, reason: "Only the author can accept" };
+  if (found.authorId !== actorId) return { ok: false, code: "notAuthor" };
   const { receiverId } = partiesOf(found, found.proposerId);
   await settleOverdueAgreements(receiverId, now);
 
@@ -49,21 +66,21 @@ export async function acceptProposal(
         .select({ postId: proposal.postId })
         .from(proposal)
         .where(eq(proposal.id, proposalId));
-      if (!unlocked) return { ok: false, reason: "Proposal not found" };
+      if (!unlocked) return { ok: false, code: "notFound" };
 
       const [lockedPost] = await tx
         .select({ id: post.id, authorId: post.authorId, type: post.type, status: post.status })
         .from(post)
         .where(eq(post.id, unlocked.postId))
         .for("update");
-      if (!lockedPost) return { ok: false, reason: "Post not found" };
+      if (!lockedPost) return { ok: false, code: "postNotFound" };
 
       const [current] = await tx
         .select(proposalColumns)
         .from(proposal)
         .where(eq(proposal.id, proposalId))
         .for("update");
-      if (!current) return { ok: false, reason: "Proposal not found" };
+      if (!current) return { ok: false, code: "notFound" };
 
       const parties = partiesOf(lockedPost, current.proposerId);
       const [account] = await tx
@@ -120,12 +137,12 @@ export async function acceptProposal(
       return { ok: true, agreementId: created.id };
     });
   } catch (error) {
-    if (error instanceof PointAccountError) return { ok: false, reason: error.message };
+    if (error instanceof PointAccountError) return { ok: false, code: error.code };
     throw error;
   }
 }
 
-export type SendResult = { ok: true; proposalId: string } | { ok: false; reason: string };
+export type SendResult = { ok: true; proposalId: string } | Refused;
 
 // F8, F10: a student sends a proposal on someone else's open post. In one transaction:
 // decideSend judges it, the conversation between the proposer and the author is created
@@ -145,7 +162,7 @@ export async function sendProposal(
         .from(post)
         .where(eq(post.id, postId))
         .for("share");
-      if (!lockedPost) return { ok: false, reason: "Post not found" };
+      if (!lockedPost) return { ok: false, code: "postNotFound" };
 
       const existing = await tx
         .select({
@@ -177,9 +194,9 @@ export async function sendProposal(
     });
   } catch (error) {
     // Two sends at the same time can both pass decideSend. The unique index on pending
-    // proposals refuses the second, which gets the same reason as from the rule.
+    // proposals refuses the second, which gets the same code as from the rule.
     if (violates(error, "proposal_postId_proposerId_pending_key")) {
-      return { ok: false, reason: "You already have an unanswered proposal on this post" };
+      return { ok: false, code: "alreadyPending" };
     }
     throw error;
   }
@@ -203,7 +220,7 @@ export async function hasPendingProposal(postId: string, proposerId: string): Pr
   return found !== undefined;
 }
 
-export type ProposalResult = { ok: true } | { ok: false; reason: string };
+export type ProposalResult = { ok: true } | Refused;
 
 // F8: the proposer withdraws a proposal the author has not answered yet. The caller
 // passes a proposerId from requireStudent() in this request.
@@ -250,7 +267,7 @@ async function endPendingProposal(
       .innerJoin(post, eq(proposal.postId, post.id))
       .where(eq(proposal.id, proposalId))
       .for("update", { of: proposal });
-    if (!current) return { ok: false, reason: "Proposal not found" };
+    if (!current) return { ok: false, code: "notFound" };
 
     const decision = decideProposal(current, { kind }, actorId, {
       post: {
@@ -270,9 +287,7 @@ async function endPendingProposal(
       .set({ status: decision.newStatus, decidedAt: now })
       .where(and(eq(proposal.id, proposalId), eq(proposal.status, "pending")))
       .returning({ id: proposal.id });
-    if (updated.length === 0) {
-      return { ok: false, reason: "Proposal has already been answered or withdrawn" };
-    }
+    if (updated.length === 0) return { ok: false, code: "alreadyAnswered" };
     return { ok: true };
   });
 }

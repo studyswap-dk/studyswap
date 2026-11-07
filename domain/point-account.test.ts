@@ -160,8 +160,8 @@ describe("decideReservation", () => {
   });
 
   it("F9: boundary: one point too few is refused", () => {
-    expect(decideReservation(0, 1).ok).toBe(false);
-    expect(decideReservation(2, 3).ok).toBe(false);
+    expect(decideReservation(0, 1)).toEqual({ ok: false, code: "insufficientPoints" });
+    expect(decideReservation(2, 3)).toEqual({ ok: false, code: "insufficientPoints" });
   });
 
   it("F9: more available points than needed is enough", () => {
@@ -169,17 +169,17 @@ describe("decideReservation", () => {
   });
 
   it("F9: a negative available amount is refused", () => {
-    expect(decideReservation(-1, 1).ok).toBe(false);
+    expect(decideReservation(-1, 1)).toEqual({ ok: false, code: "insufficientPoints" });
   });
 
   it.each([0, -1, 1.5, Number.NaN])("F9: %s points cannot be reserved", (points) => {
-    expect(decideReservation(5, points).ok).toBe(false);
+    expect(decideReservation(5, points)).toEqual({ ok: false, code: "invalidAmount" });
   });
 });
 
 function changesAfter(a: Agreement, action: Action, actorId: string, at: Date) {
   const decision = decide(a, action, actorId, at);
-  if (!decision.ok) throw new Error(decision.reason);
+  if (!decision.ok) throw new Error(decision.code);
   return accountChanges(a, decision.newStatus, decision.transactions);
 }
 

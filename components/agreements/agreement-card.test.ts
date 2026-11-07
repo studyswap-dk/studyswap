@@ -2,6 +2,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { TextsProvider } from "@/components/texts/texts-provider";
+import { en } from "@/lib/texts/en";
+
 import { AgreementCard } from "./agreement-card";
 import type { PartyAction } from "@/domain/agreement";
 import type { AgreementListItem } from "@/lib/agreements";
@@ -9,8 +12,8 @@ import type { AgreementListItem } from "@/lib/agreements";
 // The buttons call Server Actions, which reach the database. Rendering only needs them
 // to exist.
 vi.mock("@/app/actions/agreements", () => ({
-  confirmAgreement: vi.fn<() => Promise<{ ok: boolean; message: string }>>(),
-  markAgreementDone: vi.fn<() => Promise<{ ok: boolean; message: string }>>(),
+  confirmAgreement: vi.fn<() => Promise<{ ok: true }>>(),
+  markAgreementDone: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 const HELPER = "11111111-1111-4111-8111-111111111111";
@@ -35,7 +38,8 @@ const agreement: AgreementListItem = {
 };
 
 function render(entry: AgreementListItem, userId: string, actions: PartyAction[]) {
-  return renderToStaticMarkup(createElement(AgreementCard, { agreement: entry, userId, actions }));
+  const card = createElement(AgreementCard, { agreement: entry, userId, actions });
+  return renderToStaticMarkup(createElement(TextsProvider, { texts: en }, card));
 }
 
 describe("AgreementCard", () => {

@@ -50,17 +50,17 @@ export function summarize(transactions: PointTransaction[], userId: string) {
   };
 }
 
+// NF1: why a reservation is refused. The user interface turns the code into a text.
+export type ReservationRefusal = "invalidAmount" | "insufficientPoints";
+
 // F9: points can only be reserved from what is available, that is balance minus reserved.
 export function decideReservation(
   available: number,
   points: number,
-): { ok: true } | { ok: false; reason: string } {
-  if (!Number.isInteger(points) || points <= 0) {
-    return { ok: false, reason: "An agreement must cost a whole number of points above 0" };
-  }
-  if (available < points) {
-    return { ok: false, reason: "Receiver has insufficient available points" };
-  }
+): { ok: true } | { ok: false; code: ReservationRefusal } {
+  // An agreement must cost a whole number of points above 0.
+  if (!Number.isInteger(points) || points <= 0) return { ok: false, code: "invalidAmount" };
+  if (available < points) return { ok: false, code: "insufficientPoints" };
   return { ok: true };
 }
 

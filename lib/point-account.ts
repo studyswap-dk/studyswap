@@ -18,6 +18,7 @@ import {
   initialTransaction,
   type PointTransaction,
   type StoredAccount,
+  type ReservationRefusal,
 } from "@/domain/point-account";
 import { violates } from "@/lib/db-errors";
 import { slicePage } from "@/lib/pagination";
@@ -27,9 +28,17 @@ import { slicePage } from "@/lib/pagination";
 
 export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// A rule or a constraint refused a change to the points. The message can be shown to the user.
+// NF1: why a change to the points is refused, by a rule or a constraint. The user
+// interface turns the code into a text.
+export type PointAccountRefusal = ReservationRefusal | "noPointAccount" | "alreadyReleased";
+
+// A rule or a constraint refused a change to the points. The code says why, and the
+// message is for developers only.
 export class PointAccountError extends Error {
-  constructor(message: string) {
+  constructor(
+    readonly code: PointAccountRefusal,
+    message: string,
+  ) {
     super(message);
     this.name = "PointAccountError";
   }
@@ -236,10 +245,11 @@ export async function reservePoints(
     .from(pointAccount)
     .where(eq(pointAccount.userId, receiverId))
     .for("update");
-  if (!account) throw new PointAccountError("The receiver has no point account");
+  if (!account) throw new PointAccountError("noPointAccount", "The receiver has no point account");
 
   const reservation = decideReservation(account.balance - account.reserved, points);
-  if (!reservation.ok) throw new PointAccountError(reservation.reason);
+  if (!reservation.ok)
+    throw new PointAccountError(reservation.code, "The points cannot be reserved");
 
   await tx
     .update(pointAccount)
@@ -278,7 +288,11 @@ export async function settlePoints(
   const accountIdOf = new Map(accounts.map((a) => [a.userId, a.id]));
   const accountId = (userId: string) => {
     const id = accountIdOf.get(userId);
-    if (!id) throw new PointAccountError("A party of the agreement has no point account");
+    if (!id)
+      throw new PointAccountError(
+        "noPointAccount",
+        "A party of the agreement has no point account",
+      );
     return id;
   };
 
@@ -294,7 +308,10 @@ export async function settlePoints(
       );
     } catch (error) {
       if (violates(error, "pointTransaction_agreementId_accountId_key")) {
-        throw new PointAccountError("The points for this agreement have already been released");
+        throw new PointAccountError(
+          "alreadyReleased",
+          "The points for this agreement have already been released",
+        );
       }
       throw error;
     }
