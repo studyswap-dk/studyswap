@@ -26,6 +26,8 @@ const navigation = [
   { href: "/points", label: "Points", icon: Coins },
 ] as const;
 
+const NEW_POST_PATH = "/posts/new";
+
 function isActivePath(pathname: string, href: string) {
   const isPostConversation = pathname.startsWith("/posts/") && pathname.includes("/conversations/");
 
@@ -33,7 +35,8 @@ function isActivePath(pathname: string, href: string) {
     return true;
   }
 
-  if (href === "/posts" && isPostConversation) {
+  // Creating a post has its own button, which is always highlighted, so Posts stays plain there.
+  if (href === "/posts" && (isPostConversation || pathname === NEW_POST_PATH)) {
     return false;
   }
 
@@ -90,27 +93,28 @@ export function DashboardNavigation() {
         ))}
 
         <Button
-          render={<Link href="/posts/new" />}
+          render={<Link href={NEW_POST_PATH} />}
           nativeButton={false}
           size="sm"
-          aria-label="Create Post"
-          className="gap-1.5 px-2.5 sm:px-3"
+          aria-current={pathname === NEW_POST_PATH ? "page" : undefined}
+          className="gap-1.5 px-3"
         >
           <Plus data-icon="inline-start" aria-hidden="true" />
-          <span className="hidden sm:inline">Create Post</span>
+          Create post
         </Button>
       </nav>
 
       <Button
-        render={<Link href="/posts/new" />}
+        render={<Link href={NEW_POST_PATH} />}
         nativeButton={false}
         variant="default"
         size="sm"
-        aria-label="Create Post"
+        aria-label="Create post"
+        aria-current={pathname === NEW_POST_PATH ? "page" : undefined}
         className="gap-1.5 px-2.5 sm:px-3 md:hidden"
       >
         <Plus data-icon="inline-start" aria-hidden="true" />
-        <span className="hidden sm:inline">Create Post</span>
+        <span className="hidden sm:inline">Create post</span>
       </Button>
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -163,15 +167,15 @@ export function DashboardNavigation() {
             ))}
             <Separator className="my-2" />
             <Button
-              render={<Link href="/posts/new" />}
+              render={<Link href={NEW_POST_PATH} />}
               nativeButton={false}
               size="lg"
-              aria-label="Create Post"
+              aria-current={pathname === NEW_POST_PATH ? "page" : undefined}
               onClick={() => setIsMobileMenuOpen(false)}
               className="w-full justify-start gap-3 rounded-[min(var(--radius-md),12px)]"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
-              Create Post
+              Create post
             </Button>
           </nav>
         </SheetContent>
