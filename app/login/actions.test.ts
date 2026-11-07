@@ -67,17 +67,15 @@ describe("loginAction", () => {
     },
   );
 
+  // As Neon's SDK returns them: its own code, and Better Auth's message.
   it.each([
-    ["INVALID_OTP", "codeInvalid"],
-    ["OTP_EXPIRED", "codeExpired"],
-    ["TOO_MANY_ATTEMPTS", "tooManyAttempts"],
-    ["SOMETHING_ELSE", "signInFailed"],
-  ])("F1, NF1: Neon Auth's %s is shown as our own %s, not as its message", async (code, error) => {
+    ["validation_failed", "Invalid OTP", "codeInvalid"],
+    ["validation_failed", "OTP expired", "codeExpired"],
+    ["feature_not_supported", "Too many attempts", "tooManyAttempts"],
+    ["unknown_error", "Something else", "signInFailed"],
+  ])("F1, NF1: Neon Auth's %s with %j is shown as our own %s", async (code, message, error) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    neonAuth.signIn.emailOtp.mockResolvedValueOnce({
-      data: null,
-      error: { code, message: "A message written for developers" },
-    });
+    neonAuth.signIn.emailOtp.mockResolvedValueOnce({ data: null, error: { code, message } });
 
     const result = await loginAction(
       { step: "code", email: EMAIL },

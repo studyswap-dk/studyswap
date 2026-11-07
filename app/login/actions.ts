@@ -23,12 +23,15 @@ export type LoginActionState =
   | { step: "email"; email?: string; error?: LoginError }
   | { step: "code"; email: string; error?: LoginError };
 
-// The error codes of Better Auth's email OTP plugin, which Neon Auth runs, from
-// better-auth/dist/plugins/email-otp/error-codes.mjs. Any other error is signInFailed.
+// Neon's SDK replaces Better Auth's error code with its own, such as "validation_failed"
+// (normalizeBetterAuthError in @neondatabase/auth), but keeps the message. For the email
+// OTP plugin the message is a fixed text from better-auth/dist/plugins/email-otp/
+// error-codes.mjs, so it is the only way to tell the three apart. Any other error is
+// signInFailed.
 const OTP_ERRORS: Record<string, LoginError> = {
-  INVALID_OTP: "codeInvalid",
-  OTP_EXPIRED: "codeExpired",
-  TOO_MANY_ATTEMPTS: "tooManyAttempts",
+  "Invalid OTP": "codeInvalid",
+  "OTP expired": "codeExpired",
+  "Too many attempts": "tooManyAttempts",
 };
 
 export async function loginAction(
@@ -82,7 +85,7 @@ export async function loginAction(
   try {
     const { data, error } = await getNeonAuth().signIn.emailOtp({ email, otp: code });
     if (error) {
-      const known = error.code ? OTP_ERRORS[error.code] : undefined;
+      const known = error.message ? OTP_ERRORS[error.message] : undefined;
       if (!known) console.error("Neon Auth could not sign in with the code:", error);
       return { step: "code", email, error: known ?? "signInFailed" };
     }
