@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loginAction } from "./actions";
 
@@ -7,8 +7,24 @@ type NeonAnswer = Promise<{ data: unknown; error: { code: string; message: strin
 const neonAuth = vi.hoisted(() => ({
   signIn: { emailOtp: vi.fn<() => NeonAnswer>() },
   emailOtp: { sendVerificationOtp: vi.fn<() => NeonAnswer>() },
+  signOut: vi.fn<() => NeonAnswer>(),
 }));
 vi.mock("@/lib/auth/server", () => ({ getNeonAuth: () => neonAuth }));
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw new Error(`redirect to ${url}`);
+  },
+}));
+
+// The tests below decide the environment themselves, so the developer's own shell
+// cannot turn EXTRA_ALLOWED_EMAILS on.
+beforeEach(() => {
+  vi.stubEnv("VERCEL_ENV", undefined);
+  vi.stubEnv("EXTRA_ALLOWED_EMAILS", undefined);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const EMAIL = "202412345@post.au.dk";
 
@@ -98,5 +114,72 @@ describe("loginAction", () => {
     );
 
     expect(result).toEqual({ step: "email", email: EMAIL, error: "sendFailed" });
+  });
+
+  describe("with EXTRA_ALLOWED_EMAILS", () => {
+    const EXTRA = "student@example.com";
+
+    it("F1: sends a code to an extra address on a preview", async () => {
+      vi.stubEnv("VERCEL_ENV", "preview");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", EXTRA);
+      neonAuth.emailOtp.sendVerificationOtp.mockResolvedValueOnce({ data: {}, error: null });
+
+      const result = await loginAction(
+        { step: "email" },
+        form({ intent: "send-code", email: EXTRA }),
+      );
+
+      expect(result).toEqual({ step: "code", email: EXTRA });
+    });
+
+    it("F1: rejects the extra address in production without asking Neon Auth", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", EXTRA);
+      neonAuth.emailOtp.sendVerificationOtp.mockClear();
+
+      const result = await loginAction(
+        { step: "email" },
+        form({ intent: "send-code", email: EXTRA }),
+      );
+
+      expect(result).toEqual({ step: "email", error: "notStudentEmail" });
+      expect(neonAuth.emailOtp.sendVerificationOtp).not.toHaveBeenCalled();
+    });
+
+    it("F1: signs in an extra address on a preview", async () => {
+      vi.stubEnv("VERCEL_ENV", "preview");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", EXTRA);
+      neonAuth.signIn.emailOtp.mockResolvedValueOnce({
+        data: { user: { email: EXTRA } },
+        error: null,
+      });
+
+      await expect(
+        loginAction(
+          { step: "code", email: EXTRA },
+          form({ intent: "verify-code", email: EXTRA, code: "123456" }),
+        ),
+      ).rejects.toThrow("redirect to /posts");
+    });
+
+    it("F1: signs out a user with an extra address in production", async () => {
+      // The address passes the first check on a preview, and production is set after,
+      // so the test reaches the check of the address Neon Auth signed in.
+      vi.stubEnv("VERCEL_ENV", "preview");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", EXTRA);
+      neonAuth.signOut.mockResolvedValueOnce({ data: {}, error: null });
+      neonAuth.signIn.emailOtp.mockImplementationOnce(async () => {
+        vi.stubEnv("VERCEL_ENV", "production");
+        return { data: { user: { email: EXTRA } }, error: null };
+      });
+
+      const result = await loginAction(
+        { step: "code", email: EXTRA },
+        form({ intent: "verify-code", email: EXTRA, code: "123456" }),
+      );
+
+      expect(result).toEqual({ step: "code", email: EXTRA, error: "notAllowed" });
+      expect(neonAuth.signOut).toHaveBeenCalledOnce();
+    });
   });
 });

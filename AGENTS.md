@@ -157,7 +157,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 **Login**
 - Login uses Neon Auth, which is managed Better Auth, through `@neondatabase/auth`, with a one-time code sent by email and no passwords
 - Neon Auth sends the login emails itself. The app never sends them and does not need an email API key
-- Only student addresses of the form `<student number>@post.au.dk` may sign up
+- Only student addresses of the form `<student number>@post.au.dk` may sign up. On `dev.studyswap.dk`, the addresses in `EXTRA_ALLOWED_EMAILS` may too, never in production. Check addresses with `normalizeSignInEmail()` from `lib/auth/allowed-email.ts`, never with `normalizeStudentEmail()` directly. See `docs/login-and-authentication.md`
 
 **Test data**
 - Never use a real student number or a real person's email address in code, tests, docs or examples. Use only the addresses below, each for the case it stands for, so a reader knows what a test checks from the address alone
@@ -172,6 +172,7 @@ Before a task is done, run `lint`, `format`, `typecheck` and `test`. CI runs the
 | `202412abc@post.au.dk` | A student number with letters in it |
 | `student@example.com` | An address outside AU |
 | `202412345@post.au.dk.example.com` | A domain that only starts like AU's |
+| `student@example.com.example.com` | A domain that only starts like an extra address |
 | `202412345@@post.au.dk` | A malformed address |
 
 **User interface**

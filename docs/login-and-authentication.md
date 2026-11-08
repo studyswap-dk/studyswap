@@ -4,9 +4,9 @@ StudySwap uses Neon Auth, which is managed Better Auth, through `@neondatabase/a
 
 ## How it works
 
-1. The student enters their email on `/login`. Only `<student number>@post.au.dk` is accepted (F1)
+1. The student enters their email on `/login`. Only `<student number>@post.au.dk` is accepted (F1). On `dev.studyswap.dk`, the addresses in `EXTRA_ALLOWED_EMAILS` are accepted too, see [Extra addresses on the development site](#extra-addresses-on-the-development-site)
 2. The `loginAction` server action checks the address again on the server and asks Neon Auth to send a code
-3. The student enters the code, and the same server action signs them in with Neon Auth. If the student is new, Neon Auth calls our `user.before_create` webhook first, which rejects any address that is not a student address
+3. The student enters the code, and the same server action signs them in with Neon Auth. If the student is new, Neon Auth calls our `user.before_create` webhook first, which rejects any address that may not sign in on that site
 4. Every Server Action and every data function in `lib/` gets the student from `requireStudent()`, which reads the session on the server and sends anyone without a student session to `/login`
 5. At first login the dashboard layout sends the student to `/welcome`, where they enter their name and choose their programme before they can use the rest of the app. The name is saved in Neon Auth with `updateUser`, and the programme's key from `domain/programmes.ts` in our `profile` table, so its name can be corrected or translated without changing what is stored. The same form is on `/profile`. This is guidance, not access control (F1)
 
@@ -16,9 +16,10 @@ A session lasts 7 days: on `dev-morten` on 2 October 2026, `expiresAt` was exact
 
 | File | Purpose |
 |---|---|
-| `domain/student-email.ts` | The rule for which addresses may sign up, with tests |
+| `domain/student-email.ts` | The rule for which addresses may sign up, and where the extra addresses count, with tests |
+| `lib/auth/allowed-email.ts` | Reads `EXTRA_ALLOWED_EMAILS` and `VERCEL_ENV`, so `loginAction`, the webhook and `requireStudent()` use the same rule |
 | `app/login/` | The login page and its server action |
-| `app/api/webhooks/neon-auth/route.ts` | Verifies Neon Auth webhook signatures and rejects non-student account creation (F1) |
+| `app/api/webhooks/neon-auth/route.ts` | Verifies Neon Auth webhook signatures and rejects account creation for addresses that may not sign in (F1) |
 | `lib/auth/neon-webhook.ts` | Checks the webhook signature against the branch's JWKS |
 | `lib/auth/server.ts` | Creates the Neon Auth client and checks the environment variables |
 | `lib/current-user.ts` | `requireStudent()`, the access check, and `getCurrentUser()` for the navigation |
@@ -67,6 +68,15 @@ To set it up on a branch:
 4. Check that an existing user can still sign in, that a non-student address is rejected with `NOT_STUDENT_EMAIL`, and that a new student can sign up
 
 The webhook fails closed: if the route is down or answers wrongly, no new user can be created on that branch. Existing users can still sign in, because `user.before_create` only runs when a user is created. Neon requires a public HTTPS hostname, so `localhost` cannot be used; for local work, use an HTTPS tunnel and set it only on your own branch.
+
+### Extra addresses on the development site
+
+A few people without a student number may sign in on `dev.studyswap.dk`. The supervisor is the reason: decided by the group on 27 October 2026 (F1).
+
+- Their addresses are in the environment variable `EXTRA_ALLOWED_EMAILS`, separated by commas, set in Vercel for Preview and only for the branch `dev`. They are real people's addresses, so they are never written in the repository or in a pull request
+- The code only reads the list when `VERCEL_ENV` is `preview` or `development`. In production it is ignored, also if it is set there by mistake, and without `VERCEL_ENV` it is ignored too
+- The same rule is checked in all three places: `loginAction`, the webhook and `requireStudent()`. An address that is removed from the list can no longer sign in or use the app, but its user stays in Neon Auth until it is deleted there
+- It only works on `dev.studyswap.dk`, because a new user is only created if the branch's webhook answers yes. `preview/dev` has its own webhook to `dev.studyswap.dk`, see the table above. Every other branch, both a pull request's preview and a developer's own branch, is made from `production` and copies its webhook, so its Neon Auth asks `studyswap.dk`, where the list is ignored. On a pull request's preview the code is sent, but signing in fails with "Could not sign in", and the preview's log shows the refusal from `studyswap.dk` as a 403 with the webhook's own message. Checked 8 November 2026
 
 ## Neon Auth settings
 
