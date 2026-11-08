@@ -25,10 +25,10 @@ import {
   useMessageScroller,
 } from "@/components/ui/message-scroller";
 import { MAX_MESSAGE_LENGTH } from "@/domain/message";
-import { fill } from "@/lib/texts/fill";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { ConversationMessage, MyConversation } from "@/lib/conversations";
 import { formatMessageTime } from "@/lib/dates";
+import { fill } from "@/lib/texts/fill";
 import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 

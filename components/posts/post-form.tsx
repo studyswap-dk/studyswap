@@ -23,16 +23,17 @@ import {
   validateTitle,
   validateType,
 } from "@/domain/post";
+import type { Texts } from "@/lib/texts";
 import { fill } from "@/lib/texts/fill";
-import { DEFAULT_LOCALE, type Texts } from "@/lib/texts";
 
-// NF1: the text for a code from domain/post.ts, with the limits filled in.
+// NF1: the text for a code from domain/post.ts, with the limits filled in. The numbers
+// are not formatted for a language here, because only the root layout knows it.
 function fieldText(texts: Texts["post"], field: PostField, code: PostFieldError): string {
   if (field === "type") return texts.type.required;
   const limits =
     field === "title"
       ? { min: TITLE_MIN_LENGTH, max: TITLE_MAX_LENGTH }
-      : { min: DESCRIPTION_MIN_LENGTH, max: DESCRIPTION_MAX_LENGTH.toLocaleString(DEFAULT_LOCALE) };
+      : { min: DESCRIPTION_MIN_LENGTH, max: DESCRIPTION_MAX_LENGTH };
   return fill(texts[field][code], limits);
 }
 
