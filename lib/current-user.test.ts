@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireStudent } from "./current-user";
 
@@ -19,6 +19,14 @@ function sessionFor(email: string) {
 describe("requireStudent", () => {
   beforeEach(() => {
     getSession.mockReset();
+    // The tests decide the environment themselves, so the developer's own shell
+    // cannot turn EXTRA_ALLOWED_EMAILS on.
+    vi.stubEnv("VERCEL_ENV", undefined);
+    vi.stubEnv("EXTRA_ALLOWED_EMAILS", undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("F1: returns the student from the session", async () => {
@@ -48,5 +56,23 @@ describe("requireStudent", () => {
     getSession.mockResolvedValue({ data: null, error: { message: "unavailable" } });
 
     await expect(requireStudent()).rejects.toThrow("Could not verify");
+  });
+
+  describe("with EXTRA_ALLOWED_EMAILS", () => {
+    it("F1: returns a user with an extra address on a preview", async () => {
+      vi.stubEnv("VERCEL_ENV", "preview");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", "student@example.com");
+      getSession.mockResolvedValue(sessionFor("student@example.com"));
+
+      await expect(requireStudent()).resolves.toMatchObject({ email: "student@example.com" });
+    });
+
+    it("F1: sends a user with an extra address to /login in production", async () => {
+      vi.stubEnv("VERCEL_ENV", "production");
+      vi.stubEnv("EXTRA_ALLOWED_EMAILS", "student@example.com");
+      getSession.mockResolvedValue(sessionFor("student@example.com"));
+
+      await expect(requireStudent()).rejects.toThrow("redirect to /login");
+    });
   });
 });

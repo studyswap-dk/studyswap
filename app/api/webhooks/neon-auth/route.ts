@@ -1,4 +1,4 @@
-import { normalizeStudentEmail } from "@/domain/student-email";
+import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import { verifyNeonAuthWebhook } from "@/lib/auth/neon-webhook";
 
 export async function POST(request: Request) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unsupported webhook event." }, { status: 400 });
   }
 
-  if (!normalizeStudentEmail(payload.user.email)) {
+  if (!normalizeSignInEmail(payload.user.email)) {
     return Response.json({
       allowed: false,
       error_message: "Only AU student email addresses can create an account.",

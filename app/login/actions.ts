@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 
-import { normalizeStudentEmail } from "@/domain/student-email";
-import { getNeonAuth } from "@/lib/auth/server";
+import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import type { LoginError } from "@/lib/auth/login-error";
+import { getNeonAuth } from "@/lib/auth/server";
 
 export type LoginActionState =
   | { step: "email"; email?: string; error?: LoginError }
@@ -32,11 +32,11 @@ export async function loginAction(
 
   const intent = formData.get("intent");
   if (intent === "change-email") {
-    const email = normalizeStudentEmail(formData.get("email"));
+    const email = normalizeSignInEmail(formData.get("email"));
     return { step: "email", ...(email ? { email } : {}) };
   }
 
-  const email = normalizeStudentEmail(formData.get("email"));
+  const email = normalizeSignInEmail(formData.get("email"));
   if (!email) {
     return { step: "email", error: "notStudentEmail" };
   }
@@ -87,7 +87,7 @@ export async function loginAction(
     return { step: "code", email, error: "signInFailed" };
   }
 
-  if (!normalizeStudentEmail(authenticatedEmail)) {
+  if (!normalizeSignInEmail(authenticatedEmail)) {
     try {
       const { error } = await getNeonAuth().signOut();
       if (error) {

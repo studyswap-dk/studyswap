@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@/db";
-import { normalizeStudentEmail } from "@/domain/student-email";
 import { profile } from "@/db/schema";
+import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
 export type CurrentUser = {
@@ -22,7 +22,7 @@ export type CurrentUserLookup =
   | { user: CurrentUser; issue: null }
   | {
       user: null;
-      issue: "authentication-unavailable" | "unauthenticated" | "not-au-student-email";
+      issue: "authentication-unavailable" | "unauthenticated" | "email-not-allowed";
     };
 
 // The access check of the data access layer, see "Creating a Data Access Layer" in
@@ -71,9 +71,9 @@ export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
       return { user: null, issue: "unauthenticated" };
     }
 
-    const email = normalizeStudentEmail(sessionUser.email);
+    const email = normalizeSignInEmail(sessionUser.email);
     if (!email) {
-      return { user: null, issue: "not-au-student-email" };
+      return { user: null, issue: "email-not-allowed" };
     }
 
     return {
