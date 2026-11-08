@@ -8,6 +8,7 @@ import {
   type Post,
   type Proposal,
   type ProposalContext,
+  readerIsReceiver,
 } from "./proposal";
 
 const seekingPost: Post = { id: "p1", authorId: "author", type: "seeking", status: "open" };
@@ -25,18 +26,24 @@ describe("decideSend", () => {
   });
 
   it("F8: a proposal cannot be sent on your own post", () => {
-    expect(decideSend(seekingPost, "author", []).ok).toBe(false);
+    expect(decideSend(seekingPost, "author", [])).toEqual({ ok: false, code: "ownPost" });
   });
 
   it.each(["closed", "removed"] as const)(
     "F8: a proposal cannot be sent on a post with status %s",
     (status) => {
-      expect(decideSend({ ...seekingPost, status }, "proposer", []).ok).toBe(false);
+      expect(decideSend({ ...seekingPost, status }, "proposer", [])).toEqual({
+        ok: false,
+        code: "postNotOpen",
+      });
     },
   );
 
   it("F8: a student cannot have two pending proposals on the same post", () => {
-    expect(decideSend(seekingPost, "proposer", [pending]).ok).toBe(false);
+    expect(decideSend(seekingPost, "proposer", [pending])).toEqual({
+      ok: false,
+      code: "alreadyPending",
+    });
   });
 
   it.each(["withdrawn", "declined", "accepted"] as const)(
@@ -62,7 +69,10 @@ describe("decideProposal: withdraw and decline", () => {
   });
 
   it("F8: the author cannot withdraw the proposer's proposal", () => {
-    expect(decideProposal(pending, { kind: "withdraw" }, "author", ctx).ok).toBe(false);
+    expect(decideProposal(pending, { kind: "withdraw" }, "author", ctx)).toEqual({
+      ok: false,
+      code: "notProposer",
+    });
   });
 
   it("F9: the author can decline a pending proposal", () => {
@@ -73,7 +83,10 @@ describe("decideProposal: withdraw and decline", () => {
   });
 
   it("F9: the proposer cannot decline their own proposal", () => {
-    expect(decideProposal(pending, { kind: "decline" }, "proposer", ctx).ok).toBe(false);
+    expect(decideProposal(pending, { kind: "decline" }, "proposer", ctx)).toEqual({
+      ok: false,
+      code: "notAuthor",
+    });
   });
 
   it.each(["accepted", "declined", "withdrawn"] as const)(
@@ -81,9 +94,18 @@ describe("decideProposal: withdraw and decline", () => {
     (status) => {
       const answered = { ...pending, status };
 
-      expect(decideProposal(answered, { kind: "withdraw" }, "proposer", ctx).ok).toBe(false);
-      expect(decideProposal(answered, { kind: "decline" }, "author", ctx).ok).toBe(false);
-      expect(decideProposal(answered, { kind: "accept" }, "author", ctx).ok).toBe(false);
+      expect(decideProposal(answered, { kind: "withdraw" }, "proposer", ctx)).toEqual({
+        ok: false,
+        code: "alreadyAnswered",
+      });
+      expect(decideProposal(answered, { kind: "decline" }, "author", ctx)).toEqual({
+        ok: false,
+        code: "alreadyAnswered",
+      });
+      expect(decideProposal(answered, { kind: "accept" }, "author", ctx)).toEqual({
+        ok: false,
+        code: "alreadyAnswered",
+      });
     },
   );
 });
@@ -126,16 +148,22 @@ describe("decideProposal: accept", () => {
   it("F9: only the author can accept", () => {
     const ctx = context(seekingPost, { author: 5 });
 
-    expect(decideProposal(pending, { kind: "accept" }, "proposer", ctx).ok).toBe(false);
-    expect(decideProposal(pending, { kind: "accept" }, "someone-else", ctx).ok).toBe(false);
+    expect(decideProposal(pending, { kind: "accept" }, "proposer", ctx)).toEqual({
+      ok: false,
+      code: "notAuthor",
+    });
+    expect(decideProposal(pending, { kind: "accept" }, "someone-else", ctx)).toEqual({
+      ok: false,
+      code: "notAuthor",
+    });
   });
 
   it("F9: a proposal cannot be accepted when the post is closed", () => {
     const closed: Post = { ...seekingPost, status: "closed" };
 
     expect(
-      decideProposal(pending, { kind: "accept" }, "author", context(closed, { author: 5 })).ok,
-    ).toBe(false);
+      decideProposal(pending, { kind: "accept" }, "author", context(closed, { author: 5 })),
+    ).toEqual({ ok: false, code: "postNotOpen" });
   });
 
   it("F9: boundary: exactly one available point for the receiver is enough", () => {
@@ -147,7 +175,10 @@ describe("decideProposal: accept", () => {
   it("F9: a receiver without available points cannot enter an agreement", () => {
     const ctx = context(seekingPost, { author: 0 });
 
-    expect(decideProposal(pending, { kind: "accept" }, "author", ctx).ok).toBe(false);
+    expect(decideProposal(pending, { kind: "accept" }, "author", ctx)).toEqual({
+      ok: false,
+      code: "insufficientPoints",
+    });
   });
 
   it("F9: a receiver missing from the overview counts as having no points", () => {
@@ -161,7 +192,10 @@ describe("decideProposal: accept", () => {
     const receiverHasNone = context(offeringPost, { author: 5, proposer: 0 });
 
     expect(decideProposal(pending, { kind: "accept" }, "author", helperHasNone).ok).toBe(true);
-    expect(decideProposal(pending, { kind: "accept" }, "author", receiverHasNone).ok).toBe(false);
+    expect(decideProposal(pending, { kind: "accept" }, "author", receiverHasNone)).toEqual({
+      ok: false,
+      code: "insufficientPoints",
+    });
   });
 });
 
@@ -231,4 +265,23 @@ describe("availableProposalActions", () => {
       "decline",
     ]);
   });
+});
+
+describe("readerIsReceiver", () => {
+  // The reader is the proposer when they sent it, otherwise the author. The answer must
+  // match who partiesOf() makes the receiver, for every type of post.
+  it.each([
+    ["offering", true],
+    ["offering", false],
+    ["seeking", true],
+    ["seeking", false],
+  ] as const)(
+    "F9, NF1: on a post %s help, sent by the reader %s, matches partiesOf",
+    (type, sent) => {
+      const post = { ...seekingPost, type };
+      const reader = sent ? "proposer" : post.authorId;
+
+      expect(readerIsReceiver(type, sent)).toBe(partiesOf(post, "proposer").receiverId === reader);
+    },
+  );
 });

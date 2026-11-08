@@ -144,12 +144,13 @@ describe("validatePost", () => {
     expect(result.field).toBe("title");
   });
 
-  it("F5: the message is the one the field's own rule gives", () => {
+  it("F5, NF1: the code is the one the field's own rule gives", () => {
     const result = validatePost({ ...valid, title: "abc" });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.message).toBe(validateTitle("abc"));
+    expect(result.code).toBe("tooShort");
+    expect(result.code).toBe(validateTitle("abc"));
   });
 });
 

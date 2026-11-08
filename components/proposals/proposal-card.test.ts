@@ -2,6 +2,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { TextsProvider } from "@/components/texts/texts-provider";
+import { en } from "@/lib/texts/en";
+
 import { ProposalCard } from "./proposal-card";
 import type { ProposalActionKind } from "@/domain/proposal";
 import type { ProposalListItem } from "@/lib/proposals";
@@ -9,9 +12,9 @@ import type { ProposalListItem } from "@/lib/proposals";
 // The buttons call Server Actions, which reach the database. Rendering only needs them
 // to exist.
 vi.mock("@/app/actions/proposals", () => ({
-  acceptProposal: vi.fn<() => Promise<{ ok: boolean; message: string }>>(),
-  declineProposal: vi.fn<() => Promise<{ ok: boolean; message: string }>>(),
-  withdrawProposal: vi.fn<() => Promise<{ ok: boolean; message: string }>>(),
+  acceptProposal: vi.fn<() => Promise<{ ok: true }>>(),
+  declineProposal: vi.fn<() => Promise<{ ok: true }>>(),
+  withdrawProposal: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 const AUTHOR = "11111111-1111-4111-8111-111111111111";
@@ -30,7 +33,8 @@ const proposal: ProposalListItem = {
 };
 
 function render(entry: ProposalListItem, sent: boolean, actions: ProposalActionKind[]) {
-  return renderToStaticMarkup(createElement(ProposalCard, { proposal: entry, sent, actions }));
+  const card = createElement(ProposalCard, { proposal: entry, sent, actions });
+  return renderToStaticMarkup(createElement(TextsProvider, { texts: en }, card));
 }
 
 // The text of each button, so a word in the status line, such as "Accepted", is not taken

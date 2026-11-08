@@ -97,18 +97,18 @@ describe("decide", () => {
   });
   it("F12: the helper cannot confirm", () => {
     const result = decide(base, { kind: "confirm" }, "helper", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notReceiver" });
   });
 
   it("F12: a completed agreement cannot be confirmed again", () => {
     const completed = { ...base, status: "completed" as const };
     const result = decide(completed, { kind: "confirm" }, "receiver", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notActive" });
   });
   it("F13: the helper cannot mark the help as done twice", () => {
     const alreadyMarked = { ...base, helperConfirmedAt: new Date("2026-09-25T10:00:00Z") };
     const result = decide(alreadyMarked, { kind: "markDone" }, "helper", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "alreadyMarkedDone" });
   });
   it("F13: the helper marks the help as done", () => {
     const result = decide(base, { kind: "markDone" }, "helper", now);
@@ -133,12 +133,12 @@ describe("decide", () => {
 
   it("F11: someone outside the agreement cannot cancel", () => {
     const result = decide(base, { kind: "cancel" }, "someone-else", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notParty" });
   });
 
   it("F11: cannot be cancelled after the help is marked as done", () => {
     const result = decide(marked, { kind: "cancel" }, "receiver", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "alreadyMarkedDone" });
   });
   it("F15: the receiver disputes after the help is marked as done", () => {
     const result = decide(
@@ -155,12 +155,12 @@ describe("decide", () => {
 
   it("F15: cannot be disputed before the help is marked as done", () => {
     const result = decide(base, { kind: "dispute", reason: "..." }, "receiver", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notMarkedDone" });
   });
 
   it("F15: the helper cannot dispute", () => {
     const result = decide(marked, { kind: "dispute", reason: "..." }, "helper", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notReceiver" });
   });
 
   it("F16: an upheld dispute lifts the reservation without moving points", () => {
@@ -192,25 +192,34 @@ describe("decide", () => {
 
   it("F16: a dispute cannot be resolved on an agreement that is not disputed", () => {
     const result = decide(base, { kind: "resolveDispute", outcome: "upheld" }, "moderator", now);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "notDisputed" });
   });
   it.each(["completed", "cancelled", "expired", "disputed"] as const)(
     "F13: the help cannot be marked as done on an agreement with status %s",
     (status) => {
       const agreement = { ...base, status };
-      expect(decide(agreement, { kind: "markDone" }, "helper", now).ok).toBe(false);
+      expect(decide(agreement, { kind: "markDone" }, "helper", now)).toEqual({
+        ok: false,
+        code: "notActive",
+      });
     },
   );
 
   it.each(["receiver", "someone-else"])("F13: %s cannot mark the help as done", (actor) => {
-    expect(decide(base, { kind: "markDone" }, actor, now).ok).toBe(false);
+    expect(decide(base, { kind: "markDone" }, actor, now)).toEqual({
+      ok: false,
+      code: "notHelper",
+    });
   });
 
   it.each(["completed", "cancelled", "expired", "disputed"] as const)(
     "F11: an agreement with status %s cannot be cancelled",
     (status) => {
       const agreement = { ...base, status };
-      expect(decide(agreement, { kind: "cancel" }, "receiver", now).ok).toBe(false);
+      expect(decide(agreement, { kind: "cancel" }, "receiver", now)).toEqual({
+        ok: false,
+        code: "notActive",
+      });
     },
   );
 
@@ -219,7 +228,7 @@ describe("decide", () => {
     (status) => {
       const agreement = { ...marked, status };
       const dispute = { kind: "dispute", reason: "The help was never given" } as const;
-      expect(decide(agreement, dispute, "receiver", now).ok).toBe(false);
+      expect(decide(agreement, dispute, "receiver", now)).toEqual({ ok: false, code: "notActive" });
     },
   );
   it.each(validCases)(
@@ -263,21 +272,30 @@ describe("decide: system actions and deadlines", () => {
   it("F14: the agreement does not expire one millisecond before the expiry time", () => {
     const result = decide(base, { kind: "expire" }, SYSTEM_ACTOR, oneMsBefore(expiresAt));
 
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "tooEarly" });
   });
 
   it.each(["helper", "receiver", "moderator"])("F14: %s cannot expire the agreement", (actor) => {
-    expect(decide(base, { kind: "expire" }, actor, expiresAt).ok).toBe(false);
+    expect(decide(base, { kind: "expire" }, actor, expiresAt)).toEqual({
+      ok: false,
+      code: "onlySystem",
+    });
   });
 
   it("F14: the agreement does not expire when the help is marked as done", () => {
-    expect(decide(marked, { kind: "expire" }, SYSTEM_ACTOR, expiresAt).ok).toBe(false);
+    expect(decide(marked, { kind: "expire" }, SYSTEM_ACTOR, expiresAt)).toEqual({
+      ok: false,
+      code: "alreadyMarkedDone",
+    });
   });
 
   it("F14: the agreement does not expire when the receiver has confirmed", () => {
     const confirmed = { ...base, receiverConfirmedAt: now };
 
-    expect(decide(confirmed, { kind: "expire" }, SYSTEM_ACTOR, expiresAt).ok).toBe(false);
+    expect(decide(confirmed, { kind: "expire" }, SYSTEM_ACTOR, expiresAt)).toEqual({
+      ok: false,
+      code: "alreadyMarkedDone",
+    });
   });
 
   it.each(["completed", "cancelled", "expired", "disputed"] as const)(
@@ -305,15 +323,21 @@ describe("decide: system actions and deadlines", () => {
   it("F13: the points are not released one millisecond before the 24 hours have passed", () => {
     const result = decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, oneMsBefore(releaseAt));
 
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, code: "tooEarly" });
   });
 
   it.each(["helper", "receiver", "moderator"])("F13: %s cannot release automatically", (actor) => {
-    expect(decide(marked, { kind: "autoRelease" }, actor, releaseAt).ok).toBe(false);
+    expect(decide(marked, { kind: "autoRelease" }, actor, releaseAt)).toEqual({
+      ok: false,
+      code: "onlySystem",
+    });
   });
 
   it("F13: the points are not released automatically before the help is marked as done", () => {
-    expect(decide(base, { kind: "autoRelease" }, SYSTEM_ACTOR, releaseAt).ok).toBe(false);
+    expect(decide(base, { kind: "autoRelease" }, SYSTEM_ACTOR, releaseAt)).toEqual({
+      ok: false,
+      code: "notMarkedDone",
+    });
   });
 
   it("F15: the receiver can dispute one millisecond before the 24 hours have passed", () => {
@@ -331,8 +355,14 @@ describe("decide: system actions and deadlines", () => {
     const dispute = { kind: "dispute", reason: "The help was never given" } as const;
     const sixHoursLater = new Date(releaseAt.getTime() + 6 * 60 * 60 * 1000);
 
-    expect(decide(marked, dispute, "receiver", releaseAt).ok).toBe(false);
-    expect(decide(marked, dispute, "receiver", sixHoursLater).ok).toBe(false);
+    expect(decide(marked, dispute, "receiver", releaseAt)).toEqual({
+      ok: false,
+      code: "disputeWindowPassed",
+    });
+    expect(decide(marked, dispute, "receiver", sixHoursLater)).toEqual({
+      ok: false,
+      code: "disputeWindowPassed",
+    });
   });
 
   it("F13, F15: at any moment exactly one of release and dispute is possible", () => {
@@ -347,7 +377,10 @@ describe("decide: system actions and deadlines", () => {
   });
 
   it("F13, F14: the help cannot be marked as done once the agreement has expired", () => {
-    expect(decide(base, { kind: "markDone" }, "helper", expiresAt).ok).toBe(false);
+    expect(decide(base, { kind: "markDone" }, "helper", expiresAt)).toEqual({
+      ok: false,
+      code: "expired",
+    });
   });
 
   it("F13, F14: at any moment exactly one of expiry and marking the help as done is possible", () => {
@@ -361,7 +394,10 @@ describe("decide: system actions and deadlines", () => {
 
   it("F12, F14: the receiver cannot confirm once the agreement has expired", () => {
     expect(decide(base, { kind: "confirm" }, "receiver", oneMsBefore(expiresAt)).ok).toBe(true);
-    expect(decide(base, { kind: "confirm" }, "receiver", expiresAt).ok).toBe(false);
+    expect(decide(base, { kind: "confirm" }, "receiver", expiresAt)).toEqual({
+      ok: false,
+      code: "expired",
+    });
   });
 
   it("F12, F13: the receiver can confirm after the expiry time when the help was marked as done in time", () => {
@@ -370,7 +406,10 @@ describe("decide: system actions and deadlines", () => {
 
   it("F11, F14: an agreement cannot be cancelled once it has expired", () => {
     expect(decide(base, { kind: "cancel" }, "helper", oneMsBefore(expiresAt)).ok).toBe(true);
-    expect(decide(base, { kind: "cancel" }, "helper", expiresAt).ok).toBe(false);
+    expect(decide(base, { kind: "cancel" }, "helper", expiresAt)).toEqual({
+      ok: false,
+      code: "expired",
+    });
   });
 
   it.each([
@@ -393,7 +432,10 @@ describe("decide: system actions and deadlines", () => {
     (status) => {
       const agreement = { ...marked, status };
 
-      expect(decide(agreement, { kind: "autoRelease" }, SYSTEM_ACTOR, releaseAt).ok).toBe(false);
+      expect(decide(agreement, { kind: "autoRelease" }, SYSTEM_ACTOR, releaseAt)).toEqual({
+        ok: false,
+        code: "notActive",
+      });
     },
   );
 });
@@ -459,7 +501,10 @@ describe("autoReleaseAt", () => {
 
   it("F13: autoRelease is refused one millisecond before autoReleaseAt and allowed at it", () => {
     const at = autoReleaseAt(markedAt);
-    expect(decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, oneMsBefore(at)).ok).toBe(false);
+    expect(decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, oneMsBefore(at))).toEqual({
+      ok: false,
+      code: "tooEarly",
+    });
     expect(decide(marked, { kind: "autoRelease" }, SYSTEM_ACTOR, at).ok).toBe(true);
   });
 });

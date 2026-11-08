@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState } from "react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
+import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -12,6 +13,7 @@ import { loginAction } from "./actions";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, { step: "email" });
+  const texts = useTexts().login;
 
   return (
     <main className="grid min-h-screen place-items-center bg-muted px-4 py-8">
@@ -53,7 +55,7 @@ export function LoginForm() {
             />
             {state.error ? (
               <p className="text-sm text-destructive" role="alert">
-                {state.error}
+                {texts[state.error]}
               </p>
             ) : null}
             <Button type="submit" disabled={pending} className="mt-1 h-11 text-base">
@@ -92,7 +94,7 @@ export function LoginForm() {
               </InputOTP>
               {state.error ? (
                 <p className="text-sm text-destructive" role="alert">
-                  {state.error}
+                  {texts[state.error]}
                 </p>
               ) : null}
               <Button type="submit" disabled={pending} className="mt-1 h-11 text-base">

@@ -22,13 +22,16 @@ describe("decideStartConversation", () => {
   });
 
   it("F10: the author cannot start a conversation on their own post", () => {
-    expect(decideStartConversation(post(), "author").ok).toBe(false);
+    expect(decideStartConversation(post(), "author")).toEqual({ ok: false, code: "ownPost" });
   });
 
   it.each(["closed", "removed"] as const)(
     "F10: no new conversation can be started on a %s post",
     (status) => {
-      expect(decideStartConversation(post(status), "participant").ok).toBe(false);
+      expect(decideStartConversation(post(status), "participant")).toEqual({
+        ok: false,
+        code: "postNotOpen",
+      });
     },
   );
 });
@@ -57,11 +60,17 @@ describe("decideSendMessage", () => {
   });
 
   it("F10: nobody can write when the post has been removed", () => {
-    expect(decideSendMessage(post("removed"), conversation, "author").ok).toBe(false);
+    expect(decideSendMessage(post("removed"), conversation, "author")).toEqual({
+      ok: false,
+      code: "postRemoved",
+    });
   });
 
   it("F10: another student cannot write", () => {
-    expect(decideSendMessage(post(), conversation, "someone-else").ok).toBe(false);
+    expect(decideSendMessage(post(), conversation, "someone-else")).toEqual({
+      ok: false,
+      code: "notParty",
+    });
   });
 });
 
@@ -71,15 +80,24 @@ describe("decideWriteMessage", () => {
   });
 
   it("F10: the author cannot start a conversation in another student's name", () => {
-    expect(decideWriteMessage(post(), "participant", false, "author").ok).toBe(false);
+    expect(decideWriteMessage(post(), "participant", false, "author")).toEqual({
+      ok: false,
+      code: "notParticipant",
+    });
   });
 
   it("F10: a third student cannot start a conversation in another student's name", () => {
-    expect(decideWriteMessage(post(), "participant", false, "someone-else").ok).toBe(false);
+    expect(decideWriteMessage(post(), "participant", false, "someone-else")).toEqual({
+      ok: false,
+      code: "notParticipant",
+    });
   });
 
   it("F10: no first message can be written on a closed post", () => {
-    expect(decideWriteMessage(post("closed"), "participant", false, "participant").ok).toBe(false);
+    expect(decideWriteMessage(post("closed"), "participant", false, "participant")).toEqual({
+      ok: false,
+      code: "postNotOpen",
+    });
   });
 
   it("F10: the author can answer once the conversation exists", () => {
@@ -94,11 +112,17 @@ describe("decideWriteMessage", () => {
   });
 
   it("F10: nobody can write in an existing conversation when the post has been removed", () => {
-    expect(decideWriteMessage(post("removed"), "participant", true, "author").ok).toBe(false);
+    expect(decideWriteMessage(post("removed"), "participant", true, "author")).toEqual({
+      ok: false,
+      code: "postRemoved",
+    });
   });
 
   it("F10: a third student cannot write in an existing conversation", () => {
-    expect(decideWriteMessage(post(), "participant", true, "someone-else").ok).toBe(false);
+    expect(decideWriteMessage(post(), "participant", true, "someone-else")).toEqual({
+      ok: false,
+      code: "notParty",
+    });
   });
 });
 
@@ -135,11 +159,17 @@ describe("canOpenConversation", () => {
 describe("conversations on closed and removed posts", () => {
   it("F10: a student who has not written yet can open the conversation on a closed post, to see it cannot start", () => {
     expect(canOpenConversation(post("closed"), "participant", false, "participant")).toBe(true);
-    expect(decideWriteMessage(post("closed"), "participant", false, "participant").ok).toBe(false);
+    expect(decideWriteMessage(post("closed"), "participant", false, "participant")).toEqual({
+      ok: false,
+      code: "postNotOpen",
+    });
   });
 
   it("F10: no first message can be written on a removed post", () => {
-    expect(decideWriteMessage(post("removed"), "participant", false, "participant").ok).toBe(false);
+    expect(decideWriteMessage(post("removed"), "participant", false, "participant")).toEqual({
+      ok: false,
+      code: "postNotOpen",
+    });
   });
 
   it("F22: the author cannot open the conversation when the post has been removed", () => {

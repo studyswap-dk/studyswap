@@ -6,22 +6,40 @@ import { agreement, post, proposal, userInNeonAuth } from "@/db/schema";
 import {
   type Action,
   type Agreement,
+  type AgreementRefusal,
   AUTO_RELEASE_AFTER_MS,
   type Decision,
   decide,
   dueSystemAction,
   SYSTEM_ACTOR,
 } from "@/domain/agreement";
-import { PointAccountError, settlePoints, type Transaction } from "@/lib/point-account";
+import {
+  PointAccountError,
+  type PointAccountRefusal,
+  settlePoints,
+  type Transaction,
+} from "@/lib/point-account";
 
-// Another request changed the agreement between the read and the update. The message
-// can be shown to the user.
+// Another request changed the agreement between the read and the update.
 export class AgreementConflictError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor() {
+    super("The agreement was changed at the same time");
     this.name = "AgreementConflictError";
   }
 }
+
+// NF1: why an action on an agreement is refused: by the rules, because the agreement
+// does not exist, because another request changed it at the same time, or by the
+// points. The user interface turns the code into a text.
+export type AgreementActionRefusal =
+  | AgreementRefusal
+  | PointAccountRefusal
+  | "notFound"
+  | "conflict";
+
+export type AgreementResult =
+  | Extract<Decision, { ok: true }>
+  | { ok: false; code: AgreementActionRefusal };
 
 const agreementColumns = {
   id: agreement.id,
@@ -48,13 +66,13 @@ export async function applyAgreementAction(
   action: Action,
   actorId: string,
   now: Date,
-): Promise<Decision> {
+): Promise<AgreementResult> {
   const [current] = await tx
     .select(agreementColumns)
     .from(agreement)
     .where(eq(agreement.id, agreementId))
     .for("update");
-  if (!current) return { ok: false, reason: "Agreement not found" };
+  if (!current) return { ok: false, code: "notFound" };
 
   const decision = decide(current, action, actorId, now);
   if (!decision.ok) return decision;
@@ -71,7 +89,7 @@ export async function applyAgreementAction(
     .where(and(eq(agreement.id, agreementId), eq(agreement.status, current.status)))
     .returning({ id: agreement.id });
   if (updated.length === 0) {
-    throw new AgreementConflictError("The agreement was changed at the same time. Try again");
+    throw new AgreementConflictError();
   }
 
   await settlePoints(tx, current, decision.newStatus, decision.transactions);
@@ -79,21 +97,20 @@ export async function applyAgreementAction(
 }
 
 // The same as applyAgreementAction in a transaction of its own, for a Server Action.
-// A refusal from the database comes back as a reason instead of an exception.
+// A refusal from the database comes back as a code instead of an exception.
 export async function runAgreementAction(
   agreementId: string,
   action: Action,
   actorId: string,
   now: Date,
-): Promise<Decision> {
+): Promise<AgreementResult> {
   try {
     return await db.transaction((tx) =>
       applyAgreementAction(tx, agreementId, action, actorId, now),
     );
   } catch (error) {
-    if (error instanceof PointAccountError || error instanceof AgreementConflictError) {
-      return { ok: false, reason: error.message };
-    }
+    if (error instanceof PointAccountError) return { ok: false, code: error.code };
+    if (error instanceof AgreementConflictError) return { ok: false, code: "conflict" };
     throw error;
   }
 }

@@ -4,6 +4,7 @@ import { SendHorizontal } from "lucide-react";
 import { useActionState, useOptimistic, useRef } from "react";
 
 import { sendMessage, type SendMessageState } from "@/app/actions/messages";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
@@ -27,6 +28,7 @@ import { MAX_MESSAGE_LENGTH } from "@/domain/message";
 import { findProgramme, programmeLabel } from "@/domain/programmes";
 import type { ConversationMessage, MyConversation } from "@/lib/conversations";
 import { formatMessageTime } from "@/lib/dates";
+import { fill } from "@/lib/texts/fill";
 import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +70,7 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
 
   const action = sendMessage.bind(null, conversation.postId, conversation.participantId);
   const formRef = useRef<HTMLFormElement>(null);
+  const texts = useTexts();
   const [state, formAction, isPending] = useActionState(
     async (previous: SendMessageState, formData: FormData) => {
       const body = formData.get("body");
@@ -216,7 +219,7 @@ function ConversationPanel({ conversation, currentUserId, now }: ConversationVie
             </InputGroup>
             {state.error ? (
               <p role="alert" className="text-sm text-destructive">
-                {state.error}
+                {fill(texts.message[state.error], { max: MAX_MESSAGE_LENGTH })}
               </p>
             ) : null}
           </form>

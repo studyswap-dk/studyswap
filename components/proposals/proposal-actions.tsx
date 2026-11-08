@@ -8,6 +8,8 @@ import {
   type ProposalActionResult,
   withdrawProposal,
 } from "@/app/actions/proposals";
+import { proposalResultText } from "@/components/proposals/proposal-result-text";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import type { ProposalActionKind } from "@/domain/proposal";
 
@@ -32,21 +34,37 @@ const BUTTONS: Record<
 
 // The page decides which actions the student may take, with availableProposalActions()
 // from domain/proposal.ts, which asks the same decideProposal() the server uses. The
-// server checks again, so a button that is out of date only gives a message.
+// server checks again, so a button that is out of date only gives a refusal.
 export function ProposalActions({
   proposalId,
   actions,
+  readerIsReceiver,
 }: {
   proposalId: string;
   actions: ProposalActionKind[];
+  // F9: whether the student reading this pays for the agreement, so a refusal for lack
+  // of points can say whose points are missing.
+  readerIsReceiver: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   // Which button was pressed, so only that one says it is working. All of them are
   // disabled until the answer comes, so two actions cannot be sent at once.
   const [pressed, setPressed] = useState<ProposalActionKind | null>(null);
-  const [result, setResult] = useState<ProposalActionResult | null>(null);
+  // The answer together with the action it answers, so the text matches that action.
+  const [answer, setAnswer] = useState<{
+    kind: ProposalActionKind;
+    result: ProposalActionResult;
+  } | null>(null);
+  const texts = useTexts().proposal;
 
-  if (actions.length === 0 && result === null) return null;
+  if (actions.length === 0 && answer === null) return null;
+
+  // NF1: the server answers with a code, and the text is chosen here for the student
+  // who reads it.
+  const message =
+    answer === null
+      ? null
+      : proposalResultText(texts, answer.kind, answer.result, readerIsReceiver);
 
   return (
     <div className="flex flex-col gap-2">
@@ -62,7 +80,7 @@ export function ProposalActions({
               onClick={() => {
                 setPressed(kind);
                 startTransition(async () => {
-                  setResult(await button.run(proposalId));
+                  setAnswer({ kind, result: await button.run(proposalId) });
                 });
               }}
             >
@@ -76,12 +94,12 @@ export function ProposalActions({
       <output
         aria-live="polite"
         className={
-          result?.ok === false
+          answer?.result.ok === false
             ? "block text-sm text-destructive"
             : "block text-sm text-muted-foreground"
         }
       >
-        {result?.message}
+        {message}
       </output>
     </div>
   );

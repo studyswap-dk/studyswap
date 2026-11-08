@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { saveProfile, type SaveProfileState } from "@/app/actions/profile";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -16,12 +17,7 @@ import {
   ComboboxLabel,
   ComboboxList,
 } from "@/components/ui/combobox";
-import {
-  NAME_MAX_LENGTH,
-  NAME_MIN_LENGTH,
-  type NameError,
-  type ProgrammeError,
-} from "@/domain/profile";
+import { NAME_MAX_LENGTH, NAME_MIN_LENGTH } from "@/domain/profile";
 import {
   findProgramme,
   matchesProgrammeSearch,
@@ -31,17 +27,7 @@ import {
   programmeLabel,
   PROGRAMMES,
 } from "@/domain/programmes";
-
-// The texts for the error codes from domain/profile.ts. They live here, with the other
-// texts in the user interface, so they can be translated in one place later.
-const NAME_ERRORS: Record<NameError, string> = {
-  required: "Enter your name.",
-  tooShort: `Use at least ${NAME_MIN_LENGTH} characters.`,
-  tooLong: `Use at most ${NAME_MAX_LENGTH} characters.`,
-};
-const PROGRAMME_ERRORS: Record<ProgrammeError, string> = {
-  notOnList: "Choose your programme from the list.",
-};
+import { fill } from "@/lib/texts/fill";
 
 // The programmes in three groups, so the list reads like AU's own. They are built from
 // the same list that the server validates against.
@@ -71,9 +57,10 @@ export function ProfileForm({
   submitLabel: string;
 }) {
   const action = saveProfile.bind(null, afterSave);
+  const texts = useTexts().profile;
   const [state, formAction, isPending] = useActionState(action, {
     errors: {},
-    message: null,
+    notice: null,
     saved: false,
     name,
   } satisfies SaveProfileState);
@@ -96,7 +83,9 @@ export function ProfileForm({
             required
           />
           {state.errors.name ? (
-            <FieldError>{NAME_ERRORS[state.errors.name]}</FieldError>
+            <FieldError>
+              {fill(texts.name[state.errors.name], { min: NAME_MIN_LENGTH, max: NAME_MAX_LENGTH })}
+            </FieldError>
           ) : (
             <FieldDescription>
               Other students see your name and programme on your posts.
@@ -140,7 +129,7 @@ export function ProfileForm({
             </ComboboxContent>
           </Combobox>
           {state.errors.programme ? (
-            <FieldError>{PROGRAMME_ERRORS[state.errors.programme]}</FieldError>
+            <FieldError>{texts.programme[state.errors.programme]}</FieldError>
           ) : (
             <FieldDescription>
               Your programme at Aarhus University. Choose {otherLabel} if it is not on the list.
@@ -149,11 +138,11 @@ export function ProfileForm({
         </Field>
       </FieldGroup>
 
-      {state.message ? (
+      {state.notice ? (
         <output
           className={state.saved ? "text-sm text-muted-foreground" : "text-sm text-destructive"}
         >
-          {state.message}
+          {texts[state.notice]}
         </output>
       ) : null}
 

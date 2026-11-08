@@ -1,5 +1,5 @@
 // F8 (send, withdraw) and F9 (accept, decline).
-import { decideReservation } from "./point-account";
+import { decideReservation, type ReservationRefusal } from "./point-account";
 import type { PostStatus, PostType } from "./post";
 
 export const POINTS_PER_AGREEMENT = 1;
@@ -28,6 +28,16 @@ export type ProposalContext = {
   available: Record<string, number>;
 };
 
+// NF1: why a proposal action is refused. The user interface turns the code into a text.
+export type ProposalRefusal =
+  | "postNotOpen"
+  | "ownPost"
+  | "alreadyPending"
+  | "alreadyAnswered"
+  | "notProposer"
+  | "notAuthor"
+  | ReservationRefusal;
+
 export type ProposalDecision =
   | {
       ok: true;
@@ -36,7 +46,14 @@ export type ProposalDecision =
       closePost?: boolean;
       declineOtherProposals?: boolean;
     }
-  | { ok: false; reason: string };
+  | { ok: false; code: ProposalRefusal };
+
+// F9: whether the student reading a proposal would receive the help, and so pay, if it
+// is accepted: the proposer on a post offering help, the author on a post seeking help.
+// sentByReader says the reader is the proposer; otherwise the reader is the author.
+export function readerIsReceiver(postType: PostType, sentByReader: boolean): boolean {
+  return sentByReader ? postType === "offering" : postType === "seeking";
+}
 
 // F9: who helps and who receives when a proposal on the post is accepted.
 export function partiesOf(
@@ -53,14 +70,12 @@ export function decideSend(
   post: Post,
   proposerId: string,
   existing: Proposal[],
-): { ok: true } | { ok: false; reason: string } {
-  if (post.status !== "open") return { ok: false, reason: "Post is not open" };
-  if (proposerId === post.authorId) {
-    return { ok: false, reason: "Cannot send a proposal on your own post" };
-  }
+): { ok: true } | { ok: false; code: ProposalRefusal } {
+  if (post.status !== "open") return { ok: false, code: "postNotOpen" };
+  if (proposerId === post.authorId) return { ok: false, code: "ownPost" };
   // At most one pending proposal per student per post.
   if (existing.some((p) => p.proposerId === proposerId && p.status === "pending")) {
-    return { ok: false, reason: "You already have an unanswered proposal on this post" };
+    return { ok: false, code: "alreadyPending" };
   }
   return { ok: true };
 }
@@ -73,21 +88,17 @@ export function decideProposal(
   ctx: ProposalContext,
 ): ProposalDecision {
   const { post } = ctx;
-  if (proposal.status !== "pending") {
-    return { ok: false, reason: "Proposal has already been answered or withdrawn" };
-  }
+  if (proposal.status !== "pending") return { ok: false, code: "alreadyAnswered" };
   switch (action.kind) {
     case "withdraw":
-      if (actorId !== proposal.proposerId) {
-        return { ok: false, reason: "Only the proposer can withdraw" };
-      }
+      if (actorId !== proposal.proposerId) return { ok: false, code: "notProposer" };
       return { ok: true, newStatus: "withdrawn" };
     case "decline":
-      if (actorId !== post.authorId) return { ok: false, reason: "Only the author can decline" };
+      if (actorId !== post.authorId) return { ok: false, code: "notAuthor" };
       return { ok: true, newStatus: "declined" };
     case "accept": {
-      if (actorId !== post.authorId) return { ok: false, reason: "Only the author can accept" };
-      if (post.status !== "open") return { ok: false, reason: "Post is not open" };
+      if (actorId !== post.authorId) return { ok: false, code: "notAuthor" };
+      if (post.status !== "open") return { ok: false, code: "postNotOpen" };
 
       const { helperId, receiverId } = partiesOf(post, proposal.proposerId);
 
@@ -112,7 +123,7 @@ export type ProposalActionKind = (typeof PROPOSAL_ACTIONS)[number];
 // F8, F9: which of PROPOSAL_ACTIONS this user may take now, judged by decideProposal(),
 // so the page shows the same choice the server will make. The page does not read the
 // receiver's points, so accept is offered as if they had enough. The server checks the
-// points under a lock and answers with a message if they do not.
+// points under a lock and answers with a code if they do not.
 export function availableProposalActions(
   proposal: Proposal,
   post: Post,

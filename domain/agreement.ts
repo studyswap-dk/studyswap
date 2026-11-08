@@ -59,6 +59,21 @@ export type NewPointTransaction = {
   type: TransactionType;
 };
 
+// NF1: why an agreement action is refused. The user interface turns the code into a
+// text, so the rules say why without deciding how it is worded or in which language.
+export type AgreementRefusal =
+  | "notActive"
+  | "notReceiver"
+  | "notHelper"
+  | "notParty"
+  | "expired"
+  | "alreadyMarkedDone"
+  | "notMarkedDone"
+  | "disputeWindowPassed"
+  | "notDisputed"
+  | "onlySystem"
+  | "tooEarly";
+
 export type Decision =
   | {
       ok: true;
@@ -67,21 +82,21 @@ export type Decision =
       timestamps?: Partial<Pick<Agreement, "helperConfirmedAt" | "receiverConfirmedAt">>;
       disputeReason?: string; // only for dispute action
     }
-  | { ok: false; reason: string };
+  | { ok: false; code: AgreementRefusal };
 
 export function decide(agreement: Agreement, action: Action, actorId: string, now: Date): Decision {
   switch (action.kind) {
     case "confirm": {
       if (agreement.status !== "accepted") {
-        return { ok: false, reason: "Agreement is not in accepted status" };
+        return { ok: false, code: "notActive" };
       }
       if (actorId !== agreement.receiverId) {
-        return { ok: false, reason: "Only the receiver can confirm" };
+        return { ok: false, code: "notReceiver" };
       }
       // F14: when the deadline passes without the help being marked as done, the
       // agreement has expired, also when no one has read it since.
       if (agreement.helperConfirmedAt === null && now.getTime() >= agreement.expiresAt.getTime()) {
-        return { ok: false, reason: "Cannot confirm after the agreement has expired" };
+        return { ok: false, code: "expired" };
       }
       return {
         ok: true,
@@ -95,16 +110,16 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     }
     case "markDone": {
       if (agreement.status !== "accepted") {
-        return { ok: false, reason: "Agreement is not in accepted status" };
+        return { ok: false, code: "notActive" };
       }
       if (actorId !== agreement.helperId) {
-        return { ok: false, reason: "Only the helper can mark as done" };
+        return { ok: false, code: "notHelper" };
       }
       if (agreement.helperConfirmedAt !== null) {
-        return { ok: false, reason: "Help has already been marked as done" };
+        return { ok: false, code: "alreadyMarkedDone" };
       }
       if (now.getTime() >= agreement.expiresAt.getTime()) {
-        return { ok: false, reason: "Cannot mark as done after the agreement has expired" };
+        return { ok: false, code: "expired" };
       }
       return {
         ok: true,
@@ -115,16 +130,16 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     }
     case "cancel": {
       if (agreement.status !== "accepted") {
-        return { ok: false, reason: "Agreement is not in accepted status" };
+        return { ok: false, code: "notActive" };
       }
       if (actorId !== agreement.helperId && actorId !== agreement.receiverId) {
-        return { ok: false, reason: "Only the helper or receiver can cancel" };
+        return { ok: false, code: "notParty" };
       }
       if (agreement.helperConfirmedAt !== null || agreement.receiverConfirmedAt !== null) {
-        return { ok: false, reason: "Cannot cancel after confirmation" };
+        return { ok: false, code: "alreadyMarkedDone" };
       }
       if (now.getTime() >= agreement.expiresAt.getTime()) {
-        return { ok: false, reason: "Cannot cancel after the agreement has expired" };
+        return { ok: false, code: "expired" };
       }
       return {
         ok: true,
@@ -134,18 +149,18 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     }
     case "dispute": {
       if (agreement.status !== "accepted") {
-        return { ok: false, reason: "Agreement is not in accepted status" };
+        return { ok: false, code: "notActive" };
       }
       if (actorId !== agreement.receiverId) {
-        return { ok: false, reason: "Only the receiver can dispute" };
+        return { ok: false, code: "notReceiver" };
       }
       if (agreement.helperConfirmedAt === null) {
-        return { ok: false, reason: "Cannot dispute before helper has marked as done" };
+        return { ok: false, code: "notMarkedDone" };
       }
       // F13, F15: after 24 hours the points are released, also when no one has
       // read the agreement since, so a late dispute must not get in first.
       if (now.getTime() >= autoReleaseAt(agreement.helperConfirmedAt).getTime()) {
-        return { ok: false, reason: "The 24 hour window for disputes has passed" };
+        return { ok: false, code: "disputeWindowPassed" };
       }
       return {
         ok: true,
@@ -157,7 +172,7 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     case "resolveDispute": {
       // Moderator authorisation is enforced by the calling layer, which owns the session.
       if (agreement.status !== "disputed") {
-        return { ok: false, reason: "Agreement is not in disputed status" };
+        return { ok: false, code: "notDisputed" };
       }
       if (action.outcome === "upheld") {
         return {
@@ -179,32 +194,32 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
     // F14: if the help is neither marked as done nor confirmed before expiresAt,
     // the reservation lapses.
     case "expire": {
-      if (actorId !== SYSTEM_ACTOR) return { ok: false, reason: "Only the system can expire" };
-      if (agreement.status !== "accepted")
-        return { ok: false, reason: "Agreement is not in accepted status" };
+      if (actorId !== SYSTEM_ACTOR) return { ok: false, code: "onlySystem" };
+      if (agreement.status !== "accepted") return { ok: false, code: "notActive" };
       if (agreement.helperConfirmedAt !== null || agreement.receiverConfirmedAt !== null) {
-        return { ok: false, reason: "Help has already been marked as done or confirmed" };
+        return { ok: false, code: "alreadyMarkedDone" };
       }
-      if (now < agreement.expiresAt) return { ok: false, reason: "Agreement has not expired yet" };
+      if (now < agreement.expiresAt) return { ok: false, code: "tooEarly" };
       return { ok: true, newStatus: "expired", transactions: [] };
     }
 
     // F13: 24 hours after the helper marked the help as done, the points are released
     // if the receiver has neither confirmed nor disputed.
     case "autoRelease": {
-      if (actorId !== SYSTEM_ACTOR)
-        return { ok: false, reason: "Only the system can auto-release" };
-      if (agreement.status !== "accepted")
-        return { ok: false, reason: "Agreement is not in accepted status" };
-      if (agreement.helperConfirmedAt === null)
-        return { ok: false, reason: "Help has not been marked as done" };
+      if (actorId !== SYSTEM_ACTOR) return { ok: false, code: "onlySystem" };
+      if (agreement.status !== "accepted") return { ok: false, code: "notActive" };
+      if (agreement.helperConfirmedAt === null) return { ok: false, code: "notMarkedDone" };
       if (now.getTime() < autoReleaseAt(agreement.helperConfirmedAt).getTime()) {
-        return { ok: false, reason: "The 24 hour window has not passed" };
+        return { ok: false, code: "tooEarly" };
       }
       return { ok: true, newStatus: "completed", transactions: releaseTransactions(agreement) };
     }
-    default:
-      return { ok: false, reason: "Action not implemented" };
+    default: {
+      // Every kind of Action is handled above, so TypeScript fails here if one is added
+      // without a case.
+      const unhandled: never = action;
+      throw new Error(`Unknown agreement action: ${JSON.stringify(unhandled)}`);
+    }
   }
 }
 

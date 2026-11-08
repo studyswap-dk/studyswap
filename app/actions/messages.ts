@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import { decideWriteMessage } from "@/domain/conversation";
-import { validateMessageBody } from "@/domain/message";
+import { type MessageError, validateMessageBody } from "@/domain/message";
 import { getConversationContext, saveMessage } from "@/lib/conversations";
 import { requireStudent } from "@/lib/current-user";
 import { isUuid } from "@/lib/ids";
 
 export type SendMessageState = {
-  error: string | null;
+  // NF1: a code, not a text. ConversationView writes the text the student reads.
+  error: MessageError | "notFound" | "notAllowed" | "failed" | null;
   // The text the student wrote, sent back when it could not be saved, so the form can
   // show it again after React has reset the form.
   body: string;
@@ -30,30 +31,29 @@ export async function sendMessage(
   const typed = formData instanceof FormData ? formData.get("body") : null;
   const body = typeof typed === "string" ? typed : "";
   if (!isUuid(postId) || !isUuid(participantId)) {
-    return { error: "This conversation could not be found.", body };
+    return { error: "notFound", body };
   }
   if (!(formData instanceof FormData)) {
-    return { error: "Enter a message before sending.", body };
+    return { error: "required", body };
   }
 
   const validation = validateMessageBody(typed);
   if (!validation.ok) {
-    return { error: validation.message, body };
+    return { error: validation.code, body };
   }
 
   try {
     const context = await getConversationContext(postId, participantId);
     const decision = context
       ? decideWriteMessage(context.post, participantId, context.conversationExists, user.id)
-      : { ok: false as const, reason: "Post not found" };
-    if (!decision.ok) {
-      return { error: "You cannot send messages in this conversation.", body };
-    }
+      : { ok: false as const };
+    // The same text for every refusal, which also hides whether the conversation exists.
+    if (!decision.ok) return { error: "notAllowed", body };
 
     await saveMessage(postId, participantId, user.id, validation.body);
   } catch (error) {
     console.error("Could not save conversation message:", error);
-    return { error: "Your message could not be saved. Please try again.", body };
+    return { error: "failed", body };
   }
 
   // The post's layout holds the author's list, which is shown beside every conversation
