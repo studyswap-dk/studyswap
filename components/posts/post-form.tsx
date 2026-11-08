@@ -24,7 +24,7 @@ import {
   validateType,
 } from "@/domain/post";
 import { fill } from "@/lib/texts/fill";
-import type { Texts } from "@/lib/texts";
+import { DEFAULT_LOCALE, type Texts } from "@/lib/texts";
 
 // NF1: the text for a code from domain/post.ts, with the limits filled in.
 function fieldText(texts: Texts["post"], field: PostField, code: PostFieldError): string {
@@ -32,7 +32,7 @@ function fieldText(texts: Texts["post"], field: PostField, code: PostFieldError)
   const limits =
     field === "title"
       ? { min: TITLE_MIN_LENGTH, max: TITLE_MAX_LENGTH }
-      : { min: DESCRIPTION_MIN_LENGTH, max: DESCRIPTION_MAX_LENGTH.toLocaleString("en-US") };
+      : { min: DESCRIPTION_MIN_LENGTH, max: DESCRIPTION_MAX_LENGTH.toLocaleString(DEFAULT_LOCALE) };
   return fill(texts[field][code], limits);
 }
 

@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { isPostShown } from "@/domain/post";
-import type { ProposalActionKind } from "@/domain/proposal";
+import { type ProposalActionKind, readerIsReceiver } from "@/domain/proposal";
 import { formatDateTime } from "@/lib/dates";
 import type { ProposalListItem } from "@/lib/proposals";
 
@@ -45,11 +45,8 @@ export function ProposalCard({
   actions: ProposalActionKind[];
 }) {
   const postShown = isPostShown(proposal.post.status);
-  // F9: the receiver pays. The proposer receives on a post offering help, and the author
-  // on a post seeking help.
-  const readerIsReceiver = sent
-    ? proposal.post.type === "offering"
-    : proposal.post.type === "seeking";
+  // F9: the receiver pays, so a refusal for lack of points depends on the reader.
+  const readsAsReceiver = readerIsReceiver(proposal.post.type, sent);
 
   return (
     <Card>
@@ -68,7 +65,7 @@ export function ProposalCard({
         <ProposalActions
           proposalId={proposal.id}
           actions={actions}
-          readerIsReceiver={readerIsReceiver}
+          readerIsReceiver={readsAsReceiver}
         />
       </CardContent>
       {postShown ? (

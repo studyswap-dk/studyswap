@@ -48,6 +48,13 @@ export type ProposalDecision =
     }
   | { ok: false; code: ProposalRefusal };
 
+// F9: whether the student reading a proposal would receive the help, and so pay, if it
+// is accepted: the proposer on a post offering help, the author on a post seeking help.
+// sentByReader says the reader is the proposer; otherwise the reader is the author.
+export function readerIsReceiver(postType: PostType, sentByReader: boolean): boolean {
+  return sentByReader ? postType === "offering" : postType === "seeking";
+}
+
 // F9: who helps and who receives when a proposal on the post is accepted.
 export function partiesOf(
   post: Pick<Post, "authorId" | "type">,

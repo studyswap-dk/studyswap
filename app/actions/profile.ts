@@ -10,7 +10,7 @@ import { saveMyProfile } from "@/lib/profile";
 export type SaveProfileState = {
   errors: ProfileErrors;
   // NF1: a code, not a text. ProfileForm writes the text the student reads.
-  message: "invalid" | "failed" | "saved" | null;
+  notice: "invalid" | "failed" | "saved" | null;
   saved: boolean;
   // The name as the student typed it, so the form can show it again after React has
   // reset the form.
@@ -33,7 +33,7 @@ export async function saveProfile(
 ): Promise<SaveProfileState> {
   await requireStudent();
   if (!AFTER_SAVE.includes(afterSave) || !(formData instanceof FormData)) {
-    return { errors: {}, message: "invalid", saved: false, name: "" };
+    return { errors: {}, notice: "invalid", saved: false, name: "" };
   }
   const typedName = formData.get("name");
   const name = typeof typedName === "string" ? typedName : "";
@@ -43,7 +43,7 @@ export async function saveProfile(
     programme: formData.get("programme"),
   });
   if (!validation.ok) {
-    return { errors: validation.errors, message: null, saved: false, name };
+    return { errors: validation.errors, notice: null, saved: false, name };
   }
 
   try {
@@ -52,7 +52,7 @@ export async function saveProfile(
     console.error("Could not save the profile:", error);
     return {
       errors: {},
-      message: "failed",
+      notice: "failed",
       saved: false,
       name,
     };
@@ -64,7 +64,7 @@ export async function saveProfile(
   }
   return {
     errors: {},
-    message: "saved",
+    notice: "saved",
     saved: true,
     name: validation.profile.name,
   };

@@ -2,13 +2,13 @@
 // refused, or that it succeeded. The rules in domain/ and lib/ return codes, and every
 // code needs a text here, so typecheck fails if a code is added without one. A second
 // language is a second object of this type, see lib/texts/index.ts.
-import type { LoginError } from "@/app/login/actions";
 import type { PartyAction } from "@/domain/agreement";
 import type { MessageError } from "@/domain/message";
 import type { PostFieldError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
 import type { ProposalActionKind } from "@/domain/proposal";
 import type { AgreementActionRefusal } from "@/lib/agreements";
+import type { LoginError } from "@/lib/auth/login-error";
 import type { ProposalActionRefusal } from "@/lib/proposals";
 
 // Words in braces, such as {min}, are filled in with fill() from lib/texts/fill.ts.

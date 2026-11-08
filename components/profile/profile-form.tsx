@@ -60,7 +60,7 @@ export function ProfileForm({
   const texts = useTexts().profile;
   const [state, formAction, isPending] = useActionState(action, {
     errors: {},
-    message: null,
+    notice: null,
     saved: false,
     name,
   } satisfies SaveProfileState);
@@ -138,11 +138,11 @@ export function ProfileForm({
         </Field>
       </FieldGroup>
 
-      {state.message ? (
+      {state.notice ? (
         <output
           className={state.saved ? "text-sm text-muted-foreground" : "text-sm text-destructive"}
         >
-          {texts[state.message]}
+          {texts[state.notice]}
         </output>
       ) : null}
 

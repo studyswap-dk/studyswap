@@ -8,6 +8,7 @@ import {
   type Post,
   type Proposal,
   type ProposalContext,
+  readerIsReceiver,
 } from "./proposal";
 
 const seekingPost: Post = { id: "p1", authorId: "author", type: "seeking", status: "open" };
@@ -161,8 +162,8 @@ describe("decideProposal: accept", () => {
     const closed: Post = { ...seekingPost, status: "closed" };
 
     expect(
-      decideProposal(pending, { kind: "accept" }, "author", context(closed, { author: 5 })).ok,
-    ).toBe(false);
+      decideProposal(pending, { kind: "accept" }, "author", context(closed, { author: 5 })),
+    ).toEqual({ ok: false, code: "postNotOpen" });
   });
 
   it("F9: boundary: exactly one available point for the receiver is enough", () => {
@@ -264,4 +265,23 @@ describe("availableProposalActions", () => {
       "decline",
     ]);
   });
+});
+
+describe("readerIsReceiver", () => {
+  // The reader is the proposer when they sent it, otherwise the author. The answer must
+  // match who partiesOf() makes the receiver, for every type of post.
+  it.each([
+    ["offering", true],
+    ["offering", false],
+    ["seeking", true],
+    ["seeking", false],
+  ] as const)(
+    "F9, NF1: on a post %s help, sent by the reader %s, matches partiesOf",
+    (type, sent) => {
+      const post = { ...seekingPost, type };
+      const reader = sent ? "proposer" : post.authorId;
+
+      expect(readerIsReceiver(type, sent)).toBe(partiesOf(post, "proposer").receiverId === reader);
+    },
+  );
 });

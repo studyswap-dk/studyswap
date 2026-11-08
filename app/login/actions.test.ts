@@ -19,7 +19,7 @@ function form(fields: Record<string, string>): FormData {
 }
 
 describe("loginAction", () => {
-  it("rejects a call without a form", async () => {
+  it("F1: rejects a call without a form", async () => {
     const result = await loginAction({ step: "email" }, undefined);
 
     expect(result).toEqual({
@@ -28,7 +28,7 @@ describe("loginAction", () => {
     });
   });
 
-  it("rejects a null form", async () => {
+  it("F1: rejects a null form", async () => {
     const result = await loginAction({ step: "email" }, null);
 
     expect(result).toEqual({
@@ -37,7 +37,7 @@ describe("loginAction", () => {
     });
   });
 
-  it("rejects a form without a student email", async () => {
+  it("F1: rejects a form without a student email", async () => {
     const formData = new FormData();
     formData.set("intent", "send-code");
 
