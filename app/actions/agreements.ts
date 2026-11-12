@@ -39,6 +39,11 @@ export async function confirmAgreement(agreementId: unknown) {
   return act(agreementId, { kind: "confirm" });
 }
 
+// F11: either party cancels the agreement before the help is confirmed or marked as done.
+// The reservation is lifted, so the receiver can use the points again.
+export async function cancelAgreement(agreementId: unknown) {
+  return act(agreementId, { kind: "cancel" });
+}
 // F13: the helper reports that the help was given. The points are released when the
 // receiver confirms, or automatically 24 hours later.
 export async function markAgreementDone(agreementId: unknown) {

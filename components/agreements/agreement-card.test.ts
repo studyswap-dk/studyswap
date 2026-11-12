@@ -14,6 +14,7 @@ import type { AgreementListItem } from "@/lib/agreements";
 vi.mock("@/app/actions/agreements", () => ({
   confirmAgreement: vi.fn<() => Promise<{ ok: true }>>(),
   markAgreementDone: vi.fn<() => Promise<{ ok: true }>>(),
+  cancelAgreement: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 const HELPER = "11111111-1111-4111-8111-111111111111";

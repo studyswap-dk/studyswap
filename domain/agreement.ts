@@ -223,12 +223,12 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
   }
 }
 
-// F12, F13: the actions a party can take on the agreements page. Cancel (F11) and
+// F11, F12, F13: the actions a party can take on the agreements page. Cancel (F11) and
 // dispute (F15) are added here when they get their buttons.
-export const PARTY_ACTIONS = ["markDone", "confirm"] as const;
+export const PARTY_ACTIONS = ["markDone", "confirm", "cancel"] as const;
 export type PartyAction = (typeof PARTY_ACTIONS)[number];
 
-// F12, F13: which of PARTY_ACTIONS this user may take now, judged by decide(), so the
+// F11, F12, F13: which of PARTY_ACTIONS this user may take now, judged by decide(), so the
 // page shows the same choice the server will make.
 export function availableActions(agreement: Agreement, userId: string, now: Date): PartyAction[] {
   return PARTY_ACTIONS.filter((kind) => decide(agreement, { kind }, userId, now).ok);

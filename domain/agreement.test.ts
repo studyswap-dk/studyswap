@@ -510,15 +510,15 @@ describe("autoReleaseAt", () => {
 });
 
 describe("availableActions", () => {
-  it("F13: the helper can mark the help as given, and nothing else", () => {
-    expect(availableActions(base, "helper", now)).toEqual(["markDone"]);
+  it("F11, F13: the helper can mark the help as given or cancel", () => {
+    expect(availableActions(base, "helper", now)).toEqual(["markDone", "cancel"]);
   });
 
-  it("F12: the receiver can confirm, and nothing else", () => {
-    expect(availableActions(base, "receiver", now)).toEqual(["confirm"]);
+  it("F11, F12: the receiver can confirm or cancel", () => {
+    expect(availableActions(base, "receiver", now)).toEqual(["confirm", "cancel"]);
   });
 
-  it("F13: once the help is marked as given, the helper has nothing left to do", () => {
+  it("F11, F13: once the help is marked as given, neither party can cancel", () => {
     expect(availableActions(marked, "helper", now)).toEqual([]);
     expect(availableActions(marked, "receiver", now)).toEqual(["confirm"]);
   });
