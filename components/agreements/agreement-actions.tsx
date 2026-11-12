@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import {
   type AgreementActionResult,
+  cancelAgreement,
   confirmAgreement,
   markAgreementDone,
 } from "@/app/actions/agreements";
@@ -13,10 +14,32 @@ import type { PartyAction } from "@/domain/agreement";
 
 const BUTTONS: Record<
   PartyAction,
-  { label: string; pending: string; run: (id: string) => Promise<AgreementActionResult> }
+  {
+    label: string;
+    pending: string;
+    variant: "default" | "outline";
+    run: (id: string) => Promise<AgreementActionResult>;
+  }
 > = {
-  markDone: { label: "Mark help as given", pending: "Saving...", run: markAgreementDone },
-  confirm: { label: "Confirm help received", pending: "Confirming...", run: confirmAgreement },
+  markDone: {
+    label: "Mark help as given",
+    pending: "Saving...",
+    variant: "default",
+    run: markAgreementDone,
+  },
+  confirm: {
+    label: "Confirm help received",
+    pending: "Confirming...",
+    variant: "default",
+    run: confirmAgreement,
+  },
+  // F11 outlined, so it does not compete with the action that moves the agreement on.
+  cancel: {
+    label: "Cancel agreemnt",
+    pending: "Cancelling...",
+    variant: "outline",
+    run: cancelAgreement,
+  },
 };
 
 // The page decides which actions the student may take, with availableActions() from
@@ -59,6 +82,7 @@ export function AgreementActions({
             <Button
               key={kind}
               size="sm"
+              variant={button.variant}
               disabled={isPending}
               onClick={() => {
                 setPressed(kind);
