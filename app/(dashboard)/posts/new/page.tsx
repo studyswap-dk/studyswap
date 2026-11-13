@@ -18,7 +18,7 @@ export default function NewPostPage() {
           Back to posts
         </Link>
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold tracking-wide text-primary">SHARE WHAT YOU KNOW</p>
+          <p className="text-sm font-semibold tracking-wide text-primary">LEARN TOGETHER</p>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Create a post</h1>
           <p className="max-w-md text-muted-foreground">
             Ask the community for a hand or offer a skill to another student. StudySwap is built on

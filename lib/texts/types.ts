@@ -4,7 +4,7 @@
 // language is a second object of this type, see lib/texts/index.ts.
 import type { PartyAction } from "@/domain/agreement";
 import type { MessageError } from "@/domain/message";
-import type { PostFieldError } from "@/domain/post";
+import type { PostFieldError, PostTagError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
 import type { ProposalActionKind } from "@/domain/proposal";
 import type { AgreementActionRefusal } from "@/lib/agreements";
@@ -30,6 +30,7 @@ export type Texts = {
     type: Record<Extract<PostFieldError, "required">, string>;
     title: Record<PostFieldError, string>;
     description: Record<PostFieldError, string>;
+    tags: Record<PostTagError, string>;
     failed: string;
     saved: string;
   };
