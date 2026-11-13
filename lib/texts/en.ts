@@ -103,4 +103,31 @@ export const en = {
     signInFailed: "Could not sign in. Please try again shortly.",
     notAllowed: "Only AU student email addresses can access StudySwap.",
   },
+  report: {
+    reason: {
+      required: "Tell the moderators why this post breaks the guidelines.",
+      tooShort: "Use at least {min} characters.",
+      tooLong: "Keep the reason to at most {max} characters.",
+    },
+    refusal: {
+      postNotFound: "This post no longer exists.",
+      alreadyReported: "You have already reported this post. A moderator will look at it.",
+      ownPost: notPossible,
+      failed: "The report could not be sent. Please try again.",
+    },
+    done: "Thank you. A moderator will look at the post.",
+  },
+  moderation: {
+    refusal: {
+      postNotFound: "This post has already been removed.",
+      noOpenReports: "The reports on this post have already been handled.",
+      conflict: "Someone changed this post at the same time. Reload the page and try again.",
+      notModerator: "Only moderators can do this.",
+      failed: "The post could not be updated. Please try again.",
+    },
+    done: {
+      remove: "The post has been removed.",
+      dismiss: "The reports have been dismissed.",
+    },
+  },
 } satisfies Texts;

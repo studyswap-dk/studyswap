@@ -288,3 +288,40 @@ export const pointTransaction = pgTable(
       .where(sql`${table.type} = 'initial'`),
   ],
 );
+
+// F20, F21, F22: a student reports a post that breaks the guidelines, and a moderator
+// handles it: "resolved" when the post is removed, "dismissed" when it stays. The rules
+// live in domain/report.ts.
+export const reportStatus = pgEnum("reportStatus", ["open", "resolved", "dismissed"]);
+
+export const report = pgTable(
+  "report",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    postId: uuid()
+      .notNull()
+      .references(() => post.id),
+    reporterId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    reason: text().notNull(),
+    status: reportStatus().notNull().default("open"),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // The moderator who handled the report, and when. Set together when it stops being open.
+    moderatorId: uuid().references(() => userInNeonAuth.id),
+    resolvedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    check("report_reason_not_blank", sql`btrim(${table.reason}) <> ''`),
+    check(
+      "report_handled_when_not_open",
+      sql`(${table.status} = 'open') = (${table.resolvedAt} IS NULL)`,
+    ),
+    // F20: at most one open report per student per post.
+    uniqueIndex("report_postId_reporterId_open_key")
+      .on(table.postId, table.reporterId)
+      .where(sql`${table.status} = 'open'`),
+    // F21: the moderator lists the open reports, oldest first.
+    index("report_status_createdAt_idx").on(table.status, table.createdAt),
+  ],
+);

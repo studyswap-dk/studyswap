@@ -538,3 +538,34 @@ describe("availableActions", () => {
     expect(availableActions(base, "someone-else", now)).toEqual([]);
   });
 });
+
+describe("decide: removePost", () => {
+  const removePost: Action = { kind: "removePost" };
+
+  it("F22: a running agreement on a removed post is cancelled without moving points", () => {
+    expect(decide(base, removePost, "moderator", now)).toEqual({
+      ok: true,
+      newStatus: "cancelled",
+      transactions: [],
+    });
+  });
+
+  it("F22: also when the helper has marked the help as done", () => {
+    const decision = decide(marked, removePost, "moderator", now);
+    expect(decision).toEqual({ ok: true, newStatus: "cancelled", transactions: [] });
+  });
+
+  it("F22: also when the receiver has disputed it", () => {
+    const decision = decide(disputed, removePost, "moderator", now);
+    expect(decision).toEqual({ ok: true, newStatus: "cancelled", transactions: [] });
+  });
+
+  it("F22: an agreement that has already ended is left as it is", () => {
+    for (const status of ["completed", "cancelled", "expired"] as const) {
+      expect(decide({ ...base, status }, removePost, "moderator", now)).toEqual({
+        ok: false,
+        code: "notActive",
+      });
+    }
+  });
+});

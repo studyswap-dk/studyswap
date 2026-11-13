@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@/db";
-import { profile } from "@/db/schema";
+import { profile, userInNeonAuth } from "@/db/schema";
+import { isModeratorRole } from "@/domain/report";
 import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
@@ -16,6 +17,8 @@ export type CurrentUser = {
 
 export type CurrentUserProfile = CurrentUser & {
   programme: string | null;
+  // F21: whether the navigation shows the moderation page.
+  isModerator: boolean;
 };
 
 export type CurrentUserLookup =
@@ -46,13 +49,38 @@ export const requireStudent = cache(async (): Promise<CurrentUser> => {
 // The student with their programme, for the navigation.
 export const getCurrentUser = cache(async (): Promise<CurrentUserProfile> => {
   const user = await requireStudent();
-  const [userProfile] = await db
-    .select({ programme: profile.programme })
-    .from(profile)
-    .where(eq(profile.userId, user.id))
-    .limit(1);
+  const [[userProfile], isModerator] = await Promise.all([
+    db
+      .select({ programme: profile.programme })
+      .from(profile)
+      .where(eq(profile.userId, user.id))
+      .limit(1),
+    isModeratorUser(user.id),
+  ]);
 
-  return { ...user, programme: userProfile?.programme ?? null };
+  return { ...user, programme: userProfile?.programme ?? null, isModerator };
+});
+
+// F16, F21, F22: is the user a moderator? The role is read from neon_auth.user.role in
+// the database on every request, not from the session, so a role that is taken away
+// takes effect at once. A moderator is made by setting the role in the database; the
+// app has no page for it. Pass only an id from requireStudent() in this request.
+export const isModeratorUser = cache(async (userId: string): Promise<boolean> => {
+  const [row] = await db
+    .select({ role: userInNeonAuth.role })
+    .from(userInNeonAuth)
+    .where(eq(userInNeonAuth.id, userId))
+    .limit(1);
+  return isModeratorRole(row?.role);
+});
+
+// F21, F22: the access check for the moderation pages. A student who is not a moderator
+// gets "not found", so the page does not tell that it exists. Server Actions use
+// isModeratorUser instead and answer with a code.
+export const requireModerator = cache(async (): Promise<CurrentUser> => {
+  const user = await requireStudent();
+  if (!(await isModeratorUser(user.id))) notFound();
+  return user;
 });
 
 // Reports problems instead of throwing or redirecting, for the login page, which must

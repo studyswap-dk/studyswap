@@ -9,17 +9,20 @@ import { AuthorLine } from "@/components/posts/author-line";
 import { PostDescription } from "@/components/posts/post-description";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
 import { SendProposalButton } from "@/components/proposals/send-proposal-button";
+import { ReportPostButton } from "@/components/reports/report-post-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConversationsOnMyPost } from "@/lib/conversations";
 import { canSeeConversationsOnPost } from "@/domain/conversation";
 import { decideSend } from "@/domain/proposal";
+import { decideReport } from "@/domain/report";
 import { requireStudent } from "@/lib/current-user";
 import { formatDate } from "@/lib/dates";
 import { isUuid } from "@/lib/ids";
 import { getPost } from "@/lib/posts";
 import { hasPendingProposal } from "@/lib/proposals";
+import { hasOpenReport } from "@/lib/reports";
 import { cn } from "@/lib/utils";
 
 // F10: a post and its conversations. The author sees the conversations on the post in a
@@ -39,7 +42,13 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
   // F8: the same rule the Server Action uses. Asked without earlier proposals, it says
   // whether this student may send one at all: not on their own post, only on an open one.
   const canPropose = decideSend(found, user.id, []).ok;
-  const alreadySent = canPropose ? await hasPendingProposal(postId, user.id) : false;
+  // F20: the same rule the Server Action uses. Asked without an open report, it says
+  // whether this student may report the post at all: not their own, only a shown one.
+  const canReport = decideReport(found, user.id, false).ok;
+  const [alreadySent, alreadyReported] = await Promise.all([
+    canPropose ? hasPendingProposal(postId, user.id) : false,
+    canReport ? hasOpenReport(postId, user.id) : false,
+  ]);
 
   // The page is exactly as high as the screen below the navigation (4rem) and the main
   // area's padding (2rem or 2.5rem at the top and bottom), so the conversation fills
@@ -83,7 +92,12 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
         <CardContent className="px-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <AuthorLine name={found.authorName} programme={found.authorProgramme} />
-            {canPropose ? <SendProposalButton postId={postId} alreadySent={alreadySent} /> : null}
+            <div className="flex flex-wrap items-start gap-2">
+              {canReport ? (
+                <ReportPostButton postId={postId} alreadyReported={alreadyReported} />
+              ) : null}
+              {canPropose ? <SendProposalButton postId={postId} alreadySent={alreadySent} /> : null}
+            </div>
           </div>
         </CardContent>
       </Card>
