@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { LoaderCircle, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { createPost, type CreatePostResult } from "@/app/actions/posts";
 import { useTexts } from "@/components/texts/texts-provider";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -32,7 +31,6 @@ import {
 } from "@/domain/post";
 import type { Texts } from "@/lib/texts";
 import { fill } from "@/lib/texts/fill";
-import { cn } from "@/lib/utils";
 
 type PostFormValues = NewPost & { tags: string };
 
@@ -51,13 +49,11 @@ function tagFieldText(texts: Texts["post"], code: PostTagError): string {
   return fill(texts.tags[code], { max: MAX_TAG_NAME_LENGTH, maxTags: MAX_TAGS_PER_POST });
 }
 
-export function PostForm() {
-  const router = useRouter();
+export function PostForm({ onCreated }: { onCreated: (postId: string) => void }) {
   const texts = useTexts().post;
   const [result, setResult] = useState<CreatePostResult | null>(null);
   const [tagNames, setTagNames] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [countdown, setCountdown] = useState(5);
   // The same rules as the server, with the text for the code, or true when valid.
   const check = (field: PostField, code: PostFieldError | null) =>
     code === null ? true : fieldText(texts, field, code);
@@ -70,20 +66,6 @@ export function PostForm() {
   } = useForm<PostFormValues>({
     defaultValues: { type: "seeking", title: "", description: "", tags: "" },
   });
-
-  useEffect(() => {
-    if (!result?.ok || countdown === 0) return;
-    const timeoutId = window.setTimeout(() => {
-      setCountdown((seconds) => Math.max(0, seconds - 1));
-    }, 1000);
-    return () => window.clearTimeout(timeoutId);
-  }, [countdown, result]);
-
-  useEffect(() => {
-    if (result?.ok && countdown === 0) {
-      router.replace("/posts/" + result.postId);
-    }
-  }, [countdown, result, router]);
 
   function updateTagNames(next: string[]) {
     setTagNames(next);
@@ -136,29 +118,11 @@ export function PostForm() {
       reset();
       setTagNames([]);
       setTagInput("");
-      setCountdown(5);
+      onCreated(response.postId);
+      return;
     }
     setResult(response);
   });
-
-  if (result?.ok) {
-    return (
-      <div className="flex flex-col gap-4">
-        <output className="text-sm font-medium text-primary">{texts.saved}</output>
-        <FieldDescription>
-          {countdown > 0
-            ? "Opening your post in " + countdown + (countdown === 1 ? " second…" : " seconds…")
-            : "Opening your post…"}
-        </FieldDescription>
-        <Link
-          href={"/posts/" + result.postId}
-          className={cn(buttonVariants({ size: "lg" }), "w-full")}
-        >
-          Go to new post
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
@@ -217,46 +181,53 @@ export function PostForm() {
 
         <Field data-invalid={Boolean(errors.tags)}>
           <FieldLabel htmlFor="tag-entry">Tags</FieldLabel>
-          {tagNames.length > 0 ? (
-            <ul aria-label="Selected tags" className="flex flex-wrap gap-2">
-              {tagNames.map((tag) => (
-                <li key={tag} className="max-w-full">
-                  <Badge
-                    variant="secondary"
-                    className="max-w-full items-start text-left break-words whitespace-normal"
-                  >
-                    <span className="min-w-0 break-words">{tag}</span>
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label={"Remove " + tag}
-                      onClick={() => removeTag(tag)}
-                      className="-mr-1 shrink-0"
-                    >
-                      <X aria-hidden="true" />
-                    </Button>
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <Input
-            id="tag-entry"
-            placeholder="Type a tag and press comma"
-            value={tagInput}
-            aria-invalid={Boolean(errors.tags)}
-            onChange={(event) => onTagInputChange(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === "," || (event.key === "Enter" && tagInput.trim())) {
-                event.preventDefault();
-                addTagNames([tagInput]);
-                setTagInput("");
-              } else if (event.key === "Backspace" && !tagInput && tagNames.length > 0) {
-                removeTag(tagNames[tagNames.length - 1]);
-              }
-            }}
-          />
+          <InputGroup className="h-auto min-h-9 flex-wrap items-center py-1">
+            {tagNames.length > 0 ? (
+              <InputGroupAddon
+                align="block-start"
+                className="w-full flex-wrap justify-start gap-2 px-2.5 pt-1.5 pb-0"
+              >
+                <ul aria-label="Selected tags" className="flex w-full flex-wrap gap-2">
+                  {tagNames.map((tag) => (
+                    <li key={tag} className="max-w-full">
+                      <Badge
+                        variant="secondary"
+                        className="max-w-full items-center text-left whitespace-normal"
+                      >
+                        <span className="min-w-0 break-words">{tag}</span>
+                        <Button
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          aria-label={"Remove " + tag}
+                          onClick={() => removeTag(tag)}
+                          className="-mr-1 shrink-0 self-center"
+                        >
+                          <X aria-hidden="true" />
+                        </Button>
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              </InputGroupAddon>
+            ) : null}
+            <InputGroupInput
+              id="tag-entry"
+              placeholder="Type a tag and press comma"
+              value={tagInput}
+              aria-invalid={Boolean(errors.tags)}
+              onChange={(event) => onTagInputChange(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === "," || (event.key === "Enter" && tagInput.trim())) {
+                  event.preventDefault();
+                  addTagNames([tagInput]);
+                  setTagInput("");
+                } else if (event.key === "Backspace" && !tagInput && tagNames.length > 0) {
+                  removeTag(tagNames[tagNames.length - 1]);
+                }
+              }}
+            />
+          </InputGroup>
           <Input
             type="hidden"
             {...register("tags", {
@@ -277,7 +248,7 @@ export function PostForm() {
         </Field>
       </FieldGroup>
 
-      {result && (
+      {result && !result.ok && (
         <p role="alert" className="text-sm font-medium text-destructive">
           {result.code === "failed"
             ? texts.failed
