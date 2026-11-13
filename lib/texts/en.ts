@@ -71,6 +71,11 @@ export const en = {
       tooShort: "Use at least {min} characters so students know what you need.",
       tooLong: "Keep the description to at most {max} characters.",
     },
+    tags: {
+      invalid: "Enter tags as comma-separated names.",
+      tooLong: "Keep each tag to at most {max} characters.",
+      tooMany: "Use at most {maxTags} tags.",
+    },
     failed: "Your post could not be saved. Please try again.",
     saved: "Your post is live.",
   },
