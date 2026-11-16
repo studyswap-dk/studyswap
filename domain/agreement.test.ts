@@ -464,6 +464,19 @@ describe("dueSystemAction", () => {
     expect(dueSystemAction(marked, base.expiresAt)).toEqual({ kind: "autoRelease" });
   });
 
+  // lib/agreements.ts saves the actor of a cancellation as cancelledById, a reference to
+  // a user, so the system must never be the one who cancels.
+  it.each([
+    { kind: "expire", agreement: base, at: base.expiresAt },
+    { kind: "autoRelease", agreement: marked, at: new Date(markedAt.getTime() + dayMs) },
+  ])("F11, F13, F14: the system action $kind never cancels an agreement", ({ agreement, at }) => {
+    const action = dueSystemAction(agreement, at);
+    if (action === null) throw new Error("expected a system action to be due");
+    const decision = decide(agreement, action, SYSTEM_ACTOR, at);
+    expect(decision.ok).toBe(true);
+    expect(decision.ok && decision.newStatus).not.toBe("cancelled");
+  });
+
   it.each(["disputed", "completed", "cancelled", "expired"] as const)(
     "F15: nothing is due on an agreement with status %s",
     (status) => {

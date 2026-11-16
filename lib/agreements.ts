@@ -83,8 +83,10 @@ export async function applyAgreementAction(
       status: decision.newStatus,
       ...decision.timestamps,
       ...(decision.newStatus === "completed" && { completedAt: now }),
-      ...(decision.newStatus === "cancelled" && { cancelledAt: now }),
-      ...(action.kind === "cancel" && { cancelledById: actorId }),
+      // F11, F16, F22: who cancelled it, a party or the moderator. The system's own
+      // actions from dueSystemAction() expire or complete an agreement but never cancel
+      // it, so actorId is a user here.
+      ...(decision.newStatus === "cancelled" && { cancelledAt: now, cancelledById: actorId }),
     })
     .where(and(eq(agreement.id, agreementId), eq(agreement.status, current.status)))
     .returning({ id: agreement.id });

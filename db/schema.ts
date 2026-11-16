@@ -152,7 +152,8 @@ export const agreement = pgTable(
     receiverId: uuid()
       .notNull()
       .references(() => userInNeonAuth.id),
-    // F11: the party who cancelled the agreement.
+    // Who cancelled the agreement: a party (F11), or the moderator who upheld a dispute
+    // (F16) or removed the post (F22).
     cancelledById: uuid().references(() => userInNeonAuth.id),
     points: integer().notNull(),
     status: agreementStatus().notNull().default("accepted"),
