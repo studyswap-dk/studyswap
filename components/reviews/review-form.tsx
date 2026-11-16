@@ -50,11 +50,11 @@ export function ReviewForm({
             aria-invalid={state.error === "invalidScore" ? true : undefined}
           >
             <option value="">Choose a score</option>
-            <option value="1">1 — Needs improvement</option>
-            <option value="2">2 — Fair</option>
-            <option value="3">3 — Good</option>
-            <option value="4">4 — Very good</option>
-            <option value="5">5 — Excellent</option>
+            <option value="1">1: Needs improvement</option>
+            <option value="2">2: Fair</option>
+            <option value="3">3: Good</option>
+            <option value="4">4: Very good</option>
+            <option value="5">5: Excellent</option>
           </NativeSelect>
           {state.error ? (
             <FieldError>{texts[state.error]}</FieldError>

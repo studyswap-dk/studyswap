@@ -46,7 +46,7 @@ describe("decideReview", () => {
 });
 
 describe("parseReviewScore", () => {
-  it("F17: accepts scores at both ends of the 1–5 scale", () => {
+  it("F17: accepts scores at both ends of the scale from 1 to 5", () => {
     expect(parseReviewScore("1")).toBe(1);
     expect(parseReviewScore("5")).toBe(5);
   });
