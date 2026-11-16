@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules", ".next"],
+    // Integration tests need Docker and run with `pnpm run test:integration`
+    exclude: ["node_modules", ".next", "**/*.integration.test.ts"],
   },
 });
