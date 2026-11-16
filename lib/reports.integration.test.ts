@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/db";
 import { post, report } from "@/db/schema";
@@ -115,10 +115,15 @@ describe("reports and moderation against the database", () => {
     const { postId, agreementId, helperId, receiverId, moderatorId } =
       await createReportedAgreement();
 
+    // moderatePost logs the error when it rolls a removal back. It is caught here, so it
+    // does not look like a failure in the test output, and counted below.
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const [removed, confirmed] = await Promise.all([
       moderatePost(postId, "remove", moderatorId, true, NOW),
       runAgreementAction(agreementId, { kind: "confirm" }, receiverId, NOW),
     ]);
+    const errorsLogged = logged.mock.calls.length;
+    logged.mockRestore();
 
     // Either can win, so the test checks that the outcome is one of those that make
     // sense, and that the points match it.
@@ -134,6 +139,7 @@ describe("reports and moderation against the database", () => {
       {
         removed: "ok",
         confirmed: "refused",
+        errorsLogged: 0,
         post: "removed",
         report: "resolved",
         agreement: "cancelled",
@@ -143,13 +149,28 @@ describe("reports and moderation against the database", () => {
       },
       // The confirmation won, and the removal came after it and found no running
       // agreement.
-      { removed: "ok", confirmed: "ok", post: "removed", report: "resolved", ...released },
+      {
+        removed: "ok",
+        confirmed: "ok",
+        errorsLogged: 0,
+        post: "removed",
+        report: "resolved",
+        ...released,
+      },
       // The removal read the agreement before the confirmation, could not cancel it once
       // it was completed, and was rolled back as a whole.
-      { removed: "conflict", confirmed: "ok", post: "closed", report: "open", ...released },
+      {
+        removed: "conflict",
+        confirmed: "ok",
+        errorsLogged: 1,
+        post: "closed",
+        report: "open",
+        ...released,
+      },
     ]).toContainEqual({
       removed: removed.ok ? "ok" : removed.code,
       confirmed: confirmed.ok ? "ok" : "refused",
+      errorsLogged,
       ...outcome,
     });
   });

@@ -22,6 +22,10 @@ The first run downloads the `postgres:18-alpine` image, so it takes longer. `pnp
 
 If the tests fail before the first test with an error from Testcontainers about the container runtime, Docker is not running, or your user may not use it.
 
+If Vitest says "No test files found" right after an error from Testcontainers, such as "No such image: postgres:18-alpine", the setup failed before the tests were collected; the files are there. It happened once in CI when the image could not be pulled, and the next run passed. Run it again before looking further.
+
+A test may write "Could not remove the post" or a similar line from `console.error` in `lib/`. That is the code logging an error it handles, not a failed test. A test that expects it should catch it with `vi.spyOn(console, "error")` and check it, as the test of removing a post and confirming its agreement at the same time in `lib/reports.integration.test.ts` does.
+
 ## How the database is made
 
 `test/integration/global-setup.ts` runs once before the tests:
