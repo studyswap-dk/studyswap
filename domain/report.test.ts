@@ -87,8 +87,15 @@ describe("decideModeration", () => {
     });
   });
 
-  it("F22: a moderator may remove a post without open reports", () => {
-    expect(decideModeration(openPost, "remove", true, 0).ok).toBe(true);
+  it("F22: boundary: a post with one open report can be removed", () => {
+    expect(decideModeration(openPost, "remove", true, 1).ok).toBe(true);
+  });
+
+  it("F22: a post without open reports cannot be removed, for example from a stale page after another moderator dismissed them", () => {
+    expect(decideModeration(openPost, "remove", true, 0)).toEqual({
+      ok: false,
+      code: "noOpenReports",
+    });
   });
 
   it("F21: a moderator dismisses the reports, and the post stays", () => {

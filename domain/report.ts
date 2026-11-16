@@ -61,9 +61,12 @@ export function reportStatusAfter(action: ModerationAction): ReportStatus {
 }
 
 // F21, F22: may this moderator take the action on the post? Moderator rights are read
-// from the session by the caller. A removed post cannot be removed again, and a post
-// without open reports has nothing to dismiss. A post can be removed without open
-// reports, because a moderator who comes across it should not have to report it first.
+// from the session by the caller. A removed post cannot be removed again. Both actions
+// need at least one open report: moderation is reactive (kravspecifikation.tex), and the
+// moderator who removed a post is saved as resolvedById on its reports
+// (architecture.tex). A moderator whose page still shows reports another moderator has
+// handled therefore gets noOpenReports, and cannot remove the post without it being
+// known who did.
 export function decideModeration(
   post: ReportedPost,
   action: ModerationAction,
@@ -74,6 +77,6 @@ export function decideModeration(
   | { ok: false; code: ModerationRefusal } {
   if (!actorIsModerator) return { ok: false, code: "notModerator" };
   if (!isPostShown(post.status)) return { ok: false, code: "postNotFound" };
-  if (action === "dismiss" && openReports === 0) return { ok: false, code: "noOpenReports" };
+  if (openReports === 0) return { ok: false, code: "noOpenReports" };
   return { ok: true, removePost: action === "remove", reportStatus: reportStatusAfter(action) };
 }
