@@ -123,12 +123,12 @@ describe("summarize", () => {
       transaction("anna", 1, "release"),
       transaction("anna", 1, "release"),
       transaction("anna", -1, "release"),
-      transaction("bo", 5, "initial"),
-      transaction("bo", -1, "release"),
+      transaction("emil", 5, "initial"),
+      transaction("emil", -1, "release"),
     ];
 
     expect(summarize(transactions, "anna")).toEqual({ balance: 6, earned: 2, spent: 1 });
-    expect(summarize(transactions, "bo")).toEqual({ balance: 4, earned: 0, spent: 1 });
+    expect(summarize(transactions, "emil")).toEqual({ balance: 4, earned: 0, spent: 1 });
   });
 
   it("F2: the starting balance does not count as earned", () => {
@@ -273,5 +273,23 @@ describe("checkAccount", () => {
     expect(checkAccount({ balance: 5, reserved: 2 }, transactions, agreements, "receiver").ok).toBe(
       false,
     );
+  });
+});
+
+describe("accountChanges: removePost", () => {
+  it("F22: a cancelled agreement on a removed post frees the receiver's reserved points", () => {
+    const running: Agreement = {
+      id: "a1",
+      helperId: "helper",
+      receiverId: "receiver",
+      status: "disputed",
+      points: 1,
+      expiresAt: new Date("2026-10-01T12:00:00Z"),
+      helperConfirmedAt: new Date("2026-09-25T10:00:00Z"),
+      receiverConfirmedAt: null,
+    };
+    expect(accountChanges(running, "cancelled", [])).toEqual([
+      { userId: "receiver", balance: 0, reserved: -1 },
+    ]);
   });
 });

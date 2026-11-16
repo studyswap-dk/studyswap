@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@/db";
 import { profile } from "@/db/schema";
+import { isModeratorRole } from "@/domain/moderator";
 import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
@@ -12,6 +13,8 @@ export type CurrentUser = {
   name: string;
   email: string;
   image: string | null;
+  // F16, F21, F22: from the role in the session, see domain/moderator.ts.
+  isModerator: boolean;
 };
 
 export type CurrentUserProfile = CurrentUser & {
@@ -55,6 +58,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUserProfile> => {
   return { ...user, programme: userProfile?.programme ?? null };
 });
 
+// F21, F22: the access check for the moderation pages. A student who is not a moderator
+// gets "not found", so the page does not tell that it exists. Server Actions check
+// user.isModerator from requireStudent() instead and answer with a code.
+export const requireModerator = cache(async (): Promise<CurrentUser> => {
+  const user = await requireStudent();
+  if (!user.isModerator) notFound();
+  return user;
+});
+
 // Reports problems instead of throwing or redirecting, for the login page, which must
 // still show the form when the session cannot be checked. Everywhere else, use
 // requireStudent.
@@ -82,6 +94,9 @@ export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
         name: sessionUser.name || email,
         email,
         image: sessionUser.image ?? null,
+        // The SDK's type only knows Better Auth's own roles, user and admin, so the
+        // role is read as unknown and checked by isModeratorRole.
+        isModerator: isModeratorRole((sessionUser as { role?: unknown }).role),
       },
       issue: null,
     };

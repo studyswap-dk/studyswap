@@ -20,7 +20,7 @@ export function DashboardNav({ user }: { user: CurrentUserProfile | null }) {
           />
         </Link>
 
-        <DashboardNavigation />
+        <DashboardNavigation isModerator={user?.isModerator ?? false} />
 
         <ProfileMenu user={user} />
       </div>

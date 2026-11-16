@@ -12,8 +12,11 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-function sessionFor(email: string) {
-  return { data: { user: { id: "user-1", name: "Anna", email, image: null } }, error: null };
+function sessionFor(email: string, role?: string) {
+  return {
+    data: { user: { id: "user-1", name: "Anna", email, image: null, role } },
+    error: null,
+  };
 }
 
 describe("requireStudent", () => {
@@ -37,7 +40,20 @@ describe("requireStudent", () => {
       name: "Anna",
       email: "202412345@post.au.dk",
       image: null,
+      isModerator: false,
     });
+  });
+
+  it("F21: a student with the moderator role in the session is a moderator", async () => {
+    getSession.mockResolvedValue(sessionFor("202412345@post.au.dk", "moderator"));
+
+    await expect(requireStudent()).resolves.toMatchObject({ isModerator: true });
+  });
+
+  it("F21: a student with Better Auth's admin role is not a moderator", async () => {
+    getSession.mockResolvedValue(sessionFor("202412345@post.au.dk", "admin"));
+
+    await expect(requireStudent()).resolves.toMatchObject({ isModerator: false });
   });
 
   it("F1: sends a visitor without a session to /login", async () => {

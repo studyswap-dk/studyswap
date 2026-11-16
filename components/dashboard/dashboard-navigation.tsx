@@ -4,7 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BookOpen, Coins, Handshake, Inbox, Menu, MessageCircle, Plus, Star } from "lucide-react";
+import {
+  BookOpen,
+  Coins,
+  Handshake,
+  Inbox,
+  Menu,
+  MessageCircle,
+  Plus,
+  ShieldCheck,
+  Star,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +36,9 @@ const navigation = [
   { href: "/reviews", label: "Reviews", icon: Star },
   { href: "/points", label: "Points", icon: Coins },
 ] as const;
+
+// F21: only shown to moderators. The page checks the role itself.
+const moderationItem = { href: "/moderation", label: "Moderation", icon: ShieldCheck } as const;
 
 const NEW_POST_PATH = "/posts/new";
 
@@ -54,7 +67,7 @@ function NavigationLink({
 }: {
   href: string;
   label: string;
-  icon: (typeof navigation)[number]["icon"];
+  icon: (typeof navigation)[number]["icon"] | typeof moderationItem.icon;
   pathname: string;
   onNavigate?: () => void;
   mobile?: boolean;
@@ -82,14 +95,15 @@ function NavigationLink({
   );
 }
 
-export function DashboardNavigation() {
+export function DashboardNavigation({ isModerator }: { isModerator: boolean }) {
   const pathname = usePathname();
+  const items = isModerator ? [...navigation, moderationItem] : navigation;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 md:justify-center">
       <nav aria-label="Dashboard" className="hidden items-center gap-1 sm:gap-1.5 md:flex">
-        {navigation.map((item) => (
+        {items.map((item) => (
           <NavigationLink key={item.href} {...item} pathname={pathname} />
         ))}
 
@@ -157,7 +171,7 @@ export function DashboardNavigation() {
             aria-label="Mobile dashboard"
             className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-5"
           >
-            {navigation.map((item) => (
+            {items.map((item) => (
               <NavigationLink
                 key={item.href}
                 {...item}
