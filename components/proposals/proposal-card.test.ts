@@ -30,6 +30,7 @@ const proposal: ProposalListItem = {
   decidedAt: null,
   post: { id: POST, authorId: AUTHOR, type: "seeking", status: "open", title: "Math tutoring" },
   otherName: "Other Student",
+  otherRating: null,
 };
 
 function render(entry: ProposalListItem, sent: boolean, actions: ProposalActionKind[]) {
@@ -60,6 +61,16 @@ describe("ProposalCard", () => {
     expect(html).toContain("From Other Student");
     expect(html).toContain("Other Student is waiting for your answer");
     expect(buttons(html)).toEqual(["Accept", "Decline"]);
+  });
+
+  it("F9, F18: the author can see the proposer's average score when reviews exist", () => {
+    const html = render({ ...proposal, otherRating: { average: 4.5, count: 2 } }, false, [
+      "accept",
+      "decline",
+    ]);
+
+    expect(html).toContain("4.5 / 5");
+    expect(html).toContain("(2 reviews)");
   });
 
   it("F9: a declined proposal says when it was declined and has no buttons", () => {
