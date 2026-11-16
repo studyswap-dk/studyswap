@@ -94,6 +94,23 @@ Sign-in and sign-up with a code have no setting of their own in the console. The
 
 **A new branch copies the settings of its parent when it is created, but is not updated later.** Branches made from `production` on 23 September 2026, before the SMTP setup, still sent from Neon's shared address, `auth@mail.myneon.app`. Reset from parent in the Neon Console copies both data and Auth settings from the parent; it replaces the branch's data, including its users. **After a reset of `preview/dev`, set its webhook URL back to `dev.studyswap.dk`**, because the reset copies the webhook settings of `production`.
 
+## Moderators
+
+A moderator is a student with the role `moderator` in Neon Auth (F16, F21, F22). The role comes with the session like the name and the email, so `requireStudent()` returns it as `user.isModerator`, and the moderation pages call `requireModerator()`. No extra database lookup is made. A role that is set or taken away takes effect when `session_data` is renewed, within five minutes, or at once after signing out and in.
+
+**Set the role with Neon's API, one branch at a time.** Find the user's id with a read-only query in the branch's SQL Editor, then:
+
+```
+PUT https://console.neon.tech/api/v2/projects/{project_id}/branches/{branch_id}/auth/users/{auth_user_id}/role
+{"roles": ["moderator"]}
+```
+
+`{"roles": ["user"]}` takes it away again. The request needs a Neon API key; use a project-scoped key from the organization's settings, not a personal one. Tested 16 November 2026 on `preview/dev`: Neon accepted the role, and `user.role` in `session_data` said `moderator` after it was renewed.
+
+- **Do not use Make admin** in the Neon Console. It gives the role `admin`, and a Better Auth admin can call Neon Auth's admin endpoints directly with their own session: list every user, ban users, change roles and sign in as someone else
+- **Do not edit the role in the table.** It is the same column, but it skips Neon Auth, does not update `updatedAt` and accepts any text
+- On `production`, a person does it, never an agent, see AGENTS.md
+
 ## Rules
 
 - Take the user's identity from the session, never from the request. Call `requireStudent()` first in every Server Action and in every function in `lib/` that reads data for the signed-in student. Hiding a button or redirecting is not access control

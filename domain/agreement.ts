@@ -32,7 +32,8 @@ export type Action =
   | { kind: "dispute"; reason: string } // F15, receiver
   | { kind: "expire" } // F14, system
   | { kind: "autoRelease" } // F13, system
-  | { kind: "resolveDispute"; outcome: "upheld" | "rejected" }; // F16, moderator
+  | { kind: "resolveDispute"; outcome: "upheld" | "rejected" } // F16, moderator
+  | { kind: "removePost" }; // F22, moderator
 
 function releaseTransactions(a: Agreement): NewPointTransaction[] {
   // The two transactions that move the points from the receiver to the helper.
@@ -189,6 +190,17 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
           { userId: agreement.receiverId, amount: -agreement.points, type: "release" },
         ],
       };
+    }
+
+    // F22: a moderator removed the post the agreement is about, because it breaks the
+    // guidelines. The agreement is cancelled whether or not the help was marked as done
+    // or disputed, so no points are moved for help on a removed post, and the receiver's
+    // reserved points are freed. Moderator rights are checked by the calling layer.
+    case "removePost": {
+      if (agreement.status !== "accepted" && agreement.status !== "disputed") {
+        return { ok: false, code: "notActive" };
+      }
+      return { ok: true, newStatus: "cancelled", transactions: [] };
     }
 
     // F14: if the help is neither marked as done nor confirmed before expiresAt,

@@ -43,7 +43,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | Danish | Code | Note |
 |---|---|---|
 | studerende | `user` | A row in `neon_auth.user` |
-| moderator | `moderator` | A student with extended rights |
+| moderator | `moderator` | A student with extended rights: the role `moderator` in Neon Auth, read from the session as `user.isModerator`. `requireModerator()` guards the moderation pages. Set with Neon's API, see `docs/login-and-authentication.md` |
 | ejer (af et opslag) | `author`, `authorId` | Never `owner` or `seller` |
 | forespørger | `proposer`, `proposerId` | The student who sent a proposal |
 | hjælper, modtager | `helper`, `receiver` | The two parties of an agreement |
@@ -80,7 +80,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | `transactionType` | `initial`, `release` | startsaldo, frigivelse |
 | `reportStatus` | `open`, `resolved`, `dismissed` | afventer, behandlet, afvist |
 
-A proposal is `declined` and a dispute is `rejected`. The two words are different on purpose.
+A proposal is `declined`, a dispute is `rejected` and a report is `dismissed`. The words are different on purpose.
 
 **Actions**
 
@@ -93,6 +93,8 @@ A proposal is `declined` and a dispute is `rejected`. The two words are differen
 | aftalen udløber | `expire` |
 | pointene frigives automatisk | `autoRelease` |
 | gøre indsigelse, afgøre en indsigelse | `dispute`, `resolveDispute` |
+| rapportere et opslag | `report` |
+| moderatoren fjerner et opslag, afviser rapporteringerne | `remove`, `dismiss`. An agreement on a removed post is cancelled with the action `removePost` |
 
 **Naming rules**
 

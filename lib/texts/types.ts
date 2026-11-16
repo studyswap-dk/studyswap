@@ -7,10 +7,12 @@ import type { MessageError } from "@/domain/message";
 import type { PostFieldError, PostTagError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
 import type { ProposalActionKind } from "@/domain/proposal";
+import type { ModerationAction, ReasonError } from "@/domain/report";
 import type { ReviewError } from "@/domain/review";
 import type { AgreementActionRefusal } from "@/lib/agreements";
 import type { LoginError } from "@/lib/auth/login-error";
 import type { ProposalActionRefusal } from "@/lib/proposals";
+import type { ModerationActionRefusal, ReportActionRefusal } from "@/lib/reports";
 
 // Words in braces, such as {min}, are filled in with fill() from lib/texts/fill.ts.
 export type Texts = {
@@ -45,4 +47,14 @@ export type Texts = {
   };
   review: Record<ReviewError | "submitted", string>;
   login: Record<LoginError, string>;
+  report: {
+    // F20: the reason the student gives.
+    reason: Record<ReasonError, string>;
+    refusal: Record<ReportActionRefusal | "failed", string>;
+    done: string;
+  };
+  moderation: {
+    refusal: Record<ModerationActionRefusal | "failed", string>;
+    done: Record<ModerationAction, string>;
+  };
 };
