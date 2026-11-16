@@ -16,6 +16,7 @@ import { autoReleaseAt, type PartyAction } from "@/domain/agreement";
 import { isPostShown } from "@/domain/post";
 import { formatDateTime } from "@/lib/dates";
 import { pointUnit } from "@/lib/point-unit";
+import { cn } from "@/lib/utils";
 import type { AgreementListItem } from "@/lib/agreements";
 
 // What happens next, or how it ended, from the agreement's status and timestamps, told
@@ -85,7 +86,10 @@ export function AgreementCard({
         <p className="text-sm text-muted-foreground">{step}</p>
         <AgreementActions agreementId={agreement.id} actions={actions} />
         {agreement.status === "completed" && !agreement.reviewedByMe ? (
-          <Link href={`/reviews/${agreement.id}`} className={buttonVariants({ size: "sm" })}>
+          <Link
+            href={`/reviews/${agreement.id}`}
+            className={cn(buttonVariants({ size: "sm" }), "w-fit")}
+          >
             Review {isHelper ? agreement.receiverName : agreement.helperName}
           </Link>
         ) : null}
