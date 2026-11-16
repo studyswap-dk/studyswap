@@ -223,8 +223,8 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
   }
 }
 
-// F11, F12, F13: the actions a party can take on the agreements page. Cancel (F11) and
-// dispute (F15) are added here when they get their buttons.
+// F11, F12, F13: the actions a party can take on the agreements page. Dispute (F15)
+// is added here when it gets its button.
 export const PARTY_ACTIONS = ["markDone", "confirm", "cancel"] as const;
 export type PartyAction = (typeof PARTY_ACTIONS)[number];
 

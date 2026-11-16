@@ -35,7 +35,7 @@ const BUTTONS: Record<
   },
   // F11 outlined, so it does not compete with the action that moves the agreement on.
   cancel: {
-    label: "Cancel agreemnt",
+    label: "Cancel agreement",
     pending: "Cancelling...",
     variant: "outline",
     run: cancelAgreement,

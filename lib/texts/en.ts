@@ -30,7 +30,7 @@ export const en = {
     done: {
       confirm: "Thank you. The points have been released.",
       markDone: "Marked as done. Waiting for confirmation.",
-      cancel: "The agreement is cancelled. The reserved point is free again.",
+      cancel: "The agreement is cancelled. The reserved points are free again.",
     },
   },
   proposal: {

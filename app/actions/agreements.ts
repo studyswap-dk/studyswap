@@ -44,6 +44,7 @@ export async function confirmAgreement(agreementId: unknown) {
 export async function cancelAgreement(agreementId: unknown) {
   return act(agreementId, { kind: "cancel" });
 }
+
 // F13: the helper reports that the help was given. The points are released when the
 // receiver confirms, or automatically 24 hours later.
 export async function markAgreementDone(agreementId: unknown) {
