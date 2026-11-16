@@ -21,7 +21,7 @@ pnpm run test:integration
 3. Every migration in `drizzle/` runs, so the tests use the schema the app has
 4. The two test users from `test/integration/test-users.ts` are added, with the fixed addresses from "Test data" in `AGENTS.md` and fixed ids
 
-`test/integration/setup-env.ts` points `DATABASE_URL` at the container before a test file imports `db/`, because `db/index.ts` reads it when it is imported. The container is removed when the tests end, so it holds no real data, and nothing from it can end up in the public Actions logs.
+`test/integration/setup-env.ts` points `DATABASE_URL` at the container before a test file imports `db/`, because `db/index.ts` reads it when it is imported. It also replaces `@/lib/current-user` with a `requireStudent` that fails, because the real one needs Next.js and Neon Auth. The tests pass user ids straight to the functions in `lib/`, as `AGENTS.md` describes, so they never need a session. The container is removed when the tests end, so it holds no real data, and nothing from it can end up in the public Actions logs.
 
 The test users are inserted into the stand-in, not into Neon's `neon_auth`, so the rule in `AGENTS.md` never to change `neon_auth` still holds.
 
