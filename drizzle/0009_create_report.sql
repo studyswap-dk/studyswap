@@ -9,7 +9,7 @@ CREATE TABLE "report" (
 	"resolvedById" uuid,
 	"resolvedAt" timestamp with time zone,
 	CONSTRAINT "report_reason_not_blank" CHECK (btrim("report"."reason") <> ''),
-	CONSTRAINT "report_handled_when_not_open" CHECK (("report"."status" = 'open') = ("report"."resolvedAt" IS NULL))
+	CONSTRAINT "report_handled_when_not_open" CHECK (("report"."status" = 'open') = ("report"."resolvedAt" IS NULL) AND ("report"."resolvedAt" IS NULL) = ("report"."resolvedById" IS NULL))
 );
 --> statement-breakpoint
 ALTER TABLE "report" ADD CONSTRAINT "report_postId_post_id_fk" FOREIGN KEY ("postId") REFERENCES "public"."post"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

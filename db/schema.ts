@@ -340,9 +340,12 @@ export const report = pgTable(
   },
   (table) => [
     check("report_reason_not_blank", sql`btrim(${table.reason}) <> ''`),
+    // F21, F22: a report is open exactly when it has no resolvedAt, and resolvedAt and
+    // resolvedById are always set together, so a handled report always says who
+    // handled it.
     check(
       "report_handled_when_not_open",
-      sql`(${table.status} = 'open') = (${table.resolvedAt} IS NULL)`,
+      sql`(${table.status} = 'open') = (${table.resolvedAt} IS NULL) AND (${table.resolvedAt} IS NULL) = (${table.resolvedById} IS NULL)`,
     ),
     // F20: at most one open report per student per post.
     uniqueIndex("report_postId_reporterId_open_key")

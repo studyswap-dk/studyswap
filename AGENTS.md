@@ -80,7 +80,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | `transactionType` | `initial`, `release` | startsaldo, frigivelse |
 | `reportStatus` | `open`, `resolved`, `dismissed` | afventer, behandlet, afvist |
 
-A proposal is `declined` and a dispute is `rejected`. The two words are different on purpose.
+A proposal is `declined`, a dispute is `rejected` and a report is `dismissed`. The words are different on purpose.
 
 **Actions**
 

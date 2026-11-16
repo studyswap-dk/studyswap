@@ -1,5 +1,5 @@
 {
-  "id": "d3591fdb-04b1-42b9-bd9f-2c3507bbc5af",
+  "id": "34c672e1-e1f4-4cb8-93d7-7d907dffb3d1",
   "prevId": "d1648422-fb1f-4bfb-aefa-28864913e2a4",
   "version": "7",
   "dialect": "postgresql",
@@ -1165,7 +1165,7 @@
         },
         "report_handled_when_not_open": {
           "name": "report_handled_when_not_open",
-          "value": "(\"report\".\"status\" = 'open') = (\"report\".\"resolvedAt\" IS NULL)"
+          "value": "(\"report\".\"status\" = 'open') = (\"report\".\"resolvedAt\" IS NULL) AND (\"report\".\"resolvedAt\" IS NULL) = (\"report\".\"resolvedById\" IS NULL)"
         }
       },
       "isRLSEnabled": false
