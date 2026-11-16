@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
-import { type PostField, type PostFieldError, validatePost } from "@/domain/post";
+import {
+  type PostField,
+  type PostFieldError,
+  type PostTagError,
+  validatePost,
+  validatePostTags,
+} from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
 import { savePost } from "@/lib/posts";
 
@@ -11,22 +17,31 @@ import { savePost } from "@/lib/posts";
 // the author is taken from the session.
 // NF1: a code, not a text. PostForm writes the text the student reads.
 export type CreatePostResult =
-  | { ok: true }
+  | { ok: true; postId: string }
   | { ok: false; field: PostField; code: PostFieldError }
+  | { ok: false; field: "tags"; code: PostTagError }
   | { ok: false; field?: undefined; code: "failed" };
 
 export async function createPost(values: unknown): Promise<CreatePostResult> {
   const user = await requireStudent();
-  const validation = validatePost(values);
+  const input =
+    typeof values === "object" && values !== null && !Array.isArray(values)
+      ? (values as Record<string, unknown>)
+      : {};
+  const validation = validatePost(input);
   if (!validation.ok) return { ok: false, field: validation.field, code: validation.code };
+  const tagsValidation = validatePostTags(input.tags);
+  if (!tagsValidation.ok) return { ok: false, field: "tags", code: tagsValidation.code };
 
+  let postId: string;
   try {
-    await savePost(user.id, validation.post);
+    postId = await savePost(user.id, validation.post, tagsValidation.tags);
   } catch (error) {
     console.error("Could not save the post:", error);
     return { ok: false, code: "failed" };
   }
 
   revalidatePath("/posts");
-  return { ok: true };
+  revalidatePath("/posts/" + postId);
+  return { ok: true, postId };
 }

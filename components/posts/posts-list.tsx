@@ -8,20 +8,21 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import { AuthorLine } from "@/components/posts/author-line";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
+import type { PostType } from "@/domain/post";
 import { formatDate } from "@/lib/dates";
 import { pageWindow } from "@/lib/pagination";
-import { getPosts } from "@/lib/posts";
+import { type PostSort, getPosts } from "@/lib/posts";
 
-export async function PostsList({ query, page }: { query: string; page: number }) {
-  const {
-    items,
-    total,
-    pages,
-    page: currentPage,
-    firstItem,
-    lastItem,
-    unavailable,
-  } = await getPosts({ query, page });
+type PostsListProps = {
+  posts: Awaited<ReturnType<typeof getPosts>>;
+  query: string;
+  type: PostType | undefined;
+  tagIds: string[];
+  sort: PostSort;
+};
+
+export function PostsList({ posts, query, type, tagIds, sort }: PostsListProps) {
+  const { items, total, pages, page, firstItem, lastItem, unavailable } = posts;
 
   if (unavailable) {
     return (
@@ -37,12 +38,13 @@ export async function PostsList({ query, page }: { query: string; page: number }
   }
 
   if (items.length === 0) {
+    const hasFilters = Boolean(query || type || tagIds.length > 0);
     return (
       <Empty>
-        <EmptyTitle>{query ? "No matching posts" : "No posts yet"}</EmptyTitle>
+        <EmptyTitle>{hasFilters ? "No matching posts" : "No posts yet"}</EmptyTitle>
         <EmptyDescription>
-          {query
-            ? "Try another search phrase, or clear the search to see all open posts."
+          {hasFilters
+            ? "Try changing your search or filters, or clear them to see all open posts."
             : "Be the first to share a skill or ask another student for help."}
         </EmptyDescription>
       </Empty>
@@ -89,6 +91,15 @@ export async function PostsList({ query, page }: { query: string; page: number }
                 <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                   {trimDescription(post.description)}
                 </p>
+                {post.tags.length > 0 ? (
+                  <ul aria-label="Post tags" className="flex flex-wrap gap-2">
+                    {post.tags.map((tag) => (
+                      <li key={tag}>
+                        <Badge variant="outline">{tag}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 <div className="mt-auto flex items-end justify-between gap-3 border-t pt-4">
                   <AuthorLine name={post.authorName} programme={post.authorProgramme} />
                   {post.conversationCount !== null ? (
@@ -105,19 +116,42 @@ export async function PostsList({ query, page }: { query: string; page: number }
         ))}
       </ul>
 
-      {pages > 1 && <Pagination query={query} page={currentPage} pages={pages} />}
+      {pages > 1 && (
+        <Pagination
+          query={query}
+          type={type}
+          tagIds={tagIds}
+          sort={sort}
+          page={page}
+          pages={pages}
+        />
+      )}
     </section>
   );
 }
 
-function Pagination({ query, page, pages }: { query: string; page: number; pages: number }) {
+function Pagination({
+  query,
+  type,
+  tagIds,
+  sort,
+  page,
+  pages,
+}: {
+  query: string;
+  type: PostType | undefined;
+  tagIds: string[];
+  sort: PostSort;
+  page: number;
+  pages: number;
+}) {
   const pageRange = pageWindow(page, pages);
 
   return (
     <nav aria-label="Posts pages" className="flex items-center justify-center gap-2 pt-3">
       {page > 1 ? (
         <Link
-          href={pageHref(page - 1, query)}
+          href={pageHref(page - 1, { query, type, tagIds, sort })}
           aria-label="Previous page"
           className={buttonVariants({ variant: "outline", size: "icon" })}
         >
@@ -137,7 +171,7 @@ function Pagination({ query, page, pages }: { query: string; page: number; pages
       {pageRange.map((value) => (
         <Link
           key={value}
-          href={pageHref(value, query)}
+          href={pageHref(value, { query, type, tagIds, sort })}
           aria-current={value === page ? "page" : undefined}
           className={buttonVariants({
             variant: value === page ? "default" : "outline",
@@ -149,7 +183,7 @@ function Pagination({ query, page, pages }: { query: string; page: number; pages
       ))}
       {page < pages ? (
         <Link
-          href={pageHref(page + 1, query)}
+          href={pageHref(page + 1, { query, type, tagIds, sort })}
           aria-label="Next page"
           className={buttonVariants({ variant: "outline", size: "icon" })}
         >
@@ -170,9 +204,20 @@ function Pagination({ query, page, pages }: { query: string; page: number; pages
   );
 }
 
-function pageHref(page: number, query: string) {
+function pageHref(
+  page: number,
+  {
+    query,
+    type,
+    tagIds,
+    sort,
+  }: { query: string; type: PostType | undefined; tagIds: string[]; sort: PostSort },
+) {
   const searchParams = new URLSearchParams();
   if (query) searchParams.set("q", query);
+  if (type) searchParams.set("type", type);
+  for (const tagId of tagIds) searchParams.append("tag", tagId);
+  if (sort !== "newest") searchParams.set("sort", sort);
   if (page > 1) searchParams.set("page", String(page));
   const search = searchParams.toString();
   return search ? `/posts?${search}` : "/posts";

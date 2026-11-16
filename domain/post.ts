@@ -15,6 +15,12 @@ export type NewPost = {
   description: string;
 };
 
+export const MAX_TAGS_PER_POST = 5;
+export const MAX_TAG_NAME_LENGTH = 32;
+export type PostTagError = "invalid" | "tooLong" | "tooMany";
+
+export type PostTagsValidation = { ok: true; tags: string[] } | { ok: false; code: PostTagError };
+
 export type PostField = keyof NewPost;
 
 // NF1: why a field of a post is refused. The user interface turns the code into a text,
@@ -77,6 +83,31 @@ export function validatePost(value: unknown): PostValidation {
       description: trimmed(input.description),
     },
   };
+}
+
+// F5, F6: tags are optional, but a submitted tag list is normalized and bounded
+// before it is written to the shared tag table.
+export function validatePostTags(value: unknown): PostTagsValidation {
+  if (value === undefined || value === null || value === "") {
+    return { ok: true, tags: [] };
+  }
+  if (typeof value !== "string") return { ok: false, code: "invalid" };
+
+  const tags = value
+    .split(",")
+    .map((name) => name.trim().replace(/\s+/g, " ").toLowerCase())
+    .filter(Boolean);
+
+  if (tags.some((name) => name.length > MAX_TAG_NAME_LENGTH)) {
+    return { ok: false, code: "tooLong" };
+  }
+
+  const uniqueTags = [...new Set(tags)];
+  if (uniqueTags.length > MAX_TAGS_PER_POST) {
+    return { ok: false, code: "tooMany" };
+  }
+
+  return { ok: true, tags: uniqueTags };
 }
 
 // The values of postStatus in db/schema.ts, written out because domain/ does not import

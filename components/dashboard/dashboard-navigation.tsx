@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Plus,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const navigation = [
   { href: "/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/proposals", label: "Proposals", icon: Inbox },
   { href: "/agreements", label: "Agreements", icon: Handshake },
+  { href: "/reviews", label: "Reviews", icon: Star },
   { href: "/points", label: "Points", icon: Coins },
 ] as const;
 

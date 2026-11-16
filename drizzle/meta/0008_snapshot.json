@@ -1,5 +1,5 @@
 {
-  "id": "4376cee3-bc45-48b0-aec7-e002310ec2d0",
+  "id": "d1648422-fb1f-4bfb-aefa-28864913e2a4",
   "prevId": "1c2827fd-03d4-4867-94e9-ca38d8016188",
   "version": "7",
   "dialect": "postgresql",
@@ -1010,8 +1010,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.report": {
-      "name": "report",
+    "public.review": {
+      "name": "review",
       "schema": "",
       "columns": {
         "id": {
@@ -1021,86 +1021,44 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "postId": {
-          "name": "postId",
+        "agreementId": {
+          "name": "agreementId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "reporterId": {
-          "name": "reporterId",
+        "reviewerId": {
+          "name": "reviewerId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "reason": {
-          "name": "reason",
-          "type": "text",
+        "revieweeId": {
+          "name": "revieweeId",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "reportStatus",
-          "typeSchema": "public",
+        "score": {
+          "name": "score",
+          "type": "smallint",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
+          "notNull": true
         },
-        "createdAt": {
-          "name": "createdAt",
+        "givenAt": {
+          "name": "givenAt",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "moderatorId": {
-          "name": "moderatorId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolvedAt": {
-          "name": "resolvedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
-        "report_postId_reporterId_open_key": {
-          "name": "report_postId_reporterId_open_key",
+        "review_revieweeId_idx": {
+          "name": "review_revieweeId_idx",
           "columns": [
             {
-              "expression": "postId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "reporterId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"report\".\"status\" = 'open'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "report_status_createdAt_idx": {
-          "name": "report_status_createdAt_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "createdAt",
+              "expression": "revieweeId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1113,12 +1071,12 @@
         }
       },
       "foreignKeys": {
-        "report_postId_post_id_fk": {
-          "name": "report_postId_post_id_fk",
-          "tableFrom": "report",
-          "tableTo": "post",
+        "review_agreementId_agreement_id_fk": {
+          "name": "review_agreementId_agreement_id_fk",
+          "tableFrom": "review",
+          "tableTo": "agreement",
           "columnsFrom": [
-            "postId"
+            "agreementId"
           ],
           "columnsTo": [
             "id"
@@ -1126,13 +1084,13 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "report_reporterId_user_id_fk": {
-          "name": "report_reporterId_user_id_fk",
-          "tableFrom": "report",
+        "review_reviewerId_user_id_fk": {
+          "name": "review_reviewerId_user_id_fk",
+          "tableFrom": "review",
           "tableTo": "user",
           "schemaTo": "neon_auth",
           "columnsFrom": [
-            "reporterId"
+            "reviewerId"
           ],
           "columnsTo": [
             "id"
@@ -1140,13 +1098,13 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "report_moderatorId_user_id_fk": {
-          "name": "report_moderatorId_user_id_fk",
-          "tableFrom": "report",
+        "review_revieweeId_user_id_fk": {
+          "name": "review_revieweeId_user_id_fk",
+          "tableFrom": "review",
           "tableTo": "user",
           "schemaTo": "neon_auth",
           "columnsFrom": [
-            "moderatorId"
+            "revieweeId"
           ],
           "columnsTo": [
             "id"
@@ -1156,16 +1114,25 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "review_agreementId_reviewerId_key": {
+          "name": "review_agreementId_reviewerId_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "agreementId",
+            "reviewerId"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {
-        "report_reason_not_blank": {
-          "name": "report_reason_not_blank",
-          "value": "btrim(\"report\".\"reason\") <> ''"
+        "review_score_between_1_and_5": {
+          "name": "review_score_between_1_and_5",
+          "value": "\"review\".\"score\" BETWEEN 1 AND 5"
         },
-        "report_handled_when_not_open": {
-          "name": "report_handled_when_not_open",
-          "value": "(\"report\".\"status\" = 'open') = (\"report\".\"resolvedAt\" IS NULL)"
+        "review_parties_differ": {
+          "name": "review_parties_differ",
+          "value": "\"review\".\"reviewerId\" <> \"review\".\"revieweeId\""
         }
       },
       "isRLSEnabled": false
@@ -2087,15 +2054,6 @@
         "accepted",
         "declined",
         "withdrawn"
-      ]
-    },
-    "public.reportStatus": {
-      "name": "reportStatus",
-      "schema": "public",
-      "values": [
-        "open",
-        "resolved",
-        "dismissed"
       ]
     },
     "public.transactionType": {

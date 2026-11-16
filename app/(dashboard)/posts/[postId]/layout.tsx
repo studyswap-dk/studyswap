@@ -10,6 +10,7 @@ import { PostDescription } from "@/components/posts/post-description";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
 import { SendProposalButton } from "@/components/proposals/send-proposal-button";
 import { ReportPostButton } from "@/components/reports/report-post-button";
+import { ReviewRating } from "@/components/reviews/review-rating";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { isUuid } from "@/lib/ids";
 import { getPost } from "@/lib/posts";
 import { hasPendingProposal } from "@/lib/proposals";
 import { hasOpenReport } from "@/lib/reports";
+import { getReviewSummaries } from "@/lib/reviews";
 import { cn } from "@/lib/utils";
 
 // F10: a post and its conversations. The author sees the conversations on the post in a
@@ -49,6 +51,16 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
     canPropose ? hasPendingProposal(postId, user.id) : false,
     canReport ? hasOpenReport(postId, user.id) : false,
   ]);
+
+  // F18: anyone but the author sees the author's rating before they write or send a
+  // proposal, so they know whom they would make an agreement with.
+  const isAuthor = found.authorId === user.id;
+  const authorRating = isAuthor
+    ? null
+    : ((await getReviewSummaries([found.authorId])).get(found.authorId) ?? {
+        average: 0,
+        count: 0,
+      });
 
   // The page is exactly as high as the screen below the navigation (4rem) and the main
   // area's padding (2rem or 2.5rem at the top and bottom), so the conversation fills
@@ -91,7 +103,10 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
         </CardHeader>
         <CardContent className="px-4 sm:px-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <AuthorLine name={found.authorName} programme={found.authorProgramme} />
+            <div className="flex flex-col gap-2">
+              <AuthorLine name={found.authorName} programme={found.authorProgramme} />
+              {authorRating ? <ReviewRating summary={authorRating} /> : null}
+            </div>
             <div className="flex flex-wrap items-start gap-2">
               {canReport ? (
                 <ReportPostButton postId={postId} alreadyReported={alreadyReported} />

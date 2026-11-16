@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import type { Action } from "@/domain/agreement";
 import { type AgreementActionRefusal, runAgreementAction } from "@/lib/agreements";
@@ -36,7 +37,15 @@ async function act(agreementId: unknown, action: Action): Promise<AgreementActio
 
 // F12: the receiver confirms that the help was given, and the points are released.
 export async function confirmAgreement(agreementId: unknown) {
-  return act(agreementId, { kind: "confirm" });
+  const result = await act(agreementId, { kind: "confirm" });
+  if (result.ok && isUuid(agreementId)) redirect(`/reviews/${agreementId}`);
+  return result;
+}
+
+// F11: either party cancels the agreement before the help is confirmed or marked as done.
+// The reservation is lifted, so the receiver can use the points again.
+export async function cancelAgreement(agreementId: unknown) {
+  return act(agreementId, { kind: "cancel" });
 }
 
 // F13: the helper reports that the help was given. The points are released when the

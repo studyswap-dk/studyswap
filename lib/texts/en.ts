@@ -30,6 +30,7 @@ export const en = {
     done: {
       confirm: "Thank you. The points have been released.",
       markDone: "Marked as done. Waiting for confirmation.",
+      cancel: "The agreement is cancelled. The reserved points are free again.",
     },
   },
   proposal: {
@@ -71,6 +72,11 @@ export const en = {
       tooShort: "Use at least {min} characters so students know what you need.",
       tooLong: "Keep the description to at most {max} characters.",
     },
+    tags: {
+      invalid: "Enter tags as comma-separated names.",
+      tooLong: "Keep each tag to at most {max} characters.",
+      tooMany: "Use at most {maxTags} tags.",
+    },
     failed: "Your post could not be saved. Please try again.",
     saved: "Your post is live.",
   },
@@ -91,6 +97,16 @@ export const en = {
     invalid: "Invalid request. Please try again.",
     failed: "Your profile could not be saved. Please try again.",
     saved: "Your profile is saved.",
+  },
+  review: {
+    invalidRequest: "This review could not be submitted. Please try again.",
+    invalidScore: "Choose a score from 1 to 5.",
+    notFound: "This completed agreement could not be found.",
+    notCompleted: "You can review an agreement only after it is completed.",
+    notParty: "You cannot review this agreement.",
+    alreadyReviewed: "You have already reviewed this student for this agreement.",
+    failed: "Your review could not be saved. Please try again.",
+    submitted: "Thank you. Your review has been saved.",
   },
   login: {
     invalidRequest: "Invalid sign-in request. Please try again.",

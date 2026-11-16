@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { ProposalActions } from "@/components/proposals/proposal-actions";
 import { ProposalStatusBadge } from "@/components/proposals/proposal-status-badge";
+import { ReviewRating } from "@/components/reviews/review-rating";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -59,6 +60,9 @@ export function ProposalCard({
           {sent ? `To ${proposal.otherName}` : `From ${proposal.otherName}`}
           {` · Sent on ${formatDateTime(proposal.createdAt)}`}
         </CardDescription>
+        {proposal.otherRating && proposal.otherRating.count > 0 ? (
+          <ReviewRating summary={proposal.otherRating} />
+        ) : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{statusLine(proposal, sent)}</p>

@@ -14,6 +14,7 @@ import type { AgreementListItem } from "@/lib/agreements";
 vi.mock("@/app/actions/agreements", () => ({
   confirmAgreement: vi.fn<() => Promise<{ ok: true }>>(),
   markAgreementDone: vi.fn<() => Promise<{ ok: true }>>(),
+  cancelAgreement: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 const HELPER = "11111111-1111-4111-8111-111111111111";
@@ -31,6 +32,7 @@ const agreement: AgreementListItem = {
   createdAt: new Date("2026-10-24T12:00:00Z"),
   completedAt: null,
   cancelledAt: null,
+  reviewedByMe: false,
   helperName: "Helper Student",
   receiverName: "Receiver Student",
   post: { id: "44444444-4444-4444-8444-444444444444", title: "Math tutoring", status: "open" },
@@ -103,6 +105,19 @@ describe("AgreementCard", () => {
     expect(html).toContain("Completed on 25 Oct 2026");
     expect(html).toContain(">point</span>");
     expect(html).not.toContain(">points</span>");
+  });
+
+  it("F17: a party can open a review for a completed agreement", () => {
+    const html = render({ ...agreement, status: "completed" }, RECEIVER, []);
+
+    expect(html).toContain(`href="/reviews/${agreement.id}"`);
+    expect(html).toContain("Review Helper Student");
+  });
+
+  it("F17: a completed agreement has no review link after this party has reviewed", () => {
+    const html = render({ ...agreement, status: "completed", reviewedByMe: true }, RECEIVER, []);
+
+    expect(html).not.toContain(`href="/reviews/${agreement.id}"`);
   });
 
   it("F22: a removed post's title and the link to the conversation are hidden", () => {
