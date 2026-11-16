@@ -117,7 +117,7 @@ Use pnpm only, never npm or yarn. The pnpm version comes from `packageManager` i
 | `pnpm run db:migrate` | Run migrations against the database in `.env.local` |
 | `pnpm run skills:sync` | Copy `.agents/skills` to `.claude/skills` |
 
-Before a task is done, run `lint`, `format`, `typecheck` and `test`, and `test:integration` when the task changes `lib/`, `db/` or `drizzle/`. CI runs the same checks, plus `format:check`, `skills:check` and `build`, on every pull request.
+Before a task is done, run `lint`, `format`, `typecheck` and `test`, and `test:integration` when the task changes `lib/`, `db/` or `drizzle/`. CI runs the same checks, plus `format:check`, `skills:check` and `build`, on every pull request, and the integration tests in a separate job, `integration`.
 
 ## Project structure
 
