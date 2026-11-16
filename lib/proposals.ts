@@ -14,6 +14,7 @@ import {
 import { settleOverdueAgreements } from "@/lib/agreements";
 import { violates } from "@/lib/db-errors";
 import { PointAccountError, type PointAccountRefusal, reservePoints } from "@/lib/point-account";
+import { getReviewSummaries, type ReviewSummary } from "@/lib/reviews";
 
 // NF1: why an action on a proposal is refused: by the rules, by the points, or because
 // the proposal or the post does not exist. The user interface turns the code into a text.
@@ -299,13 +300,14 @@ export type ProposalListItem = Proposal & {
   // The other student: the author on a proposal the student sent, the proposer on one
   // the student received.
   otherName: string;
+  otherRating: ReviewSummary | null;
 };
 
 // F8, F9: the proposals that match where, newest first, with the post and the name of
 // the student on the other side, whose id is in otherId.
 async function getProposalList(
   where: SQL,
-  otherId: typeof post.authorId | typeof proposal.proposerId,
+  otherUserIdColumn: typeof post.authorId | typeof proposal.proposerId,
 ): Promise<ProposalListItem[]> {
   const rows = await db
     .select({
@@ -319,19 +321,30 @@ async function getProposalList(
       postType: post.type,
       postStatus: post.status,
       postTitle: post.title,
+      otherId: otherUserIdColumn,
       otherName: userInNeonAuth.name,
     })
     .from(proposal)
     .innerJoin(post, eq(proposal.postId, post.id))
-    .innerJoin(userInNeonAuth, eq(userInNeonAuth.id, otherId))
+    .innerJoin(userInNeonAuth, eq(userInNeonAuth.id, otherUserIdColumn))
     .where(where)
     .orderBy(desc(proposal.createdAt), desc(proposal.id));
 
+  const ratings = await getReviewSummaries(rows.map(({ otherId }) => otherId));
   return rows.map(
-    ({ authorId, postType, postStatus, postTitle, otherName, ...row }): ProposalListItem => ({
+    ({
+      authorId,
+      postType,
+      postStatus,
+      postTitle,
+      otherId,
+      otherName,
+      ...row
+    }): ProposalListItem => ({
       ...row,
       post: { id: row.postId, authorId, type: postType, status: postStatus, title: postTitle },
       otherName: otherName.trim() || "A student",
+      otherRating: ratings.get(otherId) ?? null,
     }),
   );
 }

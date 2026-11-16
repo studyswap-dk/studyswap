@@ -84,6 +84,11 @@ export function AgreementCard({
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{step}</p>
         <AgreementActions agreementId={agreement.id} actions={actions} />
+        {agreement.status === "completed" && !agreement.reviewedByMe ? (
+          <Link href={`/reviews/${agreement.id}`} className={buttonVariants({ size: "sm" })}>
+            Review {isHelper ? agreement.receiverName : agreement.helperName}
+          </Link>
+        ) : null}
       </CardContent>
       {postShown ? (
         <CardFooter>

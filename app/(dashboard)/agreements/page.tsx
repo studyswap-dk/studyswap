@@ -1,4 +1,5 @@
 import { Handshake } from "lucide-react";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { AgreementCard } from "@/components/agreements/agreement-card";
@@ -26,6 +27,11 @@ export default async function AgreementsPage() {
   } catch (error) {
     console.error("Could not load the agreements:", error);
   }
+
+  const pendingReview = agreements?.find(
+    (agreement) => agreement.status === "completed" && !agreement.reviewedByMe,
+  );
+  if (pendingReview) redirect(`/reviews/${pendingReview.id}`);
 
   return (
     <div className="flex flex-col gap-8">

@@ -2,7 +2,7 @@ import { and, desc, eq, isNotNull, lte, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
-import { agreement, post, proposal, userInNeonAuth } from "@/db/schema";
+import { agreement, post, proposal, review, userInNeonAuth } from "@/db/schema";
 import {
   type Action,
   type Agreement,
@@ -155,6 +155,7 @@ export type AgreementListItem = Agreement & {
   createdAt: Date;
   completedAt: Date | null;
   cancelledAt: Date | null;
+  reviewedByMe: boolean;
   helperName: string;
   receiverName: string;
   post: {
@@ -176,6 +177,7 @@ export async function getAgreementList(userId: string): Promise<AgreementListIte
       createdAt: agreement.createdAt,
       completedAt: agreement.completedAt,
       cancelledAt: agreement.cancelledAt,
+      reviewId: review.id,
       helperName: helperUser.name,
       receiverName: receiverUser.name,
       postId: post.id,
@@ -188,13 +190,17 @@ export async function getAgreementList(userId: string): Promise<AgreementListIte
     .innerJoin(post, eq(proposal.postId, post.id))
     .innerJoin(helperUser, eq(agreement.helperId, helperUser.id))
     .innerJoin(receiverUser, eq(agreement.receiverId, receiverUser.id))
+    .leftJoin(review, and(eq(review.agreementId, agreement.id), eq(review.reviewerId, userId)))
     .where(or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)))
     .orderBy(desc(agreement.createdAt), desc(agreement.id));
 
-  return rows.map(({ postId, postTitle, postStatus, helperName, receiverName, ...row }) => ({
-    ...row,
-    helperName: helperName.trim() || "A student",
-    receiverName: receiverName.trim() || "A student",
-    post: { id: postId, title: postTitle, status: postStatus },
-  }));
+  return rows.map(
+    ({ postId, postTitle, postStatus, reviewId, helperName, receiverName, ...row }) => ({
+      ...row,
+      reviewedByMe: reviewId !== null,
+      helperName: helperName.trim() || "A student",
+      receiverName: receiverName.trim() || "A student",
+      post: { id: postId, title: postTitle, status: postStatus },
+    }),
+  );
 }

@@ -97,6 +97,16 @@ export const en = {
     failed: "Your profile could not be saved. Please try again.",
     saved: "Your profile is saved.",
   },
+  review: {
+    invalidRequest: "This review could not be submitted. Please try again.",
+    invalidScore: "Choose a score from 1 to 5.",
+    notFound: "This completed agreement could not be found.",
+    notCompleted: "You can review an agreement only after it is completed.",
+    notParty: "You cannot review this agreement.",
+    alreadyReviewed: "You have already reviewed this student for this agreement.",
+    failed: "Your review could not be saved. Please try again.",
+    submitted: "Thank you. Your review has been saved.",
+  },
   login: {
     invalidRequest: "Invalid sign-in request. Please try again.",
     notStudentEmail: "Enter your AU student email in the format studentnumber@post.au.dk.",

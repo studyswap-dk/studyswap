@@ -13,6 +13,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   unique,
@@ -172,6 +173,31 @@ export const agreement = pgTable(
     check("agreement_parties_differ", sql`${table.helperId} <> ${table.receiverId}`),
     index("agreement_helperId_idx").on(table.helperId),
     index("agreement_receiverId_idx").on(table.receiverId),
+  ],
+);
+
+// F17, F18: each party may review the other once after an agreement is completed.
+export const review = pgTable(
+  "review",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    agreementId: uuid()
+      .notNull()
+      .references(() => agreement.id),
+    reviewerId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    revieweeId: uuid()
+      .notNull()
+      .references(() => userInNeonAuth.id),
+    score: smallint().notNull(),
+    givenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("review_agreementId_reviewerId_key").on(table.agreementId, table.reviewerId),
+    check("review_score_between_1_and_5", sql`${table.score} BETWEEN 1 AND 5`),
+    check("review_parties_differ", sql`${table.reviewerId} <> ${table.revieweeId}`),
+    index("review_revieweeId_idx").on(table.revieweeId),
   ],
 );
 

@@ -7,6 +7,7 @@ import type { MessageError } from "@/domain/message";
 import type { PostFieldError, PostTagError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
 import type { ProposalActionKind } from "@/domain/proposal";
+import type { ReviewError } from "@/domain/review";
 import type { AgreementActionRefusal } from "@/lib/agreements";
 import type { LoginError } from "@/lib/auth/login-error";
 import type { ProposalActionRefusal } from "@/lib/proposals";
@@ -42,5 +43,6 @@ export type Texts = {
     failed: string;
     saved: string;
   };
+  review: Record<ReviewError | "submitted", string>;
   login: Record<LoginError, string>;
 };

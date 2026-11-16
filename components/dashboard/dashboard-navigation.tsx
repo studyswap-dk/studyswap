@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BookOpen, Coins, Handshake, Inbox, Menu, MessageCircle, Plus } from "lucide-react";
+import { BookOpen, Coins, Handshake, Inbox, Menu, MessageCircle, Plus, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ const navigation = [
   { href: "/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/proposals", label: "Proposals", icon: Inbox },
   { href: "/agreements", label: "Agreements", icon: Handshake },
+  { href: "/reviews", label: "Reviews", icon: Star },
   { href: "/points", label: "Points", icon: Coins },
 ] as const;
 
