@@ -59,9 +59,10 @@ async function moderate(postId: unknown, action: ModerationAction): Promise<Mode
     return { ok: false, code: "failed" };
   }
 
-  // Also after a refusal: the post may have been handled in another tab since the page
-  // was drawn, and the moderator should see how it stands now.
-  revalidatePath("/moderation");
+  // Only after success, when the card leaves the list. After a refusal the card stays
+  // with the message, so the moderator learns that the post was handled in another tab
+  // or by another moderator. The list is current again the next time it is loaded.
+  if (result.ok) revalidatePath("/moderation");
   if (result.ok && action === "remove") {
     // The removed post disappears from the list of posts, its own page and the
     // conversations, and its proposals and agreements change.

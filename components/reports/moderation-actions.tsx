@@ -30,6 +30,11 @@ const BUTTONS: Record<
   },
 };
 
+// The refusals that mean the post was already handled, in another tab or by another
+// moderator. Nothing more can be done with it, so the buttons are hidden.
+type RefusalCode = Extract<ModerationResult, { ok: false }>["code"];
+const HANDLED: readonly RefusalCode[] = ["postNotFound", "noOpenReports"];
+
 // F21, F22: what a moderator can do with a reported post. Removing it cannot be undone,
 // so the first press only asks the moderator to press again.
 export function ModerationActions({ postId }: { postId: string }) {
@@ -50,6 +55,8 @@ export function ModerationActions({ postId }: { postId: string }) {
         ? texts.done[answer.action]
         : texts.refusal[answer.result.code];
 
+  const handled = answer !== null && !answer.result.ok && HANDLED.includes(answer.result.code);
+
   function run(action: ModerationAction) {
     setPressed(action);
     setConfirmRemove(false);
@@ -60,43 +67,45 @@ export function ModerationActions({ postId }: { postId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
-        {confirmRemove ? (
-          <>
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={isPending}
-              onClick={() => run("remove")}
-            >
-              Yes, remove the post
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() => setConfirmRemove(false)}
-            >
-              Keep it
-            </Button>
-          </>
-        ) : (
-          (["remove", "dismiss"] as const).map((action) => {
-            const button = BUTTONS[action];
-            return (
+      {handled ? null : (
+        <div className="flex flex-wrap gap-2">
+          {confirmRemove ? (
+            <>
               <Button
-                key={action}
                 size="sm"
-                variant={button.variant}
+                variant="destructive"
                 disabled={isPending}
-                onClick={() => (action === "remove" ? setConfirmRemove(true) : run(action))}
+                onClick={() => run("remove")}
               >
-                {isPending && pressed === action ? button.pending : button.label}
+                Yes, remove the post
               </Button>
-            );
-          })
-        )}
-      </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => setConfirmRemove(false)}
+              >
+                Keep it
+              </Button>
+            </>
+          ) : (
+            (["remove", "dismiss"] as const).map((action) => {
+              const button = BUTTONS[action];
+              return (
+                <Button
+                  key={action}
+                  size="sm"
+                  variant={button.variant}
+                  disabled={isPending}
+                  onClick={() => (action === "remove" ? setConfirmRemove(true) : run(action))}
+                >
+                  {isPending && pressed === action ? button.pending : button.label}
+                </Button>
+              );
+            })
+          )}
+        </div>
+      )}
       {confirmRemove ? (
         <p className="text-sm text-muted-foreground">
           The post and its conversations are hidden, and running agreements on it are cancelled
