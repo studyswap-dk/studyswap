@@ -61,6 +61,7 @@ Kør derefter `gh auth login`, vælg GitHub.com, og log ind via browseren.
 | `pnpm run format:check` | Kontrollerer formatering uden at ændre filer; køres også i CI                           |
 | `pnpm run typecheck`    | Tjekker TypeScript-typerne                                                              |
 | `pnpm run test`         | Kører testene. `test:watch` kører dem igen, hver gang du gemmer                         |
+| `pnpm run test:integration` | Kører integrationstestene mod PostgreSQL i Docker, se [Integrationstests](docs/integration-tests.md) |
 | `pnpm run db:generate`  | Laver en migration ud fra `db/schema.ts`                                                |
 | `pnpm run db:migrate`   | Kører migrationerne mod din database                                                    |
 | `pnpm run db:studio`    | Viser databasen i browseren                                                             |
@@ -94,7 +95,7 @@ git checkout -b feature/kort-beskrivelse
 git push -u origin feature/kort-beskrivelse
 ```
 
-Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, formatering, skills, typecheck, test og build.
+Åbn derefter en pull request mod `dev` på GitHub. Vercel skriver et link til et preview i pull requesten, og den kan først merges, når CI er grøn: lint, formatering, skills, typecheck, test, integrationstest og build.
 
 Efter merge: `git checkout dev`, `git pull --prune` og `git branch -D feature/kort-beskrivelse`. Har pullen ændret `package.json` eller `pnpm-lock.yaml`, så kør `pnpm install`.
 
