@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { type ModerationAction, type ReasonError, validateReason } from "@/domain/report";
-import { isModeratorUser, requireStudent } from "@/lib/current-user";
+import { requireStudent } from "@/lib/current-user";
 import { isUuid } from "@/lib/ids";
 import {
   type ModerationActionRefusal,
@@ -44,10 +44,10 @@ export type ModerationResult =
   | { ok: false; code: ModerationActionRefusal | "failed" };
 
 // F21, F22: a moderator removes a reported post or dismisses its reports. Moderator
-// rights are read from the database here, never taken from the request.
+// rights come from the role in the session, never from the request.
 async function moderate(postId: unknown, action: ModerationAction): Promise<ModerationResult> {
   const user = await requireStudent();
-  const actorIsModerator = await isModeratorUser(user.id);
+  const actorIsModerator = user.isModerator;
   if (!actorIsModerator) return { ok: false, code: "notModerator" };
   if (!isUuid(postId)) return { ok: false, code: "postNotFound" };
 

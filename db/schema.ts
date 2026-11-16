@@ -334,7 +334,7 @@ export const report = pgTable(
     status: reportStatus().notNull().default("open"),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     // The moderator who handled the report, and when. Set together when it stops being open.
-    moderatorId: uuid().references(() => userInNeonAuth.id),
+    resolvedById: uuid().references(() => userInNeonAuth.id),
     resolvedAt: timestamp({ withTimezone: true }),
   },
   (table) => [

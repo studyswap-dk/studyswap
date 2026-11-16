@@ -61,7 +61,7 @@ export function reportStatusAfter(action: ModerationAction): ReportStatus {
 }
 
 // F21, F22: may this moderator take the action on the post? Moderator rights are read
-// from the database by the caller. A removed post cannot be removed again, and a post
+// from the session by the caller. A removed post cannot be removed again, and a post
 // without open reports has nothing to dismiss. A post can be removed without open
 // reports, because a moderator who comes across it should not have to report it first.
 export function decideModeration(
@@ -76,16 +76,4 @@ export function decideModeration(
   if (!isPostShown(post.status)) return { ok: false, code: "postNotFound" };
   if (action === "dismiss" && openReports === 0) return { ok: false, code: "noOpenReports" };
   return { ok: true, removePost: action === "remove", reportStatus: reportStatusAfter(action) };
-}
-
-// The role a moderator has in neon_auth.user.role. Better Auth stores several roles as
-// a comma-separated list, so "user,moderator" is a moderator too.
-export const MODERATOR_ROLE = "moderator";
-
-export function isModeratorRole(role: string | null | undefined): boolean {
-  if (!role) return false;
-  return role
-    .split(",")
-    .map((r) => r.trim().toLowerCase())
-    .includes(MODERATOR_ROLE);
 }

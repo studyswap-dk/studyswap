@@ -3,8 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@/db";
-import { profile, userInNeonAuth } from "@/db/schema";
-import { isModeratorRole } from "@/domain/report";
+import { profile } from "@/db/schema";
+import { isModeratorRole } from "@/domain/moderator";
 import { normalizeSignInEmail } from "@/lib/auth/allowed-email";
 import { getNeonAuth } from "@/lib/auth/server";
 
@@ -13,12 +13,12 @@ export type CurrentUser = {
   name: string;
   email: string;
   image: string | null;
+  // F16, F21, F22: from the role in the session, see domain/moderator.ts.
+  isModerator: boolean;
 };
 
 export type CurrentUserProfile = CurrentUser & {
   programme: string | null;
-  // F21: whether the navigation shows the moderation page.
-  isModerator: boolean;
 };
 
 export type CurrentUserLookup =
@@ -49,37 +49,21 @@ export const requireStudent = cache(async (): Promise<CurrentUser> => {
 // The student with their programme, for the navigation.
 export const getCurrentUser = cache(async (): Promise<CurrentUserProfile> => {
   const user = await requireStudent();
-  const [[userProfile], isModerator] = await Promise.all([
-    db
-      .select({ programme: profile.programme })
-      .from(profile)
-      .where(eq(profile.userId, user.id))
-      .limit(1),
-    isModeratorUser(user.id),
-  ]);
-
-  return { ...user, programme: userProfile?.programme ?? null, isModerator };
-});
-
-// F16, F21, F22: is the user a moderator? The role is read from neon_auth.user.role in
-// the database on every request, not from the session, so a role that is taken away
-// takes effect at once. A moderator is made by setting the role in the database; the
-// app has no page for it. Pass only an id from requireStudent() in this request.
-export const isModeratorUser = cache(async (userId: string): Promise<boolean> => {
-  const [row] = await db
-    .select({ role: userInNeonAuth.role })
-    .from(userInNeonAuth)
-    .where(eq(userInNeonAuth.id, userId))
+  const [userProfile] = await db
+    .select({ programme: profile.programme })
+    .from(profile)
+    .where(eq(profile.userId, user.id))
     .limit(1);
-  return isModeratorRole(row?.role);
+
+  return { ...user, programme: userProfile?.programme ?? null };
 });
 
 // F21, F22: the access check for the moderation pages. A student who is not a moderator
-// gets "not found", so the page does not tell that it exists. Server Actions use
-// isModeratorUser instead and answer with a code.
+// gets "not found", so the page does not tell that it exists. Server Actions check
+// user.isModerator from requireStudent() instead and answer with a code.
 export const requireModerator = cache(async (): Promise<CurrentUser> => {
   const user = await requireStudent();
-  if (!(await isModeratorUser(user.id))) notFound();
+  if (!user.isModerator) notFound();
   return user;
 });
 
@@ -110,6 +94,9 @@ export async function lookupCurrentUser(): Promise<CurrentUserLookup> {
         name: sessionUser.name || email,
         email,
         image: sessionUser.image ?? null,
+        // The SDK's type only knows Better Auth's own roles, user and admin, so the
+        // role is read as unknown and checked by isModeratorRole.
+        isModerator: isModeratorRole((sessionUser as { role?: unknown }).role),
       },
       issue: null,
     };

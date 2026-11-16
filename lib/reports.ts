@@ -176,7 +176,7 @@ export type ModerationResult = { ok: true } | { ok: false; code: ModerationActio
 //   dismiss: the open reports are dismissed, and the post stays as it is.
 // A refusal anywhere rolls all of it back. The caller passes a moderatorId from
 // requireStudent() in this request and whether that user is a moderator, from
-// isModeratorUser().
+// user.isModerator.
 export async function moderatePost(
   postId: string,
   action: ModerationAction,
@@ -237,7 +237,7 @@ export async function moderatePost(
 
       await tx
         .update(report)
-        .set({ status: decision.reportStatus, moderatorId, resolvedAt: now })
+        .set({ status: decision.reportStatus, resolvedById: moderatorId, resolvedAt: now })
         .where(and(eq(report.postId, postId), eq(report.status, "open")));
 
       return { ok: true };

@@ -1,5 +1,5 @@
 {
-  "id": "ad0c78cb-f5eb-41bc-ab1e-af3b0ae887c8",
+  "id": "d3591fdb-04b1-42b9-bd9f-2c3507bbc5af",
   "prevId": "d1648422-fb1f-4bfb-aefa-28864913e2a4",
   "version": "7",
   "dialect": "postgresql",
@@ -1054,8 +1054,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "moderatorId": {
-          "name": "moderatorId",
+        "resolvedById": {
+          "name": "resolvedById",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1140,13 +1140,13 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "report_moderatorId_user_id_fk": {
-          "name": "report_moderatorId_user_id_fk",
+        "report_resolvedById_user_id_fk": {
+          "name": "report_resolvedById_user_id_fk",
           "tableFrom": "report",
           "tableTo": "user",
           "schemaTo": "neon_auth",
           "columnsFrom": [
-            "moderatorId"
+            "resolvedById"
           ],
           "columnsTo": [
             "id"

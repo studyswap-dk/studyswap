@@ -43,7 +43,7 @@ Use exactly the words below in code, file names, URLs, UI text, tests and commen
 | Danish | Code | Note |
 |---|---|---|
 | studerende | `user` | A row in `neon_auth.user` |
-| moderator | `moderator` | A student with extended rights: `moderator` in `neon_auth.user.role`, checked with `isModeratorUser()` and `requireModerator()` |
+| moderator | `moderator` | A student with extended rights: the role `moderator` in Neon Auth, read from the session as `user.isModerator`. `requireModerator()` guards the moderation pages. Set with Neon's API, see `docs/login-and-authentication.md` |
 | ejer (af et opslag) | `author`, `authorId` | Never `owner` or `seller` |
 | forespørger | `proposer`, `proposerId` | The student who sent a proposal |
 | hjælper, modtager | `helper`, `receiver` | The two parties of an agreement |
