@@ -1,6 +1,6 @@
 # Integration tests
 
-The unit tests in `domain/` show that the rules decide correctly. The integration tests show what only a real database can: that the transactions in `lib/` move points without creating or losing any, that the constraints refuse what they should, and that two requests at the same time cannot both win (NF2, NF3, NF7). They run the code in `lib/` against PostgreSQL, the same code the Server Actions call.
+The unit tests in `domain/` show that the rules decide correctly. The integration tests show what only a real database can: that the transactions in `lib/` move points without creating or losing any, that the constraints refuse what they should, and that two requests at the same time cannot both win (NF2, NF3, NF7). They run the code in `lib/` against PostgreSQL, the same code the Server Actions call. The Server Actions themselves are tested next to them in `app/actions/`, with the session and `lib/` replaced by mocks: those tests show that invalid input never reaches the database, that the student is taken from the session, that a refusal reaches the browser as a code, and which pages are revalidated.
 
 ## When a test belongs here
 
