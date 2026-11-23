@@ -48,7 +48,7 @@ function nextStep(agreement: AgreementListItem, isHelper: boolean): string {
       // F16: a moderator upheld the dispute. A removed post (F22) uses the text below.
       if (agreement.dispute?.status === "upheld" && isPostShown(agreement.post.status)) {
         return isHelper
-          ? "A moderator upheld the dispute. The reserved points were returned."
+          ? `A moderator upheld the dispute. The reserved points were returned to ${agreement.receiverName}.`
           : "A moderator upheld your dispute. The reserved points were returned to you.";
       }
       return agreement.cancelledAt

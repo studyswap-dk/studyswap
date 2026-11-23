@@ -92,7 +92,7 @@ A proposal is `declined`, a dispute is `rejected` and a report is `dismissed`. T
 | annullere en aftale | `cancel` |
 | aftalen udløber | `expire` |
 | pointene frigives automatisk | `autoRelease` |
-| gøre indsigelse, afgøre en indsigelse | `dispute`, `resolveDispute` |
+| gøre indsigelse, afgøre en indsigelse | `dispute`, `resolveDispute`. The moderator gives `upholdDispute` (medhold) or `rejectDispute` (afvist), and the decision is the `outcome`, `upheld` or `rejected` |
 | rapportere et opslag | `report` |
 | ejeren fjerner sit eget opslag | `close`. The post becomes `closed`, never `removed`, so it is not confused with a moderator's removal. A closed post cannot be opened again |
 | moderatoren fjerner et opslag, afviser rapporteringerne | `remove`, `dismiss`. An agreement on a removed post is cancelled with the action `removePost` |

@@ -1,3 +1,5 @@
+import type { DisputeOutcome } from "./dispute";
+
 export type AgreementStatus = "accepted" | "completed" | "cancelled" | "expired" | "disputed";
 
 export type TransactionType = "initial" | "release";
@@ -32,7 +34,7 @@ export type Action =
   | { kind: "dispute"; reason: string } // F15, receiver
   | { kind: "expire" } // F14, system
   | { kind: "autoRelease" } // F13, system
-  | { kind: "resolveDispute"; outcome: "upheld" | "rejected" } // F16, moderator
+  | { kind: "resolveDispute"; outcome: DisputeOutcome } // F16, moderator
   | { kind: "removePost" }; // F22, moderator
 
 function releaseTransactions(a: Agreement): NewPointTransaction[] {

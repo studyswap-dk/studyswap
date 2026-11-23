@@ -102,14 +102,21 @@ export async function applyAgreementAction(
       createdAt: now,
     });
   } else if (current.status === "disputed") {
-    await tx
+    const closed = await tx
       .update(dispute)
       .set({
         status: disputeStatusAfter(decision.newStatus),
         resolvedById: actorId,
         resolvedAt: now,
       })
-      .where(and(eq(dispute.agreementId, agreementId), eq(dispute.status, "open")));
+      .where(and(eq(dispute.agreementId, agreementId), eq(dispute.status, "open")))
+      .returning({ id: dispute.id });
+    // A disputed agreement always has exactly one open dispute, but the database cannot
+    // enforce that across the two tables. If it does not, the whole action is rolled
+    // back, so points never move without a record of who decided.
+    if (closed.length !== 1) {
+      throw new Error(`Agreement ${agreementId} is disputed without one open dispute`);
+    }
   }
 
   await settlePoints(tx, current, decision.newStatus, decision.transactions);

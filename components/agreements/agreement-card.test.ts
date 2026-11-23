@@ -193,6 +193,38 @@ describe("AgreementCard", () => {
     expect(html).toContain("released to you");
   });
 
+  it("F16: an upheld dispute tells the helper that the points were returned to the receiver", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "cancelled",
+        cancelledAt: new Date("2026-10-26T12:00:00Z"),
+        dispute: { reason: "The helper never showed up.", status: "upheld" },
+      },
+      HELPER,
+      [],
+    );
+
+    expect(html).toContain("A moderator upheld the dispute");
+    expect(html).toContain(`returned to ${agreement.receiverName}`);
+  });
+
+  it("F16: a rejected dispute tells the receiver that the points were released to the helper", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "completed",
+        completedAt: new Date("2026-10-26T12:00:00Z"),
+        dispute: { reason: "The helper never showed up.", status: "rejected" },
+      },
+      RECEIVER,
+      [],
+    );
+
+    expect(html).toContain("A moderator found that the help was given");
+    expect(html).toContain(`released to ${agreement.helperName}`);
+  });
+
   it("F16, F22: a dispute closed because the post was removed reads as a removed post", () => {
     const html = render(
       {

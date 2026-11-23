@@ -92,14 +92,19 @@ export async function readDispute(agreementId: string) {
   return found;
 }
 
-// F15, F16: an agreement is disputed exactly when it has an open dispute.
+// F15, F16, F22: an agreement is disputed exactly when it has an open dispute, and a
+// closed dispute matches how the agreement ended: upheld when it was cancelled, also by a
+// removed post, and rejected when it was completed.
 export async function expectDisputesConsistent() {
   const rows = await db
     .select({ agreementStatus: agreement.status, disputeStatus: dispute.status })
     .from(agreement)
     .leftJoin(dispute, eq(dispute.agreementId, agreement.id));
-  const mismatched = rows.filter(
-    (row) => (row.agreementStatus === "disputed") !== (row.disputeStatus === "open"),
-  );
+  const mismatched = rows.filter((row) => {
+    if ((row.agreementStatus === "disputed") !== (row.disputeStatus === "open")) return true;
+    if (row.disputeStatus === "upheld") return row.agreementStatus !== "cancelled";
+    if (row.disputeStatus === "rejected") return row.agreementStatus !== "completed";
+    return false;
+  });
   expect(mismatched).toEqual([]);
 }

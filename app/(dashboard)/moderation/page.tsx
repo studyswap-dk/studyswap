@@ -97,8 +97,9 @@ function DisputesSection({ disputes }: { disputes: OpenDisputeItem[] | null }) {
   );
 }
 
-// F21, F22: the posts students have reported, which a moderator removes or whose reports
-// they dismiss. Only for moderators; anyone else gets "not found".
+// F16, F21, F22: the open disputes, which a moderator decides, and the posts students have
+// reported, which a moderator removes or whose reports they dismiss. Only for moderators;
+// anyone else gets "not found".
 export default async function ModerationPage() {
   await connection();
   await requireModerator();
