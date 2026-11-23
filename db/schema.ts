@@ -177,6 +177,38 @@ export const agreement = pgTable(
   ],
 );
 
+// F15, F16: the receiver disputes the help, and a moderator upholds or rejects it.
+// Saved and closed together with the agreement's status in applyAgreementAction.
+export const disputeStatus = pgEnum("disputeStatus", ["open", "upheld", "rejected"]);
+
+export const dispute = pgTable(
+  "dispute",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    // An agreement can only be disputed once.
+    agreementId: uuid()
+      .notNull()
+      .unique()
+      .references(() => agreement.id),
+    reason: text().notNull(),
+    status: disputeStatus().notNull().default("open"),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // Who decided the dispute and when. Set together when it is no longer open.
+    resolvedById: uuid().references(() => userInNeonAuth.id),
+    resolvedAt: timestamp({ withTimezone: true }),
+  },
+  (table) => [
+    check("dispute_reason_not_blank", sql`btrim(${table.reason}) <> ''`),
+    // F16: a decided dispute always has both resolvedAt and resolvedById.
+    check(
+      "dispute_resolved_when_not_open",
+      sql`(${table.status} = 'open') = (${table.resolvedAt} IS NULL) AND (${table.resolvedAt} IS NULL) = (${table.resolvedById} IS NULL)`,
+    ),
+    // F16: the moderator lists the open disputes, oldest first.
+    index("dispute_status_createdAt_idx").on(table.status, table.createdAt),
+  ],
+);
+
 // F17, F18: each party may review the other once after an agreement is completed.
 export const review = pgTable(
   "review",

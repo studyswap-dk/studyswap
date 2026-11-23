@@ -33,12 +33,24 @@ function nextStep(agreement: AgreementListItem, isHelper: boolean): string {
         : `${agreement.helperName} marked the help as given. The points are released when you confirm, or automatically on ${release}.`;
     }
     case "completed":
+      // F16: a moderator rejected the dispute.
+      if (agreement.dispute?.status === "rejected") {
+        return isHelper
+          ? "A moderator found that the help was given. The points have been released to you."
+          : `A moderator found that the help was given. The points have been released to ${agreement.helperName}.`;
+      }
       return agreement.completedAt
         ? `Completed on ${formatDateTime(agreement.completedAt)}.`
         : "Completed.";
     case "expired":
       return `Expired on ${formatDateTime(agreement.expiresAt)} without the help being marked as given. The reserved points were returned.`;
     case "cancelled":
+      // F16: a moderator upheld the dispute. A removed post (F22) uses the text below.
+      if (agreement.dispute?.status === "upheld" && isPostShown(agreement.post.status)) {
+        return isHelper
+          ? "A moderator upheld the dispute. The reserved points were returned."
+          : "A moderator upheld your dispute. The reserved points were returned to you.";
+      }
       return agreement.cancelledAt
         ? `Cancelled on ${formatDateTime(agreement.cancelledAt)}. The reserved points were returned.`
         : "Cancelled. The reserved points were returned.";
@@ -84,6 +96,13 @@ export function AgreementCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">{step}</p>
+        {/* F15: both parties see the reason. */}
+        {agreement.dispute ? (
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+            <p className="mb-1 font-medium">Reason for the dispute</p>
+            <p className="break-words whitespace-pre-wrap">{agreement.dispute.reason}</p>
+          </div>
+        ) : null}
         <AgreementActions agreementId={agreement.id} actions={actions} />
         {agreement.status === "completed" && !agreement.reviewedByMe ? (
           <Link

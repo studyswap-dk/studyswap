@@ -1,7 +1,8 @@
-import { ShieldCheck } from "lucide-react";
+import { Scale, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { OpenDisputeCard } from "@/components/disputes/open-dispute-card";
 import { PageHeader } from "@/components/page-header";
 import { AuthorLine } from "@/components/posts/author-line";
 import { PostDescription } from "@/components/posts/post-description";
@@ -19,6 +20,7 @@ import {
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { requireModerator } from "@/lib/current-user";
 import { formatDateTime } from "@/lib/dates";
+import { getOpenDisputes, type OpenDisputeItem } from "@/lib/disputes";
 import { getReportedPosts, type ReportedPostItem } from "@/lib/reports";
 
 function ReportedPostCard({ item }: { item: ReportedPostItem }) {
@@ -62,11 +64,51 @@ function ReportedPostCard({ item }: { item: ReportedPostItem }) {
   );
 }
 
+// F16: the open disputes, which the moderator decides.
+function DisputesSection({ disputes }: { disputes: OpenDisputeItem[] | null }) {
+  return (
+    <section aria-labelledby="disputes-title" className="flex flex-col gap-4">
+      <h2 id="disputes-title" className="text-2xl font-semibold tracking-tight">
+        Disputes
+      </h2>
+      {disputes === null ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Disputes are unavailable</CardTitle>
+            <CardDescription>The disputes could not be loaded. Please try again.</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : disputes.length === 0 ? (
+        <Empty>
+          <Scale aria-hidden="true" className="size-8 text-muted-foreground" />
+          <EmptyTitle>No open disputes</EmptyTitle>
+          <EmptyDescription>When a receiver disputes the help, it shows up here.</EmptyDescription>
+        </Empty>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {disputes.map((item) => (
+            <li key={item.agreementId}>
+              <OpenDisputeCard item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 // F21, F22: the posts students have reported, which a moderator removes or whose reports
 // they dismiss. Only for moderators; anyone else gets "not found".
 export default async function ModerationPage() {
   await connection();
   await requireModerator();
+
+  let disputes: OpenDisputeItem[] | null = null;
+  try {
+    disputes = await getOpenDisputes();
+  } catch (error) {
+    console.error("Could not load the disputes:", error);
+  }
 
   let items: ReportedPostItem[] | null = null;
   try {
@@ -79,9 +121,11 @@ export default async function ModerationPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         eyebrow="Moderation"
-        title="Reported posts"
-        description="Posts students have reported as breaking the guidelines. Remove a post that does, or dismiss the reports if it does not."
+        title="Moderation"
+        description="Decide disputes about agreements, and remove reported posts that break the guidelines or dismiss their reports."
       />
+      <DisputesSection disputes={disputes} />
+      <h2 className="text-2xl font-semibold tracking-tight">Reported posts</h2>
       {items === null ? (
         <Card>
           <CardHeader>

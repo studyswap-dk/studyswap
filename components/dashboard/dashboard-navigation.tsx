@@ -37,7 +37,7 @@ const navigation = [
   { href: "/points", label: "Points", icon: Coins },
 ] as const;
 
-// F21: only shown to moderators. The page checks the role itself.
+// F16, F21: only shown to moderators. The page checks the role itself.
 const moderationItem = { href: "/moderation", label: "Moderation", icon: ShieldCheck } as const;
 
 const NEW_POST_PATH = "/posts/new";

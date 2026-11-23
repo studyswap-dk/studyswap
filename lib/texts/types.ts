@@ -3,6 +3,7 @@
 // code needs a text here, so typecheck fails if a code is added without one. A second
 // language is a second object of this type, see lib/texts/index.ts.
 import type { PartyAction } from "@/domain/agreement";
+import type { DisputeOutcome } from "@/domain/dispute";
 import type { MessageError } from "@/domain/message";
 import type { ClosePostRefusal, PostFieldError, PostTagError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
@@ -12,6 +13,7 @@ import type { ReviewError } from "@/domain/review";
 import type { AgreementActionRefusal } from "@/lib/agreements";
 import type { LoginError } from "@/lib/auth/login-error";
 import type { SignOutError } from "@/lib/auth/sign-out-error";
+import type { DisputeResolutionRefusal } from "@/lib/disputes";
 import type { ProposalActionRefusal } from "@/lib/proposals";
 import type { ModerationActionRefusal, ReportActionRefusal } from "@/lib/reports";
 
@@ -21,6 +23,8 @@ export type Texts = {
     // "failed": the server could not carry out the action, for example the database.
     refusal: Record<AgreementActionRefusal | "failed", string>;
     done: Record<PartyAction, string>;
+    // F15: the reason the receiver gives for a dispute.
+    disputeReason: Record<ReasonError, string>;
   };
   proposal: {
     refusal: Record<Exclude<ProposalActionRefusal, "insufficientPoints"> | "failed", string>;
@@ -63,5 +67,10 @@ export type Texts = {
   moderation: {
     refusal: Record<ModerationActionRefusal | "failed", string>;
     done: Record<ModerationAction, string>;
+  };
+  // F16: the moderator's decision on a dispute.
+  dispute: {
+    refusal: Record<DisputeResolutionRefusal | "failed", string>;
+    done: Record<DisputeOutcome, string>;
   };
 };

@@ -531,9 +531,20 @@ describe("availableActions", () => {
     expect(availableActions(base, "receiver", now)).toEqual(["confirm", "cancel"]);
   });
 
-  it("F11, F13: once the help is marked as given, neither party can cancel", () => {
+  it("F11, F13, F15: once the help is marked as given, neither party can cancel, and the receiver can confirm or dispute", () => {
     expect(availableActions(marked, "helper", now)).toEqual([]);
-    expect(availableActions(marked, "receiver", now)).toEqual(["confirm"]);
+    expect(availableActions(marked, "receiver", now)).toEqual(["confirm", "dispute"]);
+  });
+
+  it("F15: the receiver is no longer offered to dispute once the 24 hours have passed", () => {
+    const releaseAt = autoReleaseAt(markedAt);
+    expect(availableActions(marked, "receiver", oneMsBefore(releaseAt))).toContain("dispute");
+    expect(availableActions(marked, "receiver", releaseAt)).not.toContain("dispute");
+  });
+
+  it("F15: a disputed agreement offers nothing to either party", () => {
+    expect(availableActions(disputed, "helper", now)).toEqual([]);
+    expect(availableActions(disputed, "receiver", now)).toEqual([]);
   });
 
   it("F14: after the deadline, neither party is offered anything", () => {

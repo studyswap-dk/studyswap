@@ -15,6 +15,7 @@ vi.mock("@/app/actions/agreements", () => ({
   confirmAgreement: vi.fn<() => Promise<{ ok: true }>>(),
   markAgreementDone: vi.fn<() => Promise<{ ok: true }>>(),
   cancelAgreement: vi.fn<() => Promise<{ ok: true }>>(),
+  disputeAgreement: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 const HELPER = "11111111-1111-4111-8111-111111111111";
@@ -37,6 +38,7 @@ const agreement: AgreementListItem = {
   receiverName: "Receiver Student",
   post: { id: "44444444-4444-4444-8444-444444444444", title: "Math tutoring", status: "open" },
   proposerId: HELPER,
+  dispute: null,
 };
 
 function render(entry: AgreementListItem, userId: string, actions: PartyAction[]) {
@@ -130,5 +132,81 @@ describe("AgreementCard", () => {
     expect(html).toContain("Post removed");
     expect(html).not.toContain("Math tutoring");
     expect(html).not.toContain("Open the conversation");
+  });
+
+  it("F15: once the help is marked as given, the receiver can dispute it", () => {
+    const html = render(
+      { ...agreement, helperConfirmedAt: new Date("2026-10-25T12:00:00Z") },
+      RECEIVER,
+      ["confirm", "dispute"],
+    );
+
+    expect(html).toContain("Confirm help received");
+    expect(html).toContain(">Dispute</button>");
+  });
+
+  it("F15: both parties of a disputed agreement read the reason", () => {
+    const disputed: AgreementListItem = {
+      ...agreement,
+      status: "disputed",
+      helperConfirmedAt: new Date("2026-10-25T12:00:00Z"),
+      dispute: { reason: "The helper never showed up.", status: "open" },
+    };
+
+    const forHelper = render(disputed, HELPER, []);
+    expect(forHelper).toContain("Receiver Student has disputed that the help was given");
+    expect(forHelper).toContain("The helper never showed up.");
+
+    const forReceiver = render(disputed, RECEIVER, []);
+    expect(forReceiver).toContain("You have disputed that the help was given");
+    expect(forReceiver).toContain("The helper never showed up.");
+  });
+
+  it("F16: an upheld dispute tells the receiver that the points were returned", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "cancelled",
+        cancelledAt: new Date("2026-10-26T12:00:00Z"),
+        dispute: { reason: "The helper never showed up.", status: "upheld" },
+      },
+      RECEIVER,
+      [],
+    );
+
+    expect(html).toContain("A moderator upheld your dispute");
+  });
+
+  it("F16: a rejected dispute tells the helper that the points were released", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "completed",
+        completedAt: new Date("2026-10-26T12:00:00Z"),
+        dispute: { reason: "The helper never showed up.", status: "rejected" },
+      },
+      HELPER,
+      [],
+    );
+
+    expect(html).toContain("A moderator found that the help was given");
+    expect(html).toContain("released to you");
+  });
+
+  it("F16, F22: a dispute closed because the post was removed reads as a removed post", () => {
+    const html = render(
+      {
+        ...agreement,
+        status: "cancelled",
+        cancelledAt: new Date("2026-10-26T12:00:00Z"),
+        post: { ...agreement.post, status: "removed" },
+        dispute: { reason: "The helper never showed up.", status: "upheld" },
+      },
+      RECEIVER,
+      [],
+    );
+
+    expect(html).not.toContain("A moderator upheld your dispute");
+    expect(html).toContain("Cancelled on 26 Oct 2026");
   });
 });
