@@ -125,31 +125,36 @@ export default async function ModerationPage() {
         description="Decide disputes about agreements, and remove reported posts that break the guidelines or dismiss their reports."
       />
       <DisputesSection disputes={disputes} />
-      <h2 className="text-2xl font-semibold tracking-tight">Reported posts</h2>
-      {items === null ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Reported posts are unavailable</CardTitle>
-            <CardDescription>
-              The reported posts could not be loaded. Please try again.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : items.length === 0 ? (
-        <Empty>
-          <ShieldCheck aria-hidden="true" className="size-8 text-muted-foreground" />
-          <EmptyTitle>No reported posts</EmptyTitle>
-          <EmptyDescription>When a student reports a post, it shows up here.</EmptyDescription>
-        </Empty>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {items.map((item) => (
-            <li key={item.id}>
-              <ReportedPostCard item={item} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* F21, F22: the same structure as the disputes, so both are regions a screen reader can jump to. */}
+      <section aria-labelledby="reported-posts-title" className="flex flex-col gap-4">
+        <h2 id="reported-posts-title" className="text-2xl font-semibold tracking-tight">
+          Reported posts
+        </h2>
+        {items === null ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Reported posts are unavailable</CardTitle>
+              <CardDescription>
+                The reported posts could not be loaded. Please try again.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : items.length === 0 ? (
+          <Empty>
+            <ShieldCheck aria-hidden="true" className="size-8 text-muted-foreground" />
+            <EmptyTitle>No reported posts</EmptyTitle>
+            <EmptyDescription>When a student reports a post, it shows up here.</EmptyDescription>
+          </Empty>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {items.map((item) => (
+              <li key={item.id}>
+                <ReportedPostCard item={item} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

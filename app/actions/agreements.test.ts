@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { REASON_MAX_LENGTH } from "@/domain/report";
 import type { runAgreementAction } from "@/lib/agreements";
 import type { CurrentUser, requireStudent } from "@/lib/current-user";
 
-import { cancelAgreement, confirmAgreement, markAgreementDone } from "./agreements";
+import {
+  cancelAgreement,
+  confirmAgreement,
+  disputeAgreement,
+  markAgreementDone,
+} from "./agreements";
 
 // The signed-in student comes from the session, which the test decides. The database
 // is replaced too: runAgreementAction is tested against PostgreSQL in
@@ -165,5 +171,77 @@ describe.each([
     mocks.runAgreementAction.mockResolvedValueOnce(ALLOWED);
 
     await expect(action(AGREEMENT_ID)).resolves.toEqual({ ok: true });
+  });
+});
+
+describe("disputeAgreement", () => {
+  const REASON = "We agreed to meet on Tuesday, but the helper never showed up.";
+
+  it("F15: sends the trimmed reason for the signed-in student and shows the dispute to the moderators", async () => {
+    mocks.runAgreementAction.mockResolvedValueOnce({ ...ALLOWED, newStatus: "disputed" });
+
+    await expect(disputeAgreement(AGREEMENT_ID, `  ${REASON}  `)).resolves.toEqual({ ok: true });
+
+    expect(mocks.runAgreementAction).toHaveBeenCalledWith(
+      AGREEMENT_ID,
+      { kind: "dispute", reason: REASON },
+      STUDENT.id,
+      expect.any(Date),
+    );
+    expect(revalidated()).toEqual(["/agreements", "/moderation", "/points"]);
+  });
+
+  it("F15: checks the session before it looks at the id and the reason", async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(disputeAgreement("not-a-uuid", "")).rejects.toThrow("redirect to /login");
+
+    expect(mocks.runAgreementAction).not.toHaveBeenCalled();
+  });
+
+  it.each(INVALID_IDS)(
+    "F15: answers notFound for the id %s before it looks at the reason, without asking the database",
+    async (agreementId) => {
+      await expect(disputeAgreement(agreementId, "")).resolves.toEqual({
+        ok: false,
+        code: "notFound",
+      });
+
+      expect(mocks.runAgreementAction).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["required", undefined],
+    ["required", "   "],
+    ["tooShort", "No show"],
+    ["tooLong", "a".repeat(REASON_MAX_LENGTH + 1)],
+  ])("F15, NF1: answers %s for the reason %j without asking the database", async (code, reason) => {
+    await expect(disputeAgreement(AGREEMENT_ID, reason)).resolves.toEqual({ ok: false, code });
+
+    expect(mocks.runAgreementAction).not.toHaveBeenCalled();
+  });
+
+  it.each(["notReceiver", "notMarkedDone", "disputeWindowPassed"] as const)(
+    "F15: passes the refusal %s on, and shows how the agreement stands without telling the moderators",
+    async (code) => {
+      mocks.runAgreementAction.mockResolvedValueOnce({ ok: false, code });
+
+      await expect(disputeAgreement(AGREEMENT_ID, REASON)).resolves.toEqual({ ok: false, code });
+
+      expect(revalidated()).toEqual(AGREEMENT_PAGES);
+    },
+  );
+
+  it("F15: answers failed when the database cannot be reached, and changes no page", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.runAgreementAction.mockRejectedValueOnce(new Error("connection refused"));
+
+    await expect(disputeAgreement(AGREEMENT_ID, REASON)).resolves.toEqual({
+      ok: false,
+      code: "failed",
+    });
+
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -239,8 +239,10 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
 export const PARTY_ACTIONS = ["markDone", "confirm", "dispute", "cancel"] as const;
 export type PartyAction = (typeof PARTY_ACTIONS)[number];
 
-// F11, F12, F13: which of PARTY_ACTIONS this user may take now, judged by decide(), so the
-// page shows the same choice the server will make.
+// F11, F12, F13, F15: which of PARTY_ACTIONS this user may take now, judged by decide(), so
+// the page shows the same choice the server will make. decide() does not judge the reason
+// of a dispute, disputeAgreement does, so an empty reason is enough to ask whether the
+// receiver may dispute now.
 export function availableActions(agreement: Agreement, userId: string, now: Date): PartyAction[] {
   return PARTY_ACTIONS.filter((kind) => decide(agreement, { kind, reason: "" }, userId, now).ok);
 }

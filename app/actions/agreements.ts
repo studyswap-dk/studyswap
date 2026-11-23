@@ -67,6 +67,9 @@ export async function disputeAgreement(
   reason: unknown,
 ): Promise<DisputeAgreementResult> {
   await requireStudent();
+  // The id before the reason, as in act(), so an address that does not exist gives
+  // notFound whatever the student wrote.
+  if (!isUuid(agreementId)) return { ok: false, code: "notFound" };
   const validation = validateReason(reason);
   if (!validation.ok) return { ok: false, code: validation.code };
   return act(agreementId, { kind: "dispute", reason: validation.reason });
