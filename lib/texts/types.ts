@@ -11,6 +11,7 @@ import type { ModerationAction, ReasonError } from "@/domain/report";
 import type { ReviewError } from "@/domain/review";
 import type { AgreementActionRefusal } from "@/lib/agreements";
 import type { LoginError } from "@/lib/auth/login-error";
+import type { SignOutError } from "@/lib/auth/sign-out-error";
 import type { ProposalActionRefusal } from "@/lib/proposals";
 import type { ModerationActionRefusal, ReportActionRefusal } from "@/lib/reports";
 
@@ -47,6 +48,7 @@ export type Texts = {
   };
   review: Record<ReviewError | "submitted", string>;
   login: Record<LoginError, string>;
+  signOut: Record<SignOutError, string>;
   report: {
     // F20: the reason the student gives.
     reason: Record<ReasonError, string>;
