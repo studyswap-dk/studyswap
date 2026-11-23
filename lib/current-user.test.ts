@@ -30,6 +30,7 @@ describe("requireStudent", () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it("F1: returns the student from the session", async () => {
@@ -69,9 +70,15 @@ describe("requireStudent", () => {
   });
 
   it("F1: throws instead of redirecting when Neon Auth cannot check the session", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     getSession.mockResolvedValue({ data: null, error: { message: "unavailable" } });
 
     await expect(requireStudent()).rejects.toThrow("Could not verify");
+
+    // The log is the only trace in production of why the student could not get in.
+    expect(logged).toHaveBeenCalledWith("Neon Auth session lookup failed:", {
+      message: "unavailable",
+    });
   });
 
   describe("with EXTRA_ALLOWED_EMAILS", () => {
