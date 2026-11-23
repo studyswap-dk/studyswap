@@ -1,23 +1,27 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { CurrentUser, requireStudent } from "@/lib/current-user";
 import type { saveMyProfile } from "@/lib/profile";
 
 import { saveProfile } from "./profile";
 
 // saveMyProfile takes the student from the session itself, and is replaced here, so
 // these tests check only what the Server Action does with the form.
+const STUDENT: CurrentUser = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Student",
+  email: "202412345@post.au.dk",
+  image: null,
+  isModerator: false,
+};
 const PROGRAMME = "bachelor-softwareteknologi-diplomingenioer";
 
 const mocks = vi.hoisted(() => ({
+  requireStudent: vi.fn<typeof requireStudent>(),
   saveMyProfile: vi.fn<typeof saveMyProfile>(),
   revalidatePath: vi.fn<(path: string, type?: "layout" | "page") => void>(),
 }));
-vi.mock("@/lib/current-user", () => ({
-  requireStudent: async () => ({
-    id: "11111111-1111-4111-8111-111111111111",
-    email: "202412345@post.au.dk",
-  }),
-}));
+vi.mock("@/lib/current-user", () => ({ requireStudent: mocks.requireStudent }));
 vi.mock("@/lib/profile", () => ({ saveMyProfile: mocks.saveMyProfile }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 // redirect() ends the action by throwing in Next.js. The test sees where it would go.
@@ -26,6 +30,10 @@ vi.mock("next/navigation", () => ({
     throw new Error(`redirect to ${url}`);
   },
 }));
+
+beforeEach(() => {
+  mocks.requireStudent.mockResolvedValue(STUDENT);
+});
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -50,13 +58,23 @@ describe("saveProfile", () => {
 
     expect(result).toEqual({ errors: {}, notice: "saved", saved: true, name: "Anna Hansen" });
     expect(mocks.saveMyProfile).toHaveBeenCalledWith({ name: "Anna Hansen", programme: PROGRAMME });
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/", "layout");
+    expect(mocks.revalidatePath.mock.calls).toEqual([["/", "layout"]]);
   });
 
   it("F1: sends the student on to the posts from /welcome", async () => {
     await expect(
       saveProfile("/posts", NO_STATE, form({ name: "Anna Hansen", programme: PROGRAMME })),
     ).rejects.toThrow("redirect to /posts");
+  });
+
+  it("F1: checks the session before it looks at the form", async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(saveProfile(null, NO_STATE, null as unknown as FormData)).rejects.toThrow(
+      "redirect to /login",
+    );
+
+    expect(mocks.saveMyProfile).not.toHaveBeenCalled();
   });
 
   it.each(["/admin", "https://example.com", undefined, 42])(
@@ -68,7 +86,7 @@ describe("saveProfile", () => {
         form({ name: "Anna Hansen", programme: PROGRAMME }),
       );
 
-      expect(result).toMatchObject({ notice: "invalid", saved: false });
+      expect(result).toEqual({ errors: {}, notice: "invalid", saved: false, name: "" });
       expect(mocks.saveMyProfile).not.toHaveBeenCalled();
     },
   );
@@ -78,7 +96,7 @@ describe("saveProfile", () => {
     async (formData) => {
       const result = await saveProfile(null, NO_STATE, formData as unknown as FormData);
 
-      expect(result).toMatchObject({ notice: "invalid", saved: false });
+      expect(result).toEqual({ errors: {}, notice: "invalid", saved: false, name: "" });
       expect(mocks.saveMyProfile).not.toHaveBeenCalled();
     },
   );

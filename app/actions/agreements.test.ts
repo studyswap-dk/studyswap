@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { runAgreementAction } from "@/lib/agreements";
+import type { CurrentUser, requireStudent } from "@/lib/current-user";
 
 import { cancelAgreement, confirmAgreement, markAgreementDone } from "./agreements";
 
@@ -8,16 +9,21 @@ import { cancelAgreement, confirmAgreement, markAgreementDone } from "./agreemen
 // is replaced too: runAgreementAction is tested against PostgreSQL in
 // lib/agreements.integration.test.ts, the rules in domain/agreement.test.ts, and here
 // only the Server Actions around it.
-const STUDENT_ID = "11111111-1111-4111-8111-111111111111";
+const STUDENT: CurrentUser = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Student",
+  email: "202412345@post.au.dk",
+  image: null,
+  isModerator: false,
+};
 const AGREEMENT_ID = "22222222-2222-4222-8222-222222222222";
 
 const mocks = vi.hoisted(() => ({
+  requireStudent: vi.fn<typeof requireStudent>(),
   runAgreementAction: vi.fn<typeof runAgreementAction>(),
   revalidatePath: vi.fn<(path: string, type?: "layout" | "page") => void>(),
 }));
-vi.mock("@/lib/current-user", () => ({
-  requireStudent: async () => ({ id: STUDENT_ID, email: "202412345@post.au.dk" }),
-}));
+vi.mock("@/lib/current-user", () => ({ requireStudent: mocks.requireStudent }));
 vi.mock("@/lib/agreements", () => ({ runAgreementAction: mocks.runAgreementAction }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 // redirect() ends the action by throwing in Next.js. The test sees where it would go.
@@ -27,13 +33,16 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+beforeEach(() => {
+  mocks.requireStudent.mockResolvedValue(STUDENT);
+});
+
 afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
 });
 
 const INVALID_IDS = [undefined, null, 42, "not-a-uuid", { id: AGREEMENT_ID }];
-const AGREEMENT_PAGES = ["/agreements", "/points"];
 
 // What runAgreementAction answers when decide() allows the action. Only ok reaches the
 // browser, never the new status or the point transactions.
@@ -43,9 +52,12 @@ const ALLOWED: Awaited<ReturnType<typeof runAgreementAction>> = {
   transactions: [],
 };
 
-function revalidatedPaths() {
-  return mocks.revalidatePath.mock.calls.map(([path]) => path);
+// Every call to revalidatePath, with "layout" where it was given, in a fixed order. The
+// tests compare the whole list, so a missing call and an extra call both fail.
+function revalidated() {
+  return mocks.revalidatePath.mock.calls.map((call) => call.join(" ")).toSorted();
 }
+const AGREEMENT_PAGES = ["/agreements", "/points"];
 
 // The three actions share one path through act(), so the same properties are checked
 // for all three. Each case names the action it passes to runAgreementAction.
@@ -74,19 +86,27 @@ const ACTIONS = [
 ] as const;
 
 describe.each(ACTIONS)("$name", ({ requirement, action, kind, refusal }) => {
-  it(`${requirement}: acts for the signed-in student`, async () => {
+  it(`${requirement}: acts for the signed-in student and updates the pages`, async () => {
     mocks.runAgreementAction.mockResolvedValueOnce(ALLOWED);
 
-    // confirmAgreement goes on to the review page, which the next test checks.
+    // confirmAgreement goes on to the review page, which is tested on its own below.
     await action(AGREEMENT_ID).catch(() => {});
 
     expect(mocks.runAgreementAction).toHaveBeenCalledWith(
       AGREEMENT_ID,
       { kind },
-      STUDENT_ID,
+      STUDENT.id,
       expect.any(Date),
     );
-    expect(revalidatedPaths()).toEqual(expect.arrayContaining(AGREEMENT_PAGES));
+    expect(revalidated()).toEqual(AGREEMENT_PAGES);
+  });
+
+  it(`${requirement}: checks the session before it looks at the id`, async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(action("not-a-uuid")).rejects.toThrow("redirect to /login");
+
+    expect(mocks.runAgreementAction).not.toHaveBeenCalled();
   });
 
   it.each(INVALID_IDS)(
@@ -105,7 +125,7 @@ describe.each(ACTIONS)("$name", ({ requirement, action, kind, refusal }) => {
 
     // The agreement may have expired or been changed in another tab since the page was
     // drawn.
-    expect(revalidatedPaths()).toEqual(expect.arrayContaining(AGREEMENT_PAGES));
+    expect(revalidated()).toEqual(AGREEMENT_PAGES);
   });
 
   it(`${requirement}: answers failed when the database cannot be reached, and changes no page`, async () => {
@@ -138,10 +158,10 @@ describe("confirmAgreement", () => {
 });
 
 describe.each([
-  ["cancelAgreement", cancelAgreement],
-  ["markAgreementDone", markAgreementDone],
-] as const)("%s", (_name, action) => {
-  it("F11, F13: answers ok without leaving the page", async () => {
+  ["cancelAgreement", "F11", cancelAgreement],
+  ["markAgreementDone", "F13", markAgreementDone],
+] as const)("%s", (_name, requirement, action) => {
+  it(`${requirement}: answers ok without leaving the page`, async () => {
     mocks.runAgreementAction.mockResolvedValueOnce(ALLOWED);
 
     await expect(action(AGREEMENT_ID)).resolves.toEqual({ ok: true });

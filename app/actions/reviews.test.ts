@@ -1,26 +1,36 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { CurrentUser, requireStudent } from "@/lib/current-user";
 import type { saveReview } from "@/lib/reviews";
 
 import { submitReview } from "./reviews";
 
 // The signed-in student comes from the session, which the test decides. The database
-// is replaced too: saveReview is tested against PostgreSQL in
-// lib/reviews.integration.test.ts, the rules in domain/review.test.ts, and here only
-// the Server Action around them.
-const STUDENT_ID = "11111111-1111-4111-8111-111111111111";
+// is replaced too, and the rules for a review are tested in domain/review.test.ts.
+// There is no integration test of saveReview against PostgreSQL yet. Here only the
+// Server Action is tested.
+const STUDENT: CurrentUser = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Student",
+  email: "202412345@post.au.dk",
+  image: null,
+  isModerator: false,
+};
 const OTHER_ID = "22222222-2222-4222-8222-222222222222";
 const AGREEMENT_ID = "33333333-3333-4333-8333-333333333333";
 
 const mocks = vi.hoisted(() => ({
+  requireStudent: vi.fn<typeof requireStudent>(),
   saveReview: vi.fn<typeof saveReview>(),
   revalidatePath: vi.fn<(path: string, type?: "layout" | "page") => void>(),
 }));
-vi.mock("@/lib/current-user", () => ({
-  requireStudent: async () => ({ id: STUDENT_ID, email: "202412345@post.au.dk" }),
-}));
+vi.mock("@/lib/current-user", () => ({ requireStudent: mocks.requireStudent }));
 vi.mock("@/lib/reviews", () => ({ saveReview: mocks.saveReview }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
+
+beforeEach(() => {
+  mocks.requireStudent.mockResolvedValue(STUDENT);
+});
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -35,6 +45,12 @@ function form(values: Record<string, string>) {
   return data;
 }
 
+// Every call to revalidatePath, in a fixed order. The test compares the whole list, so a
+// missing call and an extra call both fail.
+function revalidated() {
+  return mocks.revalidatePath.mock.calls.map((call) => call.join(" ")).toSorted();
+}
+
 describe("submitReview", () => {
   it("F17: saves the score for the signed-in student and updates the pages", async () => {
     mocks.saveReview.mockResolvedValueOnce({ ok: true });
@@ -42,9 +58,9 @@ describe("submitReview", () => {
     const result = await submitReview(NO_STATE, form({ agreementId: AGREEMENT_ID, score: "4" }));
 
     expect(result).toEqual({ error: null, saved: true });
-    expect(mocks.saveReview).toHaveBeenCalledWith(AGREEMENT_ID, STUDENT_ID, 4, expect.any(Date));
-    expect(mocks.revalidatePath.mock.calls.map(([path]) => path)).toEqual(
-      expect.arrayContaining([`/reviews/${AGREEMENT_ID}`, "/agreements", "/profile", "/proposals"]),
+    expect(mocks.saveReview).toHaveBeenCalledWith(AGREEMENT_ID, STUDENT.id, 4, expect.any(Date));
+    expect(revalidated()).toEqual(
+      [`/reviews/${AGREEMENT_ID}`, "/agreements", "/profile", "/proposals"].toSorted(),
     );
   });
 
@@ -56,7 +72,17 @@ describe("submitReview", () => {
       form({ agreementId: AGREEMENT_ID, score: "5", reviewerId: OTHER_ID, revieweeId: OTHER_ID }),
     );
 
-    expect(mocks.saveReview.mock.calls[0]?.[1]).toBe(STUDENT_ID);
+    expect(mocks.saveReview.mock.calls[0]?.[1]).toBe(STUDENT.id);
+  });
+
+  it("F17: checks the session before it looks at the form", async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(submitReview(NO_STATE, null as unknown as FormData)).rejects.toThrow(
+      "redirect to /login",
+    );
+
+    expect(mocks.saveReview).not.toHaveBeenCalled();
   });
 
   it.each([undefined, null, "agreementId=1", { agreementId: AGREEMENT_ID, score: "4" }])(

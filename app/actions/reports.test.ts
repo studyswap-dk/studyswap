@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { REASON_MAX_LENGTH } from "@/domain/report";
-import type { CurrentUser } from "@/lib/current-user";
+import type { CurrentUser, requireStudent } from "@/lib/current-user";
 import type { moderatePost, saveReport } from "@/lib/reports";
 
 import { dismissReports, removeReportedPost, reportPost } from "./reports";
@@ -10,25 +10,24 @@ import { dismissReports, removeReportedPost, reportPost } from "./reports";
 // without the moderator role. The database is replaced too: saveReport and moderatePost
 // are tested against PostgreSQL in lib/reports.integration.test.ts, the rules in
 // domain/report.test.ts, and here only the Server Actions around them.
-const STUDENT_ID = "11111111-1111-4111-8111-111111111111";
+const STUDENT: CurrentUser = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Student",
+  email: "202412345@post.au.dk",
+  image: null,
+  isModerator: false,
+};
+const MODERATOR: CurrentUser = { ...STUDENT, isModerator: true };
 const POST_ID = "22222222-2222-4222-8222-222222222222";
 const REASON = "The post asks for answers to the exam.";
 
 const mocks = vi.hoisted(() => ({
-  session: { isModerator: false },
+  requireStudent: vi.fn<typeof requireStudent>(),
   saveReport: vi.fn<typeof saveReport>(),
   moderatePost: vi.fn<typeof moderatePost>(),
   revalidatePath: vi.fn<(path: string, type?: "layout" | "page") => void>(),
 }));
-vi.mock("@/lib/current-user", () => ({
-  requireStudent: async (): Promise<CurrentUser> => ({
-    id: STUDENT_ID,
-    name: "Student",
-    email: "202412345@post.au.dk",
-    image: null,
-    isModerator: mocks.session.isModerator,
-  }),
-}));
+vi.mock("@/lib/current-user", () => ({ requireStudent: mocks.requireStudent }));
 vi.mock("@/lib/reports", () => ({
   saveReport: mocks.saveReport,
   moderatePost: mocks.moderatePost,
@@ -36,7 +35,7 @@ vi.mock("@/lib/reports", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
 beforeEach(() => {
-  mocks.session.isModerator = false;
+  mocks.requireStudent.mockResolvedValue(STUDENT);
 });
 
 afterEach(() => {
@@ -46,8 +45,15 @@ afterEach(() => {
 
 const INVALID_IDS = [undefined, null, 42, "not-a-uuid", { id: POST_ID }];
 
-function revalidatedPaths() {
-  return mocks.revalidatePath.mock.calls.map(([path]) => path);
+function signInAsModerator() {
+  mocks.requireStudent.mockResolvedValue(MODERATOR);
+}
+
+// Every call to revalidatePath, with "layout" where it was given, in a fixed order. The
+// tests compare the whole list, so a missing call, an extra call and a lost "layout" all
+// fail.
+function revalidated() {
+  return mocks.revalidatePath.mock.calls.map((call) => call.join(" ")).toSorted();
 }
 
 describe("reportPost", () => {
@@ -56,8 +62,16 @@ describe("reportPost", () => {
 
     await expect(reportPost(POST_ID, `  ${REASON}  `)).resolves.toEqual({ ok: true });
 
-    expect(mocks.saveReport).toHaveBeenCalledWith(POST_ID, STUDENT_ID, REASON, expect.any(Date));
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/moderation");
+    expect(mocks.saveReport).toHaveBeenCalledWith(POST_ID, STUDENT.id, REASON, expect.any(Date));
+    expect(revalidated()).toEqual(["/moderation"]);
+  });
+
+  it("F20: checks the session before it looks at the id and the reason", async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(reportPost("not-a-uuid", REASON)).rejects.toThrow("redirect to /login");
+
+    expect(mocks.saveReport).not.toHaveBeenCalled();
   });
 
   it.each(INVALID_IDS)(
@@ -113,7 +127,7 @@ const MODERATION = [
 
 describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
   it(`${requirement}: acts for the signed-in moderator`, async () => {
-    mocks.session.isModerator = true;
+    signInAsModerator();
     mocks.moderatePost.mockResolvedValueOnce({ ok: true });
 
     await expect(action(POST_ID)).resolves.toEqual({ ok: true });
@@ -121,11 +135,18 @@ describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
     expect(mocks.moderatePost).toHaveBeenCalledWith(
       POST_ID,
       kind,
-      STUDENT_ID,
+      MODERATOR.id,
       true,
       expect.any(Date),
     );
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/moderation");
+  });
+
+  it(`${requirement}: checks the session before it looks at the id`, async () => {
+    mocks.requireStudent.mockRejectedValueOnce(new Error("redirect to /login"));
+
+    await expect(action("not-a-uuid")).rejects.toThrow("redirect to /login");
+
+    expect(mocks.moderatePost).not.toHaveBeenCalled();
   });
 
   it(`${requirement}: answers notModerator for a student without the role, without asking the database`, async () => {
@@ -134,10 +155,15 @@ describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
     expect(mocks.moderatePost).not.toHaveBeenCalled();
   });
 
+  // A student without the role learns nothing about which ids exist.
+  it(`${requirement}: answers notModerator before it looks at the id`, async () => {
+    await expect(action("not-a-uuid")).resolves.toEqual({ ok: false, code: "notModerator" });
+  });
+
   it.each(INVALID_IDS)(
     `${requirement}: answers postNotFound for the id %s without asking the database`,
     async (postId) => {
-      mocks.session.isModerator = true;
+      signInAsModerator();
 
       await expect(action(postId)).resolves.toEqual({ ok: false, code: "postNotFound" });
 
@@ -148,7 +174,7 @@ describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
   it.each(["noOpenReports", "postNotFound", "conflict"] as const)(
     `${requirement}: passes the refusal %s on and keeps the card in the list`,
     async (code) => {
-      mocks.session.isModerator = true;
+      signInAsModerator();
       mocks.moderatePost.mockResolvedValueOnce({ ok: false, code });
 
       await expect(action(POST_ID)).resolves.toEqual({ ok: false, code });
@@ -160,7 +186,7 @@ describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
 
   it(`${requirement}: answers failed when the database cannot be reached, and changes no page`, async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    mocks.session.isModerator = true;
+    signInAsModerator();
     mocks.moderatePost.mockRejectedValueOnce(new Error("connection refused"));
 
     await expect(action(POST_ID)).resolves.toEqual({ ok: false, code: "failed" });
@@ -171,32 +197,30 @@ describe.each(MODERATION)("$name", ({ requirement, action, kind }) => {
 
 describe("removeReportedPost", () => {
   it("F22: updates every page the removed post and its agreements show on", async () => {
-    mocks.session.isModerator = true;
+    signInAsModerator();
     mocks.moderatePost.mockResolvedValueOnce({ ok: true });
 
     await removeReportedPost(POST_ID);
 
-    expect(revalidatedPaths()).toEqual(
-      expect.arrayContaining([
-        "/moderation",
-        "/posts",
-        "/(dashboard)/posts/[postId]",
-        "/conversations",
-        "/proposals",
-        "/agreements",
-        "/points",
-      ]),
-    );
+    expect(revalidated()).toEqual([
+      "/(dashboard)/posts/[postId] layout",
+      "/agreements",
+      "/conversations",
+      "/moderation",
+      "/points",
+      "/posts",
+      "/proposals",
+    ]);
   });
 });
 
 describe("dismissReports", () => {
   it("F21: updates only the moderation page, because the post stays as it was", async () => {
-    mocks.session.isModerator = true;
+    signInAsModerator();
     mocks.moderatePost.mockResolvedValueOnce({ ok: true });
 
     await dismissReports(POST_ID);
 
-    expect(revalidatedPaths()).toEqual(["/moderation"]);
+    expect(revalidated()).toEqual(["/moderation"]);
   });
 });
