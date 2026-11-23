@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# mutation testing, see docs/test-metrics.md
+/reports
+/.stryker-tmp
+
 # next.js
 /.next/
 /out/

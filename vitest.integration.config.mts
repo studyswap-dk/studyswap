@@ -17,5 +17,14 @@ export default defineConfig({
     // All test files share one database, so they run one after another
     fileParallelism: false,
     testTimeout: 30_000,
+    // Only with `pnpm run test:integration --coverage`: how much of the database code in
+    // lib/ the integration tests run. Reported, not enforced. See docs/test-metrics.md
+    coverage: {
+      provider: "v8",
+      include: ["lib/**/*.ts"],
+      exclude: ["**/*.test.ts", "**/*.integration.test.ts"],
+      reporter: ["text-summary", "text", "html"],
+      reportsDirectory: "coverage/integration",
+    },
   },
 });
