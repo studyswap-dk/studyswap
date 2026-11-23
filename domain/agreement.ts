@@ -1,3 +1,5 @@
+import type { DisputeOutcome } from "./dispute";
+
 export type AgreementStatus = "accepted" | "completed" | "cancelled" | "expired" | "disputed";
 
 export type TransactionType = "initial" | "release";
@@ -32,7 +34,7 @@ export type Action =
   | { kind: "dispute"; reason: string } // F15, receiver
   | { kind: "expire" } // F14, system
   | { kind: "autoRelease" } // F13, system
-  | { kind: "resolveDispute"; outcome: "upheld" | "rejected" } // F16, moderator
+  | { kind: "resolveDispute"; outcome: DisputeOutcome } // F16, moderator
   | { kind: "removePost" }; // F22, moderator
 
 function releaseTransactions(a: Agreement): NewPointTransaction[] {
@@ -235,15 +237,16 @@ export function decide(agreement: Agreement, action: Action, actorId: string, no
   }
 }
 
-// F11, F12, F13: the actions a party can take on the agreements page. Dispute (F15)
-// is added here when it gets its button.
-export const PARTY_ACTIONS = ["markDone", "confirm", "cancel"] as const;
+// F11, F12, F13, F15: the actions a party can take on the agreements page.
+export const PARTY_ACTIONS = ["markDone", "confirm", "dispute", "cancel"] as const;
 export type PartyAction = (typeof PARTY_ACTIONS)[number];
 
-// F11, F12, F13: which of PARTY_ACTIONS this user may take now, judged by decide(), so the
-// page shows the same choice the server will make.
+// F11, F12, F13, F15: which of PARTY_ACTIONS this user may take now, judged by decide(), so
+// the page shows the same choice the server will make. decide() does not judge the reason
+// of a dispute, disputeAgreement does, so an empty reason is enough to ask whether the
+// receiver may dispute now.
 export function availableActions(agreement: Agreement, userId: string, now: Date): PartyAction[] {
-  return PARTY_ACTIONS.filter((kind) => decide(agreement, { kind }, userId, now).ok);
+  return PARTY_ACTIONS.filter((kind) => decide(agreement, { kind, reason: "" }, userId, now).ok);
 }
 
 // F13, F14: the system action that is due on an agreement when it is read, if any.

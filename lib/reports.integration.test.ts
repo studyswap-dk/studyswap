@@ -9,11 +9,13 @@ import { moderatePost, saveReport } from "@/lib/reports";
 import { resetDatabase } from "@/test/integration/database";
 import {
   createAgreement,
+  expectDisputesConsistent,
   expectPointsConsistent,
   hoursAfter,
   NOW,
   readAccount,
   readAgreement,
+  readDispute,
   readReleases,
 } from "@/test/integration/fixtures";
 
@@ -72,6 +74,7 @@ async function createReportedAgreement() {
 describe("reports and moderation against the database", () => {
   beforeEach(resetDatabase);
   afterEach(expectPointsConsistent);
+  afterEach(expectDisputesConsistent);
 
   it("F20: a student reporting the same post twice at the same time saves one report", async () => {
     const { postId, helperId } = await createAgreement();
@@ -109,6 +112,32 @@ describe("reports and moderation against the database", () => {
     expect(await readReports(postId)).toEqual([
       { status: "resolved", resolvedById: moderatorId, resolvedAt: removedAt },
     ]);
+  });
+
+  it("F16, F22: removing a post with a disputed agreement closes the dispute as upheld", async () => {
+    const { postId, agreementId, helperId, receiverId, moderatorId } =
+      await createReportedAgreement();
+    await runAgreementAction(agreementId, { kind: "markDone" }, helperId, hoursAfter(NOW, 1));
+    const disputed = await runAgreementAction(
+      agreementId,
+      { kind: "dispute", reason: "The helper never showed up." },
+      receiverId,
+      hoursAfter(NOW, 2),
+    );
+    expect(disputed.ok).toBe(true);
+    const removedAt = hoursAfter(NOW, 3);
+
+    const result = await moderatePost(postId, "remove", moderatorId, true, removedAt);
+
+    expect(result).toEqual({ ok: true });
+    expect((await readAgreement(agreementId)).status).toBe("cancelled");
+    // Closed as upheld, so it no longer waits on the moderation page.
+    expect(await readDispute(agreementId)).toMatchObject({
+      status: "upheld",
+      resolvedById: moderatorId,
+      resolvedAt: removedAt,
+    });
+    expect(await readAccount(receiverId)).toEqual({ balance: INITIAL_POINTS, reserved: 0 });
   });
 
   it("F22, NF2: removing a post and confirming its agreement at the same time move the point at most once", async () => {

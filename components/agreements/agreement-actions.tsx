@@ -8,12 +8,14 @@ import {
   confirmAgreement,
   markAgreementDone,
 } from "@/app/actions/agreements";
+import { DisputeAgreementButton } from "@/components/agreements/dispute-agreement-button";
 import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import type { PartyAction } from "@/domain/agreement";
 
+// F15: dispute needs a reason, so it has its own button with a form.
 const BUTTONS: Record<
-  PartyAction,
+  Exclude<PartyAction, "dispute">,
   {
     label: string;
     pending: string;
@@ -77,6 +79,16 @@ export function AgreementActions({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
         {actions.map((kind) => {
+          if (kind === "dispute") {
+            return (
+              <DisputeAgreementButton
+                key={kind}
+                agreementId={agreementId}
+                disabled={isPending}
+                onAnswer={(result) => setAnswer({ kind, result })}
+              />
+            );
+          }
           const button = BUTTONS[kind];
           return (
             <Button

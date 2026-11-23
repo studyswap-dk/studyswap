@@ -2,7 +2,7 @@ import { and, desc, eq, isNotNull, lte, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
-import { agreement, post, proposal, review, userInNeonAuth } from "@/db/schema";
+import { agreement, dispute, post, proposal, review, userInNeonAuth } from "@/db/schema";
 import {
   type Action,
   type Agreement,
@@ -13,6 +13,7 @@ import {
   dueSystemAction,
   SYSTEM_ACTOR,
 } from "@/domain/agreement";
+import { disputeStatusAfter, type DisputeStatus } from "@/domain/dispute";
 import {
   PointAccountError,
   type PointAccountRefusal,
@@ -57,9 +58,8 @@ const agreementColumns = {
 // only matches while the status is the one decide() saw, so the check and the change
 // are one step (design.tex, "Nøgler og begrænsninger").
 //
-// The caller owns what lies outside the agreement: for "dispute" it saves the dispute
-// with decision.disputeReason, and for "resolveDispute" it checks that the actor is a
-// moderator and updates the dispute, both in the same tx.
+// The dispute is saved and closed here too (F15, F16). The caller checks moderator
+// rights for "resolveDispute" and "removePost", and validates the reason of a dispute.
 export async function applyAgreementAction(
   tx: Transaction,
   agreementId: string,
@@ -92,6 +92,31 @@ export async function applyAgreementAction(
     .returning({ id: agreement.id });
   if (updated.length === 0) {
     throw new AgreementConflictError();
+  }
+
+  // F15, F16: the dispute follows the agreement's status in the same transaction.
+  if (decision.newStatus === "disputed") {
+    await tx.insert(dispute).values({
+      agreementId,
+      reason: decision.disputeReason ?? "",
+      createdAt: now,
+    });
+  } else if (current.status === "disputed") {
+    const closed = await tx
+      .update(dispute)
+      .set({
+        status: disputeStatusAfter(decision.newStatus),
+        resolvedById: actorId,
+        resolvedAt: now,
+      })
+      .where(and(eq(dispute.agreementId, agreementId), eq(dispute.status, "open")))
+      .returning({ id: dispute.id });
+    // A disputed agreement always has exactly one open dispute, but the database cannot
+    // enforce that across the two tables. If it does not, the whole action is rolled
+    // back, so points never move without a record of who decided.
+    if (closed.length !== 1) {
+      throw new Error(`Agreement ${agreementId} is disputed without one open dispute`);
+    }
   }
 
   await settlePoints(tx, current, decision.newStatus, decision.transactions);
@@ -167,6 +192,8 @@ export type AgreementListItem = Agreement & {
   };
   // The participant of the conversation the agreement came from, for the link to it.
   proposerId: string;
+  // F15, F16: null when the agreement has no dispute.
+  dispute: { reason: string; status: DisputeStatus } | null;
 };
 
 // F12, F13: the agreements where the student is a party, newest first. The caller passes
@@ -186,6 +213,7 @@ export async function getAgreementList(userId: string): Promise<AgreementListIte
       postTitle: post.title,
       postStatus: post.status,
       proposerId: proposal.proposerId,
+      dispute: { reason: dispute.reason, status: dispute.status },
     })
     .from(agreement)
     .innerJoin(proposal, eq(agreement.proposalId, proposal.id))
@@ -193,6 +221,7 @@ export async function getAgreementList(userId: string): Promise<AgreementListIte
     .innerJoin(helperUser, eq(agreement.helperId, helperUser.id))
     .innerJoin(receiverUser, eq(agreement.receiverId, receiverUser.id))
     .leftJoin(review, and(eq(review.agreementId, agreement.id), eq(review.reviewerId, userId)))
+    .leftJoin(dispute, eq(dispute.agreementId, agreement.id))
     .where(or(eq(agreement.helperId, userId), eq(agreement.receiverId, userId)))
     .orderBy(desc(agreement.createdAt), desc(agreement.id));
 

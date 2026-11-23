@@ -30,7 +30,13 @@ export const en = {
     done: {
       confirm: "Thank you. The points have been released.",
       markDone: "Marked as done. Waiting for confirmation.",
+      dispute: "Your dispute has been sent. A moderator will decide who gets the points.",
       cancel: "The agreement is cancelled. The reserved points are free again.",
+    },
+    disputeReason: {
+      required: "Tell the moderators why you think the help was not given.",
+      tooShort: "Use at least {min} characters.",
+      tooLong: "Keep the reason to at most {max} characters.",
     },
   },
   proposal: {
@@ -156,6 +162,33 @@ export const en = {
     done: {
       remove: "The post has been removed.",
       dismiss: "The reports have been dismissed.",
+    },
+  },
+  dispute: {
+    refusal: {
+      notDisputed: "This dispute has already been decided.",
+      notFound: "This agreement no longer exists.",
+      conflict: "Someone changed this agreement at the same time. Reload the page and try again.",
+      notModerator: "Only moderators can do this.",
+      failed: "The dispute could not be decided. Please try again.",
+      notActive: notPossible,
+      notReceiver: notPossible,
+      notHelper: notPossible,
+      notParty: notPossible,
+      expired: notPossible,
+      alreadyMarkedDone: notPossible,
+      notMarkedDone: notPossible,
+      disputeWindowPassed: notPossible,
+      onlySystem: notPossible,
+      tooEarly: notPossible,
+      invalidAmount: notPossible,
+      insufficientPoints: notPossible,
+      noPointAccount: notPossible,
+      alreadyReleased: notPossible,
+    },
+    done: {
+      upheld: "The dispute is upheld. The receiver has the points back.",
+      rejected: "The dispute is rejected. The points have been released to the helper.",
     },
   },
 } satisfies Texts;

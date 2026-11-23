@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { Action } from "@/domain/agreement";
+import { type ReasonError, validateReason } from "@/domain/report";
 import { type AgreementActionRefusal, runAgreementAction } from "@/lib/agreements";
 import { requireStudent } from "@/lib/current-user";
 import { isUuid } from "@/lib/ids";
@@ -32,6 +33,8 @@ async function act(agreementId: unknown, action: Action): Promise<AgreementActio
   // since the page was drawn, and the student should see how it stands now.
   revalidatePath("/agreements");
   revalidatePath("/points");
+  // F15: a new dispute shows up for the moderators.
+  if (decision.ok && action.kind === "dispute") revalidatePath("/moderation");
   return decision.ok ? { ok: true } : { ok: false, code: decision.code };
 }
 
@@ -52,4 +55,22 @@ export async function cancelAgreement(agreementId: unknown) {
 // receiver confirms, or automatically 24 hours later.
 export async function markAgreementDone(agreementId: unknown) {
   return act(agreementId, { kind: "markDone" });
+}
+
+// NF1: a code, not a text.
+export type DisputeAgreementResult = AgreementActionResult | { ok: false; code: ReasonError };
+
+// F15: the receiver disputes the help. The reason is checked with the same rule as a
+// report (F20), and the points stay reserved until a moderator decides (F16).
+export async function disputeAgreement(
+  agreementId: unknown,
+  reason: unknown,
+): Promise<DisputeAgreementResult> {
+  await requireStudent();
+  // The id before the reason, as in act(), so an address that does not exist gives
+  // notFound whatever the student wrote.
+  if (!isUuid(agreementId)) return { ok: false, code: "notFound" };
+  const validation = validateReason(reason);
+  if (!validation.ok) return { ok: false, code: validation.code };
+  return act(agreementId, { kind: "dispute", reason: validation.reason });
 }
