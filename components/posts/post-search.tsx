@@ -9,20 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { POST_TYPES, type PostType } from "@/domain/post";
-import type { PostSort, PostTagOption } from "@/lib/posts";
+import { POST_TYPES } from "@/domain/post";
+import { MAX_TAG_FILTERS, type PostSearch as PostSearchValues } from "@/lib/post-search";
+import type { PostTagOption } from "@/lib/posts";
 import { cn } from "@/lib/utils";
 
 type PostSearchProps = {
-  query: string;
-  type: PostType | undefined;
-  tagIds: string[];
-  sort: PostSort;
+  search: PostSearchValues;
   tagOptions: PostTagOption[];
 };
 
-export function PostSearch({ query, type, tagIds, sort, tagOptions }: PostSearchProps) {
-  const [selectedTagIds, setSelectedTagIds] = useState(tagIds);
+// F5, F6: the search form on /posts. It sends the search, the filters and the sort order
+// in the address, where parsePostSearch reads them again.
+export function PostSearch({ search, tagOptions }: PostSearchProps) {
+  const { query, type, sort } = search;
+  const [selectedTagIds, setSelectedTagIds] = useState(search.tagIds);
 
   function toggleTag(tagId: string) {
     setSelectedTagIds((selected) =>
@@ -72,8 +73,8 @@ export function PostSearch({ query, type, tagIds, sort, tagOptions }: PostSearch
                 <NativeSelect id="post-sort" name="sort" defaultValue={sort}>
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>
-                  <option value="title-asc">Name A–Z</option>
-                  <option value="title-desc">Name Z–A</option>
+                  <option value="title-asc">Title A–Z</option>
+                  <option value="title-desc">Title Z–A</option>
                 </NativeSelect>
               </Field>
             </FieldGroup>
@@ -81,12 +82,15 @@ export function PostSearch({ query, type, tagIds, sort, tagOptions }: PostSearch
             <fieldset className="flex flex-col gap-2">
               <legend className="text-sm leading-none font-medium">Filter by tags</legend>
               <FieldDescription>
-                Select any tags to show posts that match at least one of them.
+                Select up to {MAX_TAG_FILTERS} tags to show posts that match at least one of them.
               </FieldDescription>
               {tagOptions.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {tagOptions.map((tag) => {
                     const selected = selectedTagIds.includes(tag.id);
+                    // parsePostSearch keeps only the first MAX_TAG_FILTERS, so the rest
+                    // cannot be selected once the limit is reached.
+                    const full = !selected && selectedTagIds.length >= MAX_TAG_FILTERS;
                     return (
                       <Button
                         key={tag.id}
@@ -94,6 +98,7 @@ export function PostSearch({ query, type, tagIds, sort, tagOptions }: PostSearch
                         size="sm"
                         variant={selected ? "secondary" : "outline"}
                         aria-pressed={selected}
+                        disabled={full}
                         onClick={() => toggleTag(tag.id)}
                         className="h-auto min-h-7 max-w-full text-left break-words whitespace-normal"
                       >

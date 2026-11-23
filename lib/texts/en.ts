@@ -78,7 +78,7 @@ export const en = {
       tooMany: "Use at most {maxTags} tags.",
     },
     failed: "Your post could not be saved. Please try again.",
-    saved: "Your post is live.",
+    saved: "Post published!",
     close: {
       refusal: {
         postNotFound: "This post no longer exists.",

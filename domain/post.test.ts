@@ -3,6 +3,8 @@ import {
   DESCRIPTION_MAX_LENGTH,
   DESCRIPTION_MIN_LENGTH,
   decideClosePost,
+  MAX_TAG_NAME_LENGTH,
+  MAX_TAGS_PER_POST,
   isPostListed,
   isPostShown,
   POST_STATUSES,
@@ -10,6 +12,7 @@ import {
   TITLE_MIN_LENGTH,
   validateDescription,
   validatePost,
+  validatePostTags,
   validateTitle,
   validateType,
 } from "./post";
@@ -228,5 +231,54 @@ describe("decideClosePost", () => {
       (status) => decideClosePost({ authorId: AUTHOR, status }, AUTHOR).ok,
     );
     expect(closable).toEqual(["open"]);
+  });
+});
+
+describe("validatePostTags", () => {
+  it("F5: limits a post to 5 tags of at most 32 characters", () => {
+    expect([MAX_TAGS_PER_POST, MAX_TAG_NAME_LENGTH]).toEqual([5, 32]);
+  });
+
+  it.each([undefined, null, ""])("F5: tags are optional, so %j gives no tags", (value) => {
+    expect(validatePostTags(value)).toEqual({ ok: true, tags: [] });
+  });
+
+  it.each([42, ["sql"], { tags: "sql" }])("F5: refuses tags that are not text, %j", (value) => {
+    expect(validatePostTags(value)).toEqual({ ok: false, code: "invalid" });
+  });
+
+  it("F5, F6: makes the names lower case and joins inner spaces, so Git and git are one tag", () => {
+    expect(validatePostTags("  Git , SQL   Joins")).toEqual({
+      ok: true,
+      tags: ["git", "sql joins"],
+    });
+  });
+
+  it("F5: drops empty names between commas", () => {
+    expect(validatePostTags("sql, , ,git,")).toEqual({ ok: true, tags: ["sql", "git"] });
+  });
+
+  it("F5: keeps each name once, also when the case differs", () => {
+    expect(validatePostTags("Git, git, GIT")).toEqual({ ok: true, tags: ["git"] });
+  });
+
+  it("F5: accepts a name of exactly 32 characters and refuses one of 33", () => {
+    expect(validatePostTags("a".repeat(MAX_TAG_NAME_LENGTH)).ok).toBe(true);
+    expect(validatePostTags("a".repeat(MAX_TAG_NAME_LENGTH + 1))).toEqual({
+      ok: false,
+      code: "tooLong",
+    });
+  });
+
+  it("F5: accepts 5 tags and refuses 6", () => {
+    expect(validatePostTags("a, b, c, d, e").ok).toBe(true);
+    expect(validatePostTags("a, b, c, d, e, f")).toEqual({ ok: false, code: "tooMany" });
+  });
+
+  it("F5: counts a repeated name once toward the limit", () => {
+    expect(validatePostTags("a, b, c, d, e, A")).toEqual({
+      ok: true,
+      tags: ["a", "b", "c", "d", "e"],
+    });
   });
 });
