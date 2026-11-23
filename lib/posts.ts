@@ -19,17 +19,13 @@ import {
   decideClosePost,
   isPostShown,
   LISTED_POST_STATUSES,
-  POST_TYPES,
   type NewPost,
-  type PostType,
 } from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
-import { isUuid } from "@/lib/ids";
 import { slicePage } from "@/lib/pagination";
+import type { PostSearch, PostSort } from "@/lib/post-search";
 
 export const POSTS_PER_PAGE = 8;
-export const POST_SORTS = ["newest", "oldest", "title-asc", "title-desc"] as const;
-export type PostSort = (typeof POST_SORTS)[number];
 
 export type PostTagOption = { id: string; name: string };
 
@@ -54,47 +50,26 @@ export type PostDetail = Omit<Post, "conversationCount" | "tags"> & {
   status: (typeof postStatus.enumValues)[number];
 };
 
+// F3 to F6: one page of the open posts, with the search, the filters and the sort order
+// that parsePostSearch in lib/post-search.ts has read from the address.
 export async function getPosts({
   query,
+  type: postType,
+  tagIds: selectedTagIds,
+  sort: postSort,
   page,
-  type,
-  tagIds,
-  sort,
-}: {
-  query: string;
-  page: number;
-  type?: unknown;
-  tagIds?: unknown;
-  sort?: unknown;
-}) {
+}: PostSearch & { page: number }) {
   // Only signed-in students may read posts. Outside the try, so a visitor is sent to
   // /login instead of being told that posts are unavailable.
   const user = await requireStudent();
-  const searchTerm = query.trim();
-  const searchCondition = searchTerm
+  const searchCondition = query
     ? or(
-        ilike(post.title, `%${escapeLike(searchTerm)}%`),
-        ilike(post.description, `%${escapeLike(searchTerm)}%`),
+        ilike(post.title, `%${escapeLike(query)}%`),
+        ilike(post.description, `%${escapeLike(query)}%`),
       )
     : undefined;
-  const postType =
-    typeof type === "string" && POST_TYPES.includes(type as PostType)
-      ? (type as PostType)
-      : undefined;
-  const requestedTagIds = [
-    ...new Set(
-      (Array.isArray(tagIds) ? tagIds : isUuid(tagIds) ? [tagIds] : []).filter(
-        (value): value is string => isUuid(value),
-      ),
-    ),
-  ];
-  const postSort =
-    typeof sort === "string" && POST_SORTS.includes(sort as PostSort)
-      ? (sort as PostSort)
-      : "newest";
 
   let tagOptions: PostTagOption[] = [];
-  const selectedTagIds = requestedTagIds;
   // F8, F10: only the posts that can get new proposals are listed, as isPostListed in
   // domain/post.ts says. The rule is used as a list of statuses here, so the count and
   // the pages only include what is listed.
@@ -117,7 +92,9 @@ export async function getPosts({
         .from(tag)
         .innerJoin(postTag, eq(postTag.tagId, tag.id))
         .innerJoin(post, eq(postTag.postId, post.id))
-        .where(listed)
+        // The tags on open posts, and the selected ones even when no open post has them
+        // any more, so a selected tag can still be seen and deselected.
+        .where(selectedTagIds.length > 0 ? or(listed, inArray(tag.id, selectedTagIds)) : listed)
         .orderBy(asc(tag.name)),
       db.select({ total: count() }).from(post).where(where),
     ]);
@@ -176,9 +153,6 @@ export async function getPosts({
           : null,
       })) as Post[],
       tagOptions,
-      selectedType: postType,
-      selectedTagIds,
-      sort: postSort,
       total,
       ...slice,
       unavailable: false,
@@ -188,9 +162,6 @@ export async function getPosts({
     return {
       items: [] as Post[],
       tagOptions,
-      selectedType: postType,
-      selectedTagIds,
-      sort: postSort,
       total: 0,
       ...slicePage(0, 1, POSTS_PER_PAGE),
       unavailable: true,

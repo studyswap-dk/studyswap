@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 
 import { PostForm } from "@/components/posts/post-form";
+import { useTexts } from "@/components/texts/texts-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// The seconds the confirmation stays before the student is taken to the new post.
+const REDIRECT_SECONDS = 5;
+
 export function NewPostContent() {
+  const texts = useTexts().post;
   const router = useRouter();
   const [createdPostId, setCreatedPostId] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The form is replaced by the confirmation, so focus moves to its heading. A screen
+  // reader then reads the confirmation, and the keyboard is not left on a removed button.
+  useEffect(() => {
+    if (createdPostId) headingRef.current?.focus();
+  }, [createdPostId]);
 
   useEffect(() => {
     if (!createdPostId) return;
@@ -30,25 +42,32 @@ export function NewPostContent() {
 
   if (createdPostId) {
     return (
-      <section
-        aria-live="polite"
-        className="mx-auto flex w-full flex-1 flex-col items-center justify-center gap-6 py-12 text-center"
-      >
+      <section className="mx-auto flex w-full flex-1 flex-col items-center justify-center gap-6 py-12 text-center">
         <div className="flex size-24 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Check aria-hidden="true" className="size-12" strokeWidth={2.5} />
         </div>
+        {/* NF1: the confirmation comes from lib/texts/en.ts. The countdown below is hidden
+            from screen readers, which would otherwise read it again every second; the
+            sentence in sr-only tells them about the redirect once. */}
         <div className="flex max-w-xl flex-col gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Post published!</h1>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-3xl font-semibold tracking-tight outline-none sm:text-4xl"
+          >
+            {texts.saved}
+          </h1>
           <p className="text-muted-foreground">Your post is ready for other students to find.</p>
+          <p className="sr-only">You are taken to your post in {REDIRECT_SECONDS} seconds.</p>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p aria-hidden="true" className="text-sm text-muted-foreground">
           Taking you to your post in {countdown} {countdown === 1 ? "second…" : "seconds…"}
         </p>
         <Link
           href={"/posts/" + createdPostId}
           className={cn(buttonVariants({ size: "lg" }), "min-w-52")}
         >
-          Go to new posts
+          Go to your post
         </Link>
       </section>
     );
@@ -81,7 +100,10 @@ export function NewPostContent() {
       <Card>
         <CardHeader>
           <CardTitle>Post details</CardTitle>
-          <CardDescription>All fields are required. You can update the post later.</CardDescription>
+          <CardDescription>
+            The type, title and description are required, and tags are optional. A post cannot be
+            edited after it is published.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <PostForm onCreated={setCreatedPostId} />

@@ -8,20 +8,18 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import { AuthorLine } from "@/components/posts/author-line";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
-import type { PostType } from "@/domain/post";
 import { formatDate } from "@/lib/dates";
 import { pageWindow } from "@/lib/pagination";
-import { type PostSort, getPosts } from "@/lib/posts";
+import type { PostSearch } from "@/lib/post-search";
+import type { getPosts } from "@/lib/posts";
 
 type PostsListProps = {
   posts: Awaited<ReturnType<typeof getPosts>>;
-  query: string;
-  type: PostType | undefined;
-  tagIds: string[];
-  sort: PostSort;
+  search: PostSearch;
 };
 
-export function PostsList({ posts, query, type, tagIds, sort }: PostsListProps) {
+export function PostsList({ posts, search }: PostsListProps) {
+  const { query, type, tagIds } = search;
   const { items, total, pages, page, firstItem, lastItem, unavailable } = posts;
 
   if (unavailable) {
@@ -116,42 +114,19 @@ export function PostsList({ posts, query, type, tagIds, sort }: PostsListProps) 
         ))}
       </ul>
 
-      {pages > 1 && (
-        <Pagination
-          query={query}
-          type={type}
-          tagIds={tagIds}
-          sort={sort}
-          page={page}
-          pages={pages}
-        />
-      )}
+      {pages > 1 && <Pagination search={search} page={page} pages={pages} />}
     </section>
   );
 }
 
-function Pagination({
-  query,
-  type,
-  tagIds,
-  sort,
-  page,
-  pages,
-}: {
-  query: string;
-  type: PostType | undefined;
-  tagIds: string[];
-  sort: PostSort;
-  page: number;
-  pages: number;
-}) {
+function Pagination({ search, page, pages }: { search: PostSearch; page: number; pages: number }) {
   const pageRange = pageWindow(page, pages);
 
   return (
     <nav aria-label="Posts pages" className="flex items-center justify-center gap-2 pt-3">
       {page > 1 ? (
         <Link
-          href={pageHref(page - 1, { query, type, tagIds, sort })}
+          href={pageHref(page - 1, search)}
           aria-label="Previous page"
           className={buttonVariants({ variant: "outline", size: "icon" })}
         >
@@ -171,7 +146,7 @@ function Pagination({
       {pageRange.map((value) => (
         <Link
           key={value}
-          href={pageHref(value, { query, type, tagIds, sort })}
+          href={pageHref(value, search)}
           aria-current={value === page ? "page" : undefined}
           className={buttonVariants({
             variant: value === page ? "default" : "outline",
@@ -183,7 +158,7 @@ function Pagination({
       ))}
       {page < pages ? (
         <Link
-          href={pageHref(page + 1, { query, type, tagIds, sort })}
+          href={pageHref(page + 1, search)}
           aria-label="Next page"
           className={buttonVariants({ variant: "outline", size: "icon" })}
         >
@@ -204,15 +179,9 @@ function Pagination({
   );
 }
 
-function pageHref(
-  page: number,
-  {
-    query,
-    type,
-    tagIds,
-    sort,
-  }: { query: string; type: PostType | undefined; tagIds: string[]; sort: PostSort },
-) {
+// The address of a page with the same search, filters and sort order, so changing page
+// keeps them. parsePostSearch reads them back.
+function pageHref(page: number, { query, type, tagIds, sort }: PostSearch) {
   const searchParams = new URLSearchParams();
   if (query) searchParams.set("q", query);
   if (type) searchParams.set("type", type);
