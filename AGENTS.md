@@ -94,6 +94,7 @@ A proposal is `declined`, a dispute is `rejected` and a report is `dismissed`. T
 | pointene frigives automatisk | `autoRelease` |
 | gøre indsigelse, afgøre en indsigelse | `dispute`, `resolveDispute` |
 | rapportere et opslag | `report` |
+| ejeren fjerner sit eget opslag | `close`. The post becomes `closed`, never `removed`, so it is not confused with a moderator's removal. A closed post cannot be opened again |
 | moderatoren fjerner et opslag, afviser rapporteringerne | `remove`, `dismiss`. An agreement on a removed post is cancelled with the action `removePost` |
 
 **Naming rules**

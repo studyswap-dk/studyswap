@@ -79,6 +79,15 @@ export const en = {
     },
     failed: "Your post could not be saved. Please try again.",
     saved: "Your post is live.",
+    close: {
+      refusal: {
+        postNotFound: "This post no longer exists.",
+        alreadyClosed: "This post is already closed.",
+        notAuthor: notPossible,
+        failed: "The post could not be closed. Please try again.",
+      },
+      done: "Your post is closed. It is no longer listed and gets no new proposals.",
+    },
   },
   message: {
     required: "Enter a message before sending.",

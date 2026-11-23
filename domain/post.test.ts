@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DESCRIPTION_MAX_LENGTH,
   DESCRIPTION_MIN_LENGTH,
+  decideClosePost,
   isPostListed,
   isPostShown,
   POST_STATUSES,
@@ -180,5 +181,52 @@ describe("isPostListed", () => {
   it("F8, F22: every listed post is also shown", () => {
     const listedButHidden = POST_STATUSES.filter((s) => isPostListed(s) && !isPostShown(s));
     expect(listedButHidden).toEqual([]);
+  });
+});
+
+describe("decideClosePost", () => {
+  const AUTHOR = "author";
+  const OTHER = "other";
+
+  it("F7: the author may close an open post", () => {
+    expect(decideClosePost({ authorId: AUTHOR, status: "open" }, AUTHOR)).toEqual({ ok: true });
+  });
+
+  it("F7: another student may not close the post", () => {
+    expect(decideClosePost({ authorId: AUTHOR, status: "open" }, OTHER)).toEqual({
+      ok: false,
+      code: "notAuthor",
+    });
+  });
+
+  it("F7: a closed post cannot be closed again", () => {
+    expect(decideClosePost({ authorId: AUTHOR, status: "closed" }, AUTHOR)).toEqual({
+      ok: false,
+      code: "alreadyClosed",
+    });
+  });
+
+  it("F7: another student is told they are not the author of a closed post", () => {
+    expect(decideClosePost({ authorId: AUTHOR, status: "closed" }, OTHER)).toEqual({
+      ok: false,
+      code: "notAuthor",
+    });
+  });
+
+  it.each([AUTHOR, OTHER])(
+    "F7, F22: a post a moderator has removed is not found, also for %s",
+    (userId) => {
+      expect(decideClosePost({ authorId: AUTHOR, status: "removed" }, userId)).toEqual({
+        ok: false,
+        code: "postNotFound",
+      });
+    },
+  );
+
+  it("F7: every status gets an answer, and only an open post can be closed", () => {
+    const closable = POST_STATUSES.filter(
+      (status) => decideClosePost({ authorId: AUTHOR, status }, AUTHOR).ok,
+    );
+    expect(closable).toEqual(["open"]);
   });
 });
