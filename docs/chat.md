@@ -19,7 +19,7 @@ The rules are in `domain/conversation.ts`, with tests in `domain/conversation.te
 - Sending a proposal (F8) also begins the conversation, if the proposer has not written yet, in the same transaction as the proposal, see `sendProposal` in `lib/proposals.ts`. The conversation then has no messages, but both parties can open it, so the links from the proposal and the agreement always work
 - Only the author of the post and the participant can read the conversation and send messages. A conversation that has not started can only be opened by the participant (`canOpenConversation`)
 - The two can still write when the post is closed, so the author can finish with the students they already write with without getting new ones. Nobody can read or write once a moderator has removed the post (F22)
-- Not built yet: when the author removes their own post (F7), it is to be closed, not removed, so the conversations on it go on. Today a post is only closed when a proposal on a post seeking help is accepted, and nothing removes a post
+- When the author closes their own post (F7), it is closed, not removed, so the conversations on it go on, see `closePost` in `lib/posts.ts`. A post is also closed when a proposal on a post seeking help is accepted
 
 A message must contain non-whitespace text and is at most 2,000 characters after trimming, see `domain/message.ts`. Server code takes the sender from the session, never from the request.
 
@@ -28,13 +28,13 @@ A message must contain non-whitespace text and is at most 2,000 characters after
 | Address | Who | What |
 |---|---|---|
 | `/posts/[postId]` | Anyone but the author | The post, the button to send a proposal on an open post, and their own conversation with the author. Their first message or proposal starts it |
-| `/posts/[postId]` | The author | The post and the list of conversations on it, newest message first |
+| `/posts/[postId]` | The author | The post, the button to close it while it is open (F7), and the list of conversations on it, newest message first |
 | `/posts/[postId]/conversations/[participantId]` | The author and that participant | One conversation. On a large screen the author's list stays beside it |
 | `/conversations` | Any student | The conversations the student is part of, as author or participant, newest message first. At most 200; there are no pages yet |
 
 `app/(dashboard)/posts/[postId]/layout.tsx` shows the post and, for the author, the list, so only the conversation changes when the author moves between them. On `/posts`, the author's own posts show how many conversations they have.
 
-`/posts` shows only open posts. `/conversations` is how a student finds a conversation again when its post is closed: it lists the conversations on closed posts too, marked "Closed", and the post page still opens for a closed post. Conversations on removed posts are not listed, because nobody can open them. The list does not show unread messages yet; that needs a record of when each party last read the conversation, which is a schema change of its own.
+`/posts` shows only open posts. `/conversations` is how a student finds a conversation again when its post is closed: it lists the conversations on closed posts too, marked "Closed", and the post page still opens for a closed post. Conversations on removed posts are not listed, because nobody can open them. There is no list of a student's own posts yet, so a post its author has closed (F7) and that has no conversations, proposals or agreements can only be opened by its address. The list does not show unread messages yet; that needs a record of when each party last read the conversation, which is a schema change of its own.
 
 A conversation that the signed-in student is not part of gives "not found", so the page does not reveal that it exists. So does a conversation that has not started, when the author opens it, because only the participant can start it.
 

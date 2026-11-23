@@ -133,3 +133,28 @@ export const LISTED_POST_STATUSES = ["open"] as const satisfies readonly PostSta
 export function isPostListed(status: PostStatus): boolean {
   return (LISTED_POST_STATUSES as readonly PostStatus[]).includes(status);
 }
+
+// F7: the post as closing it needs to know it.
+export type ClosablePost = {
+  authorId: string;
+  status: PostStatus;
+};
+
+// NF1: why closing a post is refused. The user interface turns the code into a text.
+export type ClosePostRefusal = "postNotFound" | "notAuthor" | "alreadyClosed";
+
+// F7: may this student close the post? Only the author, and only an open post. A post a
+// moderator has removed is not shown, so it answers as if it did not exist, also to its
+// author. Closing does not touch the agreements or conversations on the post, see
+// closePost in lib/posts.ts. A closed post cannot be opened again: the rule in
+// kravspecifikation.tex that the author may reopen a post when its agreement falls away
+// is not built.
+export function decideClosePost(
+  post: ClosablePost,
+  userId: string,
+): { ok: true } | { ok: false; code: ClosePostRefusal } {
+  if (!isPostShown(post.status)) return { ok: false, code: "postNotFound" };
+  if (post.authorId !== userId) return { ok: false, code: "notAuthor" };
+  if (post.status !== "open") return { ok: false, code: "alreadyClosed" };
+  return { ok: true };
+}

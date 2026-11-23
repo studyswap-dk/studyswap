@@ -4,7 +4,7 @@
 // language is a second object of this type, see lib/texts/index.ts.
 import type { PartyAction } from "@/domain/agreement";
 import type { MessageError } from "@/domain/message";
-import type { PostFieldError, PostTagError } from "@/domain/post";
+import type { ClosePostRefusal, PostFieldError, PostTagError } from "@/domain/post";
 import type { NameError, ProgrammeError } from "@/domain/profile";
 import type { ProposalActionKind } from "@/domain/proposal";
 import type { ModerationAction, ReasonError } from "@/domain/report";
@@ -37,6 +37,11 @@ export type Texts = {
     tags: Record<PostTagError, string>;
     failed: string;
     saved: string;
+    // F7: the author closes their own post.
+    close: {
+      refusal: Record<ClosePostRefusal | "failed", string>;
+      done: string;
+    };
   };
   message: Record<MessageError | "notFound" | "notAllowed" | "failed", string>;
   profile: {

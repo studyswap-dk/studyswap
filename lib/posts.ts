@@ -3,9 +3,20 @@ import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm"
 import { cache } from "react";
 
 import { db } from "@/db";
-import { conversation, post, postStatus, postTag, profile, tag, userInNeonAuth } from "@/db/schema";
+import {
+  conversation,
+  post,
+  postStatus,
+  postTag,
+  profile,
+  proposal,
+  tag,
+  userInNeonAuth,
+} from "@/db/schema";
 import { canSeeConversationsOnPost } from "@/domain/conversation";
 import {
+  type ClosePostRefusal,
+  decideClosePost,
   isPostShown,
   LISTED_POST_STATUSES,
   POST_TYPES,
@@ -215,6 +226,44 @@ export async function savePost(
       .values(tagRows.map(({ id: tagId }) => ({ postId: createdPost.id, tagId })));
 
     return createdPost.id;
+  });
+}
+
+export type ClosePostResult = { ok: true } | { ok: false; code: ClosePostRefusal };
+
+// F7: the author closes their own post. In one transaction (NF2): the post becomes
+// closed, so it is no longer listed and gets no new proposals or conversations, and its
+// pending proposals are declined. Running agreements and the conversations on the post
+// go on, so the author can finish them without getting new ones (kravspecifikation.tex).
+// No points are moved: a pending proposal reserves none. The caller passes an authorId
+// from requireStudent() in this request.
+export async function closePost(
+  postId: string,
+  authorId: string,
+  now: Date,
+): Promise<ClosePostResult> {
+  return db.transaction(async (tx): Promise<ClosePostResult> => {
+    // Lock the post first, as acceptProposal does. An accept or a send at the same time
+    // locks it too, so one of them waits and sees the post as the other left it: an
+    // accepted proposal finishes before the post closes, and a proposal sent after it
+    // is refused because the post is no longer open.
+    const [lockedPost] = await tx
+      .select({ authorId: post.authorId, status: post.status })
+      .from(post)
+      .where(eq(post.id, postId))
+      .for("update");
+    if (!lockedPost) return { ok: false, code: "postNotFound" };
+
+    const decision = decideClosePost(lockedPost, authorId);
+    if (!decision.ok) return decision;
+
+    await tx.update(post).set({ status: "closed" }).where(eq(post.id, postId));
+    await tx
+      .update(proposal)
+      .set({ status: "declined", decidedAt: now })
+      .where(and(eq(proposal.postId, postId), eq(proposal.status, "pending")));
+
+    return { ok: true };
   });
 }
 

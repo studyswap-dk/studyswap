@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  type ClosePostRefusal,
   type PostField,
   type PostFieldError,
   type PostTagError,
@@ -10,7 +11,8 @@ import {
   validatePostTags,
 } from "@/domain/post";
 import { requireStudent } from "@/lib/current-user";
-import { savePost } from "@/lib/posts";
+import { isUuid } from "@/lib/ids";
+import { closePost, savePost } from "@/lib/posts";
 
 // F3, F4, F5: create a post by the signed-in student. A Server Action is a public
 // endpoint, so the input is validated again here with the same rules as the form, and
@@ -44,4 +46,33 @@ export async function createPost(values: unknown): Promise<CreatePostResult> {
   revalidatePath("/posts");
   revalidatePath("/posts/" + postId);
   return { ok: true, postId };
+}
+
+// NF1: a code, not a text. ClosePostButton writes the text the student reads.
+export type CloseOwnPostResult = { ok: true } | { ok: false; code: ClosePostRefusal | "failed" };
+
+// F7: the author closes their own post. A Server Action is a public endpoint, so the id
+// is checked again here and the student is taken from the session. closePost checks
+// that the student is the author.
+export async function closeOwnPost(postId: unknown): Promise<CloseOwnPostResult> {
+  const user = await requireStudent();
+  if (!isUuid(postId)) return { ok: false, code: "postNotFound" };
+
+  let result;
+  try {
+    result = await closePost(postId, user.id, new Date());
+  } catch (error) {
+    console.error("Could not close the post:", error);
+    return { ok: false, code: "failed" };
+  }
+
+  if (result.ok) {
+    // The post leaves the list of posts and gets the badge Closed on its own page, and
+    // its declined proposals change for both the author and the proposers.
+    revalidatePath("/posts");
+    revalidatePath("/(dashboard)/posts/[postId]", "layout");
+    revalidatePath("/proposals");
+    revalidatePath("/conversations");
+  }
+  return result;
 }

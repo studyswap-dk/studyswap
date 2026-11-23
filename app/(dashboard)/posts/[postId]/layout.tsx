@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { ConversationUpdates } from "@/components/conversation/conversation-updates";
 import { AuthorLine } from "@/components/posts/author-line";
+import { ClosePostButton } from "@/components/posts/close-post-button";
 import { PostDescription } from "@/components/posts/post-description";
 import { PostTypeBadge } from "@/components/posts/post-type-badge";
 import { SendProposalButton } from "@/components/proposals/send-proposal-button";
@@ -113,6 +114,10 @@ export default async function PostLayout({ children, params }: LayoutProps<"/pos
               ) : null}
               {canPropose ? <SendProposalButton postId={postId} alreadySent={alreadySent} /> : null}
             </div>
+            {/* F7: only the author can close the post. Straight in the row, because the
+                confirmation takes a line of its own below it. The button hides itself
+                once the post is closed. */}
+            {isAuthor ? <ClosePostButton postId={postId} status={found.status} /> : null}
           </div>
         </CardContent>
       </Card>
