@@ -116,11 +116,13 @@ Use pnpm only, never npm or yarn. The pnpm version comes from `packageManager` i
 | `pnpm run typecheck` | TypeScript |
 | `pnpm run test` | Vitest |
 | `pnpm run test:integration` | Integration tests against PostgreSQL in Docker, see `docs/integration-tests.md` |
+| `pnpm run test:coverage` | The unit tests with coverage. Fails if `domain/` or `app/actions/` falls below 95 %, see `docs/test-metrics.md` |
+| `pnpm run test:mutation` | Mutation testing of `domain/` with Stryker. Takes minutes, run by hand, locally or with the workflow `Mutation test` from the Actions tab, see `docs/test-metrics.md` |
 | `pnpm run db:generate --name <name>` | New migration from `db/schema.ts` |
 | `pnpm run db:migrate` | Run migrations against the database in `.env.local` |
 | `pnpm run skills:sync` | Copy `.agents/skills` to `.claude/skills` |
 
-Before a task is done, run `lint`, `format`, `typecheck` and `test`, and `test:integration` when the task changes `lib/`, `db/` or `drizzle/`. CI runs the same checks, plus `format:check`, `skills:check` and `build`, on every pull request, and the integration tests in a separate job, `integration`.
+Before a task is done, run `lint`, `format`, `typecheck` and `test`, and `test:integration` when the task changes `lib/`, `db/` or `drizzle/`. CI runs the same checks, with `test:coverage` in place of `test`, plus `format:check`, `skills:check` and `build`, on every pull request, and the integration tests in a separate job, `integration`. A new rule in `domain/` or a new Server Action needs tests, or the coverage floor fails.
 
 ## Project structure
 

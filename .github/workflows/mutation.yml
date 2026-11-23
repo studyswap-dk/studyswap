@@ -1,0 +1,34 @@
+name: Mutation test
+
+# NF7: Stryker on domain/. Started by hand from the Actions tab, not on pull
+# requests, because the result needs judgement. See docs/test-metrics.md
+on:
+  workflow_dispatch:
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # Same major version as engines in package.json, which Vercel follows
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Mutation test
+        run: pnpm run test:mutation
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: stryker-report
+          path: reports/mutation/
