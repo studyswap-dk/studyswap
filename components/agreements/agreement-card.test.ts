@@ -143,6 +143,8 @@ describe("AgreementCard", () => {
 
     expect(html).toContain("Confirm help received");
     expect(html).toContain(">Dispute</button>");
+    // The window to dispute closes when the points are released automatically.
+    expect(html).toContain("Until then, you can dispute it");
   });
 
   it("F15: both parties of a disputed agreement read the reason", () => {

@@ -30,7 +30,7 @@ function nextStep(agreement: AgreementListItem, isHelper: boolean): string {
       const release = formatDateTime(autoReleaseAt(agreement.helperConfirmedAt));
       return isHelper
         ? `You marked the help as given. The points are released when ${agreement.receiverName} confirms, or automatically on ${release}.`
-        : `${agreement.helperName} marked the help as given. The points are released when you confirm, or automatically on ${release}.`;
+        : `${agreement.helperName} marked the help as given. The points are released when you confirm, or automatically on ${release}. Until then, you can dispute it if the help was not given.`;
     }
     case "completed":
       // F16: a moderator rejected the dispute.
