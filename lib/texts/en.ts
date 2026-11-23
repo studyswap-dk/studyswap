@@ -119,6 +119,9 @@ export const en = {
     signInFailed: "Could not sign in. Please try again shortly.",
     notAllowed: "Only AU student email addresses can access StudySwap.",
   },
+  signOut: {
+    failed: "Could not sign out. Please try again.",
+  },
   report: {
     reason: {
       required: "Tell the moderators why this post breaks the guidelines.",
