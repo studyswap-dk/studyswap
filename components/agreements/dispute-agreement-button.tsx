@@ -2,7 +2,11 @@
 
 import { useId, useState, useTransition } from "react";
 
-import { type AgreementActionResult, disputeAgreement } from "@/app/actions/agreements";
+import {
+  type AgreementActionResult,
+  disputeAgreement,
+  type DisputeAgreementResult,
+} from "@/app/actions/agreements";
 import { useTexts } from "@/components/texts/texts-provider";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -42,8 +46,12 @@ export function DisputeAgreementButton({
   const texts = useTexts().agreement;
   const reasonId = useId();
 
-  function isReasonError(code: string): code is ReasonError {
-    return code in texts.disputeReason;
+  // A refusal of the reason is shown in the panel. Narrowing the whole answer, not only
+  // its code, lets TypeScript check that every other answer is one AgreementActions knows.
+  function isReasonRefusal(
+    answer: DisputeAgreementResult,
+  ): answer is { ok: false; code: ReasonError } {
+    return !answer.ok && answer.code in texts.disputeReason;
   }
 
   const errorText =
@@ -75,12 +83,12 @@ export function DisputeAgreementButton({
             }
             startTransition(async () => {
               const answer = await disputeAgreement(agreementId, reason);
-              if (!answer.ok && isReasonError(answer.code)) {
+              if (isReasonRefusal(answer)) {
                 setReasonError(answer.code);
                 return;
               }
               setOpen(false);
-              onAnswer(answer as AgreementActionResult);
+              onAnswer(answer);
             });
           }}
         >
