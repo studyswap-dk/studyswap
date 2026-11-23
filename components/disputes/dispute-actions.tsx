@@ -80,7 +80,6 @@ export function DisputeActions({ agreementId }: { agreementId: string }) {
         </div>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">{CHOICES[chosen].explanation}</p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={isPending} onClick={() => run(chosen)}>
               {isPending ? "Saving..." : CHOICES[chosen].confirm}
@@ -94,6 +93,8 @@ export function DisputeActions({ agreementId }: { agreementId: string }) {
               Back
             </Button>
           </div>
+          {/* Below the buttons, as in ModerationActions and ClosePostButton. */}
+          <p className="text-sm text-muted-foreground">{CHOICES[chosen].explanation}</p>
         </>
       )}
       {/* Always in the page, so a screen reader announces the message. */}
